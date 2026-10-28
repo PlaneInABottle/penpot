@@ -1,0 +1,1 @@
+../.agents/skills/penpot-design-system/assets/helpers.js

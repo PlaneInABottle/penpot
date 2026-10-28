@@ -1,0 +1,13 @@
+# Secrets and machine state — never committed
+.env
+.env.*
+.bak-restart-policy/
+
+# A project's design work is committed when it is ready, not by default
+design/*/
+!design/tokens.json
+
+# Python and macOS noise
+__pycache__/
+*.pyc
+.DS_Store
