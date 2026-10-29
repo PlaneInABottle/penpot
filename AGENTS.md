@@ -18,9 +18,6 @@ direction, its craft checklist and the independent critique gate. `scripts/helpe
 symlink into the design-system skill; keep it pointed at the local copy. Moving these to
 `~/.agents/skills` later means deleting the local copies and changing the symlink only.
 
-Design work can be delegated end to end to `@design-system` when the coordinator should not
-run it itself; the agent loads the skill from `.agents/skills/` like any other.
-
 ## Runtime
 
 Compose project `penpot`, containers `penpot-penpot-*`, file `docker-compose.yaml`.
@@ -64,6 +61,23 @@ docker exec penpot-penpot-postgres-1 pg_dump -U penpot penpot > ~/penpot-$(date 
   `~/.config/opencode/.penpot-mcp-url`. Never copy, print or commit that token.
 - Stock photography: `PEXELS_API_KEY` is exported in the shell profile; use it for mock
   imagery and record the photo URL as provenance. Never commit the key.
+
+## Design decisions
+
+Applies to every design in this workspace; the reasoning lives in
+`visual-interface-design` → "Decision Authority".
+
+- **Ask once, at the start, batched (max four):** who it is for, the single job of the surface,
+  whether the content is real or invented, any non-negotiable constraint. Do not ask twice.
+- **If the brief already names it, do not ask.** A stated audience, style, palette or
+  constraint is fixed: derive layout, type, tone and structure yourself and say what you chose.
+- **Never ask the user to specify design** — no "how should the story go", no "which layout".
+  Propose two or three named directions instead, each with a mechanism and a "refuses" clause.
+- **No screens before a direction is chosen.** Sketch directions as boards on a scratch page,
+  get the choice in one sentence, then build.
+- **Record the decision** in `design/<project>/brief.md` (and the stance in `principles.md`),
+  so later sessions inherit it instead of re-deciding. Accepted decisions are not reopened
+  without a stated reason.
 
 ## Design projects
 
