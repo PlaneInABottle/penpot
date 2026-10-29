@@ -86,14 +86,18 @@ design/
   tokens.json            # the generic demo set (`core`)
   <project>/
     brief.md             # direction, content, per-page spec — the project's single source
+    principles.md        # the stance and the voice: rules a token cannot express
+    craft-rules.json     # optional lint overrides for this project (a written deviation)
     tokens.json          # the project token file, synced to a Penpot set of the same name
-    build/               # Penpot build scripts, idempotent, run through penpot_exec.py
+    build/               # idempotent build scripts, one per screen, run with penpot_exec.py
     shots/               # exported board renders, the visual evidence
 ```
 
 - One project folder per design; never mix two projects in one token file or build folder.
 - Page, board and token-set names are declared in that project's `brief.md`, not here.
 - A project folder is throwaway-able: everything needed to rebuild it lives inside it.
+- A build script is run as `python3 scripts/penpot_exec.py --file design/<project>/build/screen-01.js`;
+  it must be safe to run twice (check-then-create, rebuild from scratch, no leftovers).
 
 ## Scripts
 
@@ -119,9 +123,9 @@ python3 scripts/check_contrast.py --file design/<project>/tokens.json --pair fg:
 - `import_media.py` needs `PEXELS_API_KEY`, downloads and shrinks the photo itself (the
   plugin sandbox cannot fetch cross-origin), and attaches it to a board **only while that
   page is active** — the script opens the page and verifies it first.
-- `design_lint.py` reads `DESIGN_LINT_DEFAULTS` from the script and can be overridden per
-  project with `--rules`; its thresholds are deliberately generic, the project brief decides
-  the values that are brand choices.
+- `design_lint.py` reads its `DEFAULTS` block and can be overridden per project with
+  `--rules design/<project>/craft-rules.json`; the thresholds are deliberately generic, and
+  an override is a recorded deviation, not a silent one.
 - The MCP tool text wraps the plugin return value in a second `result` field; unwrap before
   decoding.
 - Tests: `python3 -m unittest scripts/test_penpot_scripts.py`, 33 cases, no network.
@@ -137,3 +141,19 @@ Generic, shared by every project:
 - Components are named `component/state` (`button/primary`, `button/primary-hover`), with
   states and sizes in one variant family.
 - The library is file-scoped: deleting a page leaves its token sets behind.
+
+## Definition of done
+
+A screen is not finished because it was written. All of these must hold on the final state:
+
+1. `design_lint.py --page <page>` → **0 high** (type scale, accents, collisions, overflow,
+   placeholders). A medium is either fixed or explained.
+2. `design_qa.py --page <page>` → `findings: none`, `renderMismatches: 0`, fills bound.
+3. `check_contrast.py` → every pair used on the screen passes; the pairs are listed, not assumed.
+4. `export_board.py` for the screen, then **look at it at 1:1** in the four places: smallest
+   text, densest region, primary action, every icon/arrow row.
+5. Prototype: `page.flows.length` is what you claim, and the per-board interaction count is
+   non-zero after the last rebuild.
+6. An independent reviewer has seen the render and crops (the maker's own pass is not review).
+
+Anything not covered by 1–6 is reported as a gap, never as done.
