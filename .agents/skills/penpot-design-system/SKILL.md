@@ -37,7 +37,9 @@ surface, not to execute twice.
 ## Order of work
 
 One path, in order. A later step that invents a value an earlier step owns is a defect:
-screens never hard-code a hex, components never carry per-screen spacing.
+screens never hard-code a hex, components never carry per-screen spacing. The six phases and
+the file each one writes are declared in the workspace `AGENTS.md`; this skill owns the work
+inside phases 3–5.
 
 ### 1. Foundations
 

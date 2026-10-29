@@ -79,25 +79,50 @@ Applies to every design in this workspace; the reasoning lives in
   so later sessions inherit it instead of re-deciding. Accepted decisions are not reopened
   without a stated reason.
 
-## Design projects
+## Project lifecycle
+
+Every design in this workspace runs the same six phases, in order. Each phase writes a file
+before the next one starts; a phase with no artifact did not happen.
+
+| # | Phase | Writes | Exit condition |
+|---|---|---|---|
+| 1 | **Intake** | `brief.md` — audience, single job, content truth, constraints | the four answers exist, or are explicitly marked unknown |
+| 2 | **Direction** | `brief.md` § direction · `principles.md` | two or three named directions, one chosen, the rejected ones recorded with a reason |
+| 3 | **Foundations** | `tokens.json` · Penpot set · `Components` page | `tokens_sync --check` clean; every component built and instanced once |
+| 4 | **Screens** | `build/screen-NN.js` per screen | each screen passes the Definition of done |
+| 5 | **Prototype** | flows and links on the screens | one flow, per-board interaction counts verified after the last rebuild |
+| 6 | **Handoff** | `README.md` · `shots/` · photo provenance | token/component inventory, board list, export evidence, gaps stated |
+
+The folder is the record:
 
 ```
 design/
   tokens.json            # the generic demo set (`core`)
   <project>/
-    brief.md             # direction, content, per-page spec — the project's single source
-    principles.md        # the stance and the voice: rules a token cannot express
-    craft-rules.json     # optional lint overrides for this project (a written deviation)
-    tokens.json          # the project token file, synced to a Penpot set of the same name
-    build/               # idempotent build scripts, one per screen, run with penpot_exec.py
-    shots/               # exported board renders, the visual evidence
+    README.md            # the index: page, set, boards, provenance, current state
+    brief.md             # phase 1 + 2: content, direction, per-page spec
+    principles.md        # phase 2: stance and voice, the rules a token cannot express
+    craft-rules.json     # optional lint overrides — a written deviation, not a silent one
+    tokens.json          # phase 3: the project token file, synced to a set of the same name
+    build/               # phase 4: idempotent build scripts, one per screen
+    shots/               # phases 4–6: exported board renders, the visual evidence
 ```
 
 - One project folder per design; never mix two projects in one token file or build folder.
 - Page, board and token-set names are declared in that project's `brief.md`, not here.
-- A project folder is throwaway-able: everything needed to rebuild it lives inside it.
-- A build script is run as `python3 scripts/penpot_exec.py --file design/<project>/build/screen-01.js`;
-  it must be safe to run twice (check-then-create, rebuild from scratch, no leftovers).
+- **A decision that is not in a file does not exist.** No verbal direction, no "we said
+  somewhere". If it matters later, it is written now.
+- A build script runs as `python3 scripts/penpot_exec.py --file design/<project>/build/screen-01.js`
+  and must be safe to run twice: check-then-create, rebuild from scratch, no leftovers.
+- Intake questions are capped at four and asked once. See "Design decisions" above.
+
+Starting a project:
+
+```sh
+mkdir -p design/<project>/build design/<project>/shots
+# write README.md, brief.md, principles.md, tokens.json
+python3 scripts/tokens_sync.py --file design/<project>/tokens.json --set <set>   # creates the set
+```
 
 ## Scripts
 
