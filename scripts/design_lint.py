@@ -35,6 +35,7 @@ DEFAULTS = {
     "allowed_radii": [0, 2, 4, 8, 12, 999],
     "board_widths": [1440, 390],
     "max_uppercase_ratio": 0.15,
+    "dominant_ignore_prefix": [],
     "banned_text": ["lorem", "ipsum", "todo", "xxx", "placeholder", "başlık buraya"],
 }
 
@@ -51,6 +52,7 @@ const walk = (s, parent) => {
     x: Math.round(s.x * 10) / 10, y: Math.round(s.y * 10) / 10,
     w: Math.round(s.width * 10) / 10, h: Math.round(s.height * 10) / 10,
     fill: (s.fills && s.fills[0] && s.fills[0].fillColor) || null,
+    img: !!((s.fills || []).find(f => f.fillImage)),
     radius: s.borderRadius === undefined ? null : s.borderRadius,
     shadows: (s.shadows || []).length,
     fontSize: s.type === "text" ? Number(s.fontSize) : null,
@@ -121,10 +123,13 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
         if len(sizes) > rules["max_type_sizes"]:
             add("high", f"{len(sizes)} distinct type sizes (max {rules['max_type_sizes']}): {sizes}")
         if sizes:
-            biggest = max(texts, key=lambda n: n["fontSize"])
-            offset = biggest["y"] - board["y"]
+            chrome = rules["dominant_ignore_prefix"] or []
+            pool = [n for n in texts if not any(n["name"].startswith(c) for c in chrome)] or texts
+            top_size = max(n["fontSize"] for n in pool)
+            topmost = min((n for n in pool if n["fontSize"] == top_size), key=lambda n: n["y"])
+            offset = topmost["y"] - board["y"]
             if offset > 900:
-                add("high", f"largest type ({biggest['fontSize']}px, {biggest['name']}) starts at y={offset:.0f} — the page opens without a dominant element")
+                add("high", f"largest type ({topmost['fontSize']}px, {topmost['name']}) starts at y={offset:.0f} — the page opens without a dominant element")
             counts = {size: sum(1 for n in texts if n["fontSize"] == size) for size in sizes}
             body = max(counts, key=counts.get)
             if sizes[-1] / body < rules["min_display_ratio"]:
@@ -187,8 +192,30 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
         if texts and len(uppercase) / len(texts) > rules["max_uppercase_ratio"]:
             add("medium", f"{len(uppercase)}/{len(texts)} text nodes are uppercase-tracked")
 
-        # text must not overlap text: ink rectangles come from textBounds (page-absolute)
+        # a one-line value+unit faked with two top-aligned boxes at different sizes
+        # always drifts: box tops are not baselines. Flag the pattern for a 1:1
+        # baseline check instead of trusting the coordinates.
         inks = [n for n in inside if n["type"] == "text" and n["inkW"] and n["inkH"] and n["inkW"] > 1]
+        inline_flags = 0
+        for i in range(len(inks)):
+            for j in range(i + 1, len(inks)):
+                a, b = inks[i], inks[j]
+                if a["fontSize"] == b["fontSize"]:
+                    continue
+                if abs(a["y"] - b["y"]) > 12:
+                    continue
+                ox = min(a["inkX"] + a["inkW"], b["inkX"] + b["inkW"]) - max(a["inkX"], b["inkX"])
+                oy = min(a["inkY"] + a["inkH"], b["inkY"] + b["inkH"]) - max(a["inkY"], b["inkY"])
+                small = min(a["inkH"], b["inkH"])
+                gap = max(a["inkX"], b["inkX"]) - min(a["inkX"] + a["inkW"], b["inkX"] + b["inkW"])
+                if oy > small * 0.5 and gap < 48:
+                    inline_flags += 1
+                    if inline_flags <= 4:
+                        add("medium", f"inline mixed-size pair {a['name']} ({a['fontSize']}px) / {b['name']} ({b['fontSize']}px): verify the shared baseline at 1:1")
+        if inline_flags > 4:
+            add("medium", f"{inline_flags - 4} more inline mixed-size pair(s) need a 1:1 baseline check")
+
+        # text must not overlap text: ink rectangles come from textBounds (page-absolute)
         for i in range(len(inks)):
             for j in range(i + 1, len(inks)):
                 a, b = inks[i], inks[j]
@@ -196,6 +223,39 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
                 oy = min(a["inkY"] + a["inkH"], b["inkY"] + b["inkH"]) - max(a["inkY"], b["inkY"])
                 if ox > 30 and oy > 12:
                     add("high", f"text overlap {a['name']} / {b['name']} ({ox:.0f}x{oy:.0f}px)")
+
+        # text ink must not paint over a sibling shape: copy edits change ink width
+        # without moving boxes (hero title slid 14px under its photo), and the
+        # text-vs-text check above cannot see it. Ancestors (cards, bands, boards)
+        # are the legitimate background and are excluded.
+        parent_of = {n["id"]: n.get("parentId") for n in inside}
+        def is_ancestor(anc_id, node_id):
+            seen, cur = set(), parent_of.get(node_id)
+            while cur and cur not in seen:
+                if cur == anc_id:
+                    return True
+                seen.add(cur)
+                cur = parent_of.get(cur)
+            return False
+        solids = [n for n in inside if n["type"] in ("rectangle", "board")
+                  and (n["w"] or 0) > 4 and (n["h"] or 0) > 4 and (n.get("fill") or n.get("img"))]
+        for t in inks:
+            if not t["inkW"] or not t["inkH"]:
+                continue
+            for n in solids:
+                if n["id"] == t.get("parentId") or is_ancestor(n["id"], t["id"]) or is_ancestor(t["id"], n["id"]):
+                    continue
+                ox = min(t["inkX"] + t["inkW"], n["x"] + n["w"]) - max(t["inkX"], n["x"])
+                oy = min(t["inkY"] + t["inkH"], n["y"] + n["h"]) - max(t["inkY"], n["y"])
+                if ox <= 8 or oy <= 8 or ox * oy <= 200:
+                    continue
+                # full containment = label sitting ON its pill/panel (legitimate
+                # background); only a straddled edge is a collision
+                straddles = t["inkX"] < n["x"] - 2 or t["inkX"] + t["inkW"] > n["x"] + n["w"] + 2
+                if not straddles:
+                    continue
+                add("high", f"text {t['name']} paints over shape {n['name']} ({ox:.0f}x{oy:.0f}px ink overlap)")
+                break
 
         for node in texts:
             blob = (node["text"] or "").lower()
@@ -210,6 +270,8 @@ def main() -> int:
     parser.add_argument("--page", required=True)
     parser.add_argument("--rules", type=pathlib.Path)
     parser.add_argument("--json", type=pathlib.Path)
+    parser.add_argument("--dump-nodes", type=pathlib.Path,
+                        help="write the raw geometry collector output for rhythm.py")
     args = parser.parse_args()
 
     rules = dict(DEFAULTS)
@@ -229,6 +291,10 @@ def main() -> int:
         fail(str(exc))
     except (urllib.error.URLError, TimeoutError, OSError) as exc:
         fail(f"{type(exc).__name__}: {exc}")
+
+    if args.dump_nodes:
+        args.dump_nodes.write_text(json.dumps(nodes, indent=1) + "\n")
+        print(f"wrote {args.dump_nodes} ({len(nodes)} nodes)")
 
     findings = lint(nodes, rules)
     high = [f for f in findings if f["severity"] == "high"]
