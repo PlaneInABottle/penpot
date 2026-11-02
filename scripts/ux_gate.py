@@ -189,11 +189,14 @@ def main(argv: list[str] | None = None) -> int:
         spec = json.loads(args.spec.read_text())
     except (OSError, json.JSONDecodeError) as exc:
         fail(f"cannot read spec {args.spec}: {exc}")
+    screens = spec.get("screens") if isinstance(spec, dict) else None
+    if not isinstance(screens, list) or any(not isinstance(s, dict) for s in screens):
+        fail(f"cannot read spec {args.spec}: expected an object with a screens list")
 
     try:
         url = load_url()
         wanted: dict[str, None] = {}
-        for screen in spec.get("screens", []):
+        for screen in screens:
             wanted[screen.get("page")] = None
             mobile = screen.get("mobile")
             if isinstance(mobile, dict) and mobile.get("page"):

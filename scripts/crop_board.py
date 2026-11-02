@@ -22,7 +22,8 @@ Regions come from three sources, merged by slug (explicit wins):
    cuts the smallest text, the densest text window, the primary action and
    an icon/arrow row when one exists. With `--png` and no `--board`, one
    top-level board in the node list is derived; multiple candidates are an
-   error, so pass `--board`.
+   error, so pass `--board`. The matched board's w/h must equal the render's
+   image size; this catches the wrong render but cannot prove board identity.
 2. `--primary-action NAME`: overrides the heuristic CTA pick and requires
    `--regions` (it resolves a node name). A nav/masthead ghost is excluded
    from the heuristic.
@@ -35,10 +36,12 @@ Regions come from three sources, merged by slug (explicit wins):
 
 A rerun keeps declared/manual regions only when the board name matches, and
 re-crops them. If the source image changed (sha256), every `reviewed`/`note`
-resets because the pixels are new; same source keeps attestations. Generated
-`tile-NN.png`/`region-*.png` files that the new run no longer writes are
-removed; arbitrary assets and `source.png` are never touched. `--attest`
-fails when a manifest references a PNG that is not on disk. A tile-only
+resets because the pixels are new; same source keeps attestations. `tile-*.png`
+and `region-*.png` are the **reserved generated namespace** under `--out`: a
+matching file this run did not write is removed. Names outside that namespace
+(including `source.png`) are never touched; do not put unrelated assets under
+the generated namespace. `--attest` fails when a manifest references a PNG that
+is not on disk. A tile-only
 `--png` run without regions is not attestable: declare the required regions
 with `--region` or supply `--regions` before claiming 1:1.
 
@@ -278,11 +281,12 @@ def load_nodes(paths: list[pathlib.Path]) -> list[dict]:
 
 
 def cleanup_stale(out: pathlib.Path, keep: set[str]) -> list[str]:
-    """Remove generated PNG names this run did not write; never other files.
+    """Remove this run's generated names; other names are not in the namespace.
 
-    The narrow `tile-NN.png` / `region-*.png` scan also catches an orphan from
-    an older manifest that the current manifest no longer records. `source.png`
-    and arbitrary user assets are not generated names and are never removed.
+    `tile-*.png` / `region-*.png` are reserved as generated output under
+    `--out`; a matching file not written by this run is removed even when an
+    older manifest forgot it. `source.png` and names outside the namespace are
+    never removed. Unrelated assets must not use the reserved namespace.
     """
     removed: list[str] = []
     for path in sorted(out.iterdir()):
@@ -348,6 +352,7 @@ def main(argv: list[str] | None = None) -> int:
         fail("--board (live export) or --png (existing render) is required")
 
     scoped: list[dict] | None = None
+    board_size: tuple[int, int] | None = None
     ox = oy = 0
     if args.regions:
         nodes = load_nodes(args.regions)
@@ -375,6 +380,11 @@ def main(argv: list[str] | None = None) -> int:
             stack.extend(kids.get(node["id"], []))
         scoped = subtree
         ox, oy = board_node["x"], board_node["y"]
+        try:
+            board_size = (int(round(float(board_node["w"]))),
+                          int(round(float(board_node["h"]))))
+        except (KeyError, TypeError, ValueError):
+            fail(f"node board {board_name!r} has no width/height; cannot verify the render")
 
     manifest_path = out / "manifest.json"
     old: dict = {}
@@ -398,6 +408,10 @@ def main(argv: list[str] | None = None) -> int:
 
     cropper = Cropper(src)
     img_w, img_h = cropper.size
+    if board_size is not None and board_size != (img_w, img_h):
+        fail(f"node board {board_name!r} is {board_size[0]}x{board_size[1]} but the render is "
+             f"{img_w}x{img_h}; pass the matching --board/--png (existing outputs untouched)",
+             2)
     boxes = tile_boxes(img_w, img_h, tile_w, tile_h, args.overlap)
     manifest: dict = {"board": board_name, "source": src.name, "source_sha256": digest,
                       "image": {"w": img_w, "h": img_h},

@@ -30,7 +30,7 @@ Run in this order; a later gate does not excuse an earlier failure.
 | `export_board.py --board <b> --page <p>` | together with the 1:1 review | one image per board, from the board's own id |
 | `crop_board.py --board … --out …` then `--attest` | the 1:1 review itself | every tile and region the board has is `reviewed: true` with a note; `--attest` also fails a missing PNG |
 | `ux_gate.py --spec design/<p>/ux-spec.json` | after the story is written, again on the final state | structural contract only: non-empty task/beats, named CTA exists, one saturated primary, firstViewport names above the fold, state/mobile names, claim counts |
-| `gate.py --pages <p1,p2> [--boards …]` | a convenience run: lint → QA → copy → ux per page (+export/crop for `--boards`) | prints QA advisories and a `PASS (not clean)` line; prints `FAIL (invalid)`, never PASS, on an unmeasured page. It is **not** the definition of done: contrast, rhythm, 1:1 attest, flows and the independent review are separate gates below |
+| `gate.py --pages <p1,p2> [--boards …]` | a convenience run: lint → QA → copy → ux per page (+export/crop for `--boards`) | prints QA advisories and a `PASS (not clean)` line; `coverage incomplete` means an unconfigured lint rule, not clean coverage; prints `FAIL (invalid)`, never PASS, on an unmeasured page. It is **not** the definition of done: contrast, rhythm, 1:1 attest, flows and the independent review are separate gates below |
 
 ## Definition of done
 

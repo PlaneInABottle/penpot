@@ -99,7 +99,12 @@ def primary_action_for(project: pathlib.Path, page: str, board: str) -> str | No
         spec = json.loads(path.read_text())
     except (OSError, json.JSONDecodeError):
         return None
-    matches = [s for s in spec.get("screens", [])
+    if not isinstance(spec, dict):
+        return None
+    screens = spec.get("screens")
+    if not isinstance(screens, list):
+        return None
+    matches = [s for s in screens
                if isinstance(s, dict) and s.get("board") == board
                and s.get("page") in (None, page)]
     if len(matches) != 1:

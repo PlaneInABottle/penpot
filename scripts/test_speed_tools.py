@@ -497,6 +497,61 @@ class GateTest(unittest.TestCase):
             index = crops[0].index("--primary-action")
             self.assertEqual(crops[0][index + 1], "hero cta")
 
+    def test_primary_action_for_guards_malformed_shapes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = pathlib.Path(tmp)
+            path = project / "ux-spec.json"
+            cases = [
+                ({"screens": [{"board": "B", "page": "P", "primaryCta": "hero cta"}]},
+                 "hero cta"),
+                ([], None),
+                ({"screens": None}, None),
+                ({"screens": [None, "x"]}, None),
+                ({"screens": [{"board": "B", "page": "P", "primaryCta": ""}]}, None),
+                ({"screens": [{"board": "other", "page": "P", "primaryCta": "x"}]}, None),
+                ({"screens": [{"board": "B", "page": "P", "primaryCta": "a"},
+                              {"board": "B", "page": "P", "primaryCta": "b"}]}, None),
+            ]
+            for spec, expected in cases:
+                path.write_text(json.dumps(spec))
+                self.assertEqual(gate.primary_action_for(project, "P", "B"), expected, spec)
+
+    def test_gate_boards_malformed_spec_reaches_summary_without_crash(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = pathlib.Path(tmp) / "proj"
+            (project / "build").mkdir(parents=True)
+            (project / "build" / "build.py").write_text(
+                'SCREENS = {"screen-01": ("Kurumsal", "01-ana-sayfa")}\n')
+            (project / "ux-spec.json").write_text("[]")
+            labels: list[str] = []
+            real_run_step = gate.run_step
+
+            def fake_step(label, argv, timeout):
+                labels.append(label)
+                if label.startswith("design_lint"):
+                    path = pathlib.Path(argv[argv.index("--dump-nodes") + 1])
+                    path.write_text("[]")
+                if label.startswith("export_board"):
+                    shots = project / "shots"
+                    shots.mkdir(parents=True, exist_ok=True)
+                    (shots / "01-ana-sayfa.png").write_bytes(b"png")
+                if label == "ux_gate":
+                    return real_run_step(label, argv, timeout)
+                return {"step": label, "code": 0, "seconds": 0.0, "output": ""}
+
+            buf = io.StringIO()
+            with mock.patch.object(gate, "run_step", fake_step), \
+                    contextlib.redirect_stdout(buf):
+                code = gate.gate(["Kurumsal"], ["01"], project, 30)
+            text = buf.getvalue()
+        self.assertEqual(code, 2, text)
+        self.assertIn("ux_gate", labels)
+        self.assertIn("cannot read spec", text)
+        self.assertIn("gate: ENVIRONMENT", text)
+        self.assertNotIn("Traceback", text)
+        self.assertNotIn("AttributeError", text)
+        self.assertNotIn("gate: PASS", text)
+
     def test_an_unconfigured_lint_warning_is_visible_and_not_full_coverage(self):
         def fake_step(label, argv, timeout):
             if label.startswith("design_lint"):

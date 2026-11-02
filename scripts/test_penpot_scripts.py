@@ -681,9 +681,9 @@ class CropBoardTest(unittest.TestCase):
                                inkX=1400, inkY=500, inkW=24, inkH=17))
         return nodes
 
-    def _write_nodes(self, tmp, arrow=True):
+    def _write_nodes(self, tmp, arrow=True, w=1600, h=1200):
         path = pathlib.Path(tmp) / "nodes.json"
-        path.write_text(json.dumps(self._nodes(arrow=arrow)))
+        path.write_text(json.dumps(self._nodes(w=w, h=h, arrow=arrow)))
         return path
 
     def _run_crop(self, argv):
@@ -785,15 +785,14 @@ class CropBoardTest(unittest.TestCase):
     def test_rerun_removes_stale_generated_tiles(self):
         with tempfile.TemporaryDirectory() as tmp:
             src = self._png(tmp, 3000, 1200)
-            nodes = self._write_nodes(tmp)
+            nodes = self._write_nodes(tmp, w=3000, h=1200)
             out = pathlib.Path(tmp) / "tiles"
             self.assertEqual(self._run_crop(["--png", str(src), "--out", str(out),
                                              "--regions", str(nodes)])[0], 0)
             self.assertTrue((out / "tile-02.png").is_file())
             from PIL import Image as PILImage
             PILImage.new("RGB", (800, 600), "white").save(src)
-            code, stdout = self._run_crop(["--png", str(src), "--out", str(out),
-                                           "--regions", str(nodes)])
+            code, stdout = self._run_crop(["--png", str(src), "--out", str(out)])
             self.assertEqual(code, 0, stdout)
             self.assertFalse((out / "tile-02.png").exists())
             self.assertIn("removed stale generated PNG", stdout)
@@ -828,6 +827,27 @@ class CropBoardTest(unittest.TestCase):
             auto = PILImage.open(out / "region-smallest-text.png").convert("RGB")
             self.assertEqual(auto.getpixel((10, 34)), (224, 54, 75),
                              "node y=490 must convert against board y=440")
+
+    def test_region_board_dimension_mismatch_preserves_outputs(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            src = self._png(tmp, 400, 600)
+            nodes = pathlib.Path(tmp) / "nodes.json"
+            nodes.write_text(json.dumps([
+                _node(id="b", name="01-home", type="board", parentId=None,
+                      x=0, y=0, w=1600, h=1200)]))
+            out = pathlib.Path(tmp) / "tiles"
+            out.mkdir()
+            (out / "tile-01.png").write_bytes(b"old tile")
+            (out / "manifest.json").write_text('{"board": "old"}')
+            err = io.StringIO()
+            with contextlib.redirect_stderr(err), self.assertRaises(SystemExit) as ctx:
+                import crop_board
+                crop_board.main(["--png", str(src), "--out", str(out),
+                                 "--regions", str(nodes)])
+            self.assertEqual(ctx.exception.code, 2)
+            self.assertIn("but the render is 400x600", err.getvalue())
+            self.assertEqual((out / "tile-01.png").read_bytes(), b"old tile")
+            self.assertEqual((out / "manifest.json").read_text(), '{"board": "old"}')
 
     def test_ambiguous_node_boards_require_an_explicit_board(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -1116,6 +1136,36 @@ class ContrastAuditTest(unittest.TestCase):
         report = contrast_audit.resolve(data)
         self.assertEqual(report["checked"], 0)
         self.assertIn("translucent text fill", report["manual"][0]["reason"])
+
+    @unittest.skipUnless(shutil.which("node"), "node is not installed")
+    def test_hidden_layer_and_subtree_cannot_mask_a_visible_photo(self):
+        hidden_board = {"type": "board", "id": "hidden-panel", "name": "hidden panel",
+                        "x": 0, "y": 0, "width": 400, "height": 400, "visible": False,
+                        "fills": [{"fillColor": "#FFFFFF", "fillOpacity": 1}], "children": [
+                            {"type": "text", "id": "hidden-text", "name": "hidden caption",
+                             "x": 10, "y": 10, "width": 100, "height": 20, "fontSize": 13,
+                             "fills": [{"fillColor": "#111111", "fillOpacity": 1}],
+                             "textBounds": {"x": 10, "y": 10, "width": 100, "height": 20},
+                             "children": []}]}
+        shapes = {"children": [self._board([
+            {"type": "rectangle", "id": "photo", "name": "photo", "x": 0, "y": 0,
+             "width": 400, "height": 400, "visible": True,
+             "fills": [{"fillImage": {"id": "m"}, "fillOpacity": 1}], "children": []},
+            {"type": "rectangle", "id": "hidden-white", "name": "hidden white",
+             "x": 0, "y": 0, "width": 400, "height": 400, "visible": False,
+             "fills": [{"fillColor": "#FFFFFF", "fillOpacity": 1}], "children": []},
+            hidden_board,
+            {"type": "text", "id": "t", "name": "caption", "x": 10, "y": 10,
+             "width": 100, "height": 20, "fontSize": 13,
+             "fills": [{"fillColor": "#111111", "fillOpacity": 1}],
+             "textBounds": {"x": 10, "y": 10, "width": 100, "height": 20}, "children": []},
+        ])]}
+        data = self._collect(shapes)
+        self.assertEqual([t["name"] for t in data["texts"]], ["caption"])
+        self.assertNotIn("hidden white", {layer["name"] for layer in data["layers"]})
+        report = contrast_audit.resolve(data)
+        self.assertEqual(report["checked"], 0)
+        self.assertIn("over image fill", report["manual"][0]["reason"])
 
     @unittest.skipUnless(shutil.which("node"), "node is not installed")
     def test_shape_opacity_on_a_layer_is_manual(self):

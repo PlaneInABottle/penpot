@@ -53,6 +53,7 @@ const kindOf = (fill, paints) => {
   return "unsupported";
 };
 const walk = (s, boardId, boardName, ancestorOpacity) => {
+  if (s.visible === false) return;  // hidden shapes and their subtree paint nothing
   const order = seq++;
   // Scope is the TOP-LEVEL board, so a nested panel shares its ancestor's
   // background while a neighbouring board can never leak into this one.
