@@ -1,6 +1,7 @@
 {
  "board": "01-bos",
  "source": "01-bos.png",
+ "source_sha256": "c256e59e94d5f7b7e47a55a67fd8ee82da2b488bbdb2e5044d1e534a1c9cb2d8",
  "image": {
   "w": 1440,
   "h": 592
@@ -18,7 +19,7 @@
    "x1": 1440,
    "y1": 592,
    "reviewed": true,
-   "note": "Empty state at 1:1: kicker, white card 1200x320, 80px display 'Bu hafta gündem yok.', lead, red link 'Arşivi aç →', meta, note. One action and it is a link - no saturated button on the board."
+   "note": "Empty state at 1:1 after the copy cleanup: kicker, card (kicker/display/lead/one red link/meta), 88px page tail; no footnote repeating the schedule."
   }
  ],
  "regions": [
@@ -26,31 +27,59 @@
    "file": "region-smallest-text.png",
    "subject": "masthead sub",
    "x": 200,
-   "y": 455,
+   "y": 15,
    "w": 163,
    "h": 65,
+   "origin": "auto",
    "reviewed": true,
-   "note": "13px label ('GÜNDEM · BU HAFTA' / 'YAYIMLANMIŞ GÜNDEM YOK') at 1:1: ink.500 on paper (5.04:1), no clipping."
+   "note": "13px label 'ÜYE PLATFORMU' (ink.500 on paper 5.04:1)."
   },
   {
    "file": "region-densest.png",
-   "subject": "395 texts near x=120",
+   "subject": "12 texts near x=120",
    "x": 96,
-   "y": 424,
+   "y": 0,
    "w": 768,
    "h": 948,
+   "origin": "auto",
    "reviewed": true,
-   "note": "Card text block: display + lead + link share the card without collisions; the lead wraps at 2 lines as designed."
+   "note": "Card + nav window at 1:1: display, two-line lead, one link, meta; no collision and no duplicated schedule line."
   },
   {
    "file": "region-primary-action.png",
-   "subject": "masthead cta / label",
-   "x": 1206,
-   "y": 449,
-   "w": 91,
+   "subject": "empty cta",
+   "x": 144,
+   "y": 429,
+   "w": 126,
    "h": 67,
+   "origin": "auto",
    "reviewed": true,
-   "note": "Crop is mis-framed by the crop tool's off-origin bug: it shows the neighbouring meta 'Son yayım 4 Mart 2027.' instead of the picked 'empty cta'. The CTA (a red link, 'Arşivi aç →') was read in tile-01; this region adds no new evidence and must be re-cut after the tool fix."
+   "note": "The board's real action: the red 'Arşivi aç →' link (no saturated button exists on this state)."
+  },
+  {
+   "file": "region-empty-card.png",
+   "subject": "empty-state card: kicker, display, lead, one link",
+   "x": 120,
+   "y": 184,
+   "w": 1200,
+   "h": 320,
+   "origin": "declared",
+   "reviewed": true,
+   "note": "Empty-state card: 'YAYIMLANMIŞ GÜNDEM YOK' kicker, 80px display, 16px lead, link, 'Son yayım' meta on the right."
   }
- ]
+ ],
+ "coverage": {
+  "required": [
+   "smallest-text",
+   "densest",
+   "primary-action"
+  ],
+  "present": [
+   "smallest-text",
+   "densest",
+   "primary-action",
+   "empty-card"
+  ],
+  "missing": []
+ }
 }

@@ -1,0 +1,216 @@
+{
+  "_why": "Project-owned crop plan for the 1:1 evidence. `png` renders already exist (export only when a board changed); `page` names the node dump whose geometry resolves the automatic regions; `primary` is the shape the board actually offers as its one saturated action (null where the board has none); `regions` are board-relative declarations the automatic four cannot express. Run with tools/crop_plan.py.",
+  "boards": [
+    {
+      "board": "01-ana-sayfa",
+      "page": "Kurumsal",
+      "png": "design/ihkd/shots/01-ana-sayfa.png",
+      "out": "design/ihkd/shots/01-ana-sayfa",
+      "primary": "hero cta",
+      "regions": [
+        {
+          "slug": "hero-imprint",
+          "name": "13px association imprint on the poster's dark band",
+          "x": 100,
+          "y": 700,
+          "w": 660,
+          "h": 62
+        },
+        {
+          "slug": "proof-strip",
+          "name": "poster edge to the 44px stat strip",
+          "x": 0,
+          "y": 750,
+          "w": 1440,
+          "h": 150
+        }
+      ]
+    },
+    {
+      "board": "01-bos",
+      "page": "Kurumsal",
+      "png": "design/ihkd/shots/01-bos.png",
+      "out": "design/ihkd/shots/01-bos",
+      "primary": null,
+      "regions": [
+        {
+          "slug": "empty-card",
+          "name": "empty-state card: kicker, display, lead, one link",
+          "x": 120,
+          "y": 184,
+          "w": 1200,
+          "h": 320
+        }
+      ]
+    },
+    {
+      "board": "07-program",
+      "page": "Kongre",
+      "png": "design/ihkd/shots/07-program.png",
+      "out": "design/ihkd/shots/07-program",
+      "primary": "masthead cta",
+      "regions": [
+        {
+          "slug": "sess-cards",
+          "name": "session rows with the repaired cards 2/3 and 7/8",
+          "x": 220,
+          "y": 900,
+          "w": 1110,
+          "h": 520
+        }
+      ]
+    },
+    {
+      "board": "07-program-loading",
+      "page": "Kongre",
+      "png": "design/ihkd/shots/07-program-loading.png",
+      "out": "design/ihkd/shots/07-program-loading",
+      "primary": "masthead cta",
+      "regions": [
+        {
+          "slug": "skeleton",
+          "name": "skeleton grid and its note",
+          "x": 120,
+          "y": 440,
+          "w": 1200,
+          "h": 420
+        }
+      ]
+    },
+    {
+      "board": "08-bildiri",
+      "page": "Kongre",
+      "png": "design/ihkd/shots/08-bildiri.png",
+      "out": "design/ihkd/shots/08-bildiri",
+      "primary": "f send",
+      "regions": [
+        {
+          "slug": "faq-block",
+          "name": "SSS block: four 16px answers, one line each",
+          "x": 740,
+          "y": 1880,
+          "w": 600,
+          "h": 360
+        }
+      ]
+    },
+    {
+      "board": "09-kayit-hata",
+      "page": "Kongre",
+      "png": "design/ihkd/shots/09-kayit-hata.png",
+      "out": "design/ihkd/shots/09-kayit-hata",
+      "primary": "reg cta",
+      "regions": [
+        {
+          "slug": "form-card",
+          "name": "error summary and the two invalid fields",
+          "x": 120,
+          "y": 296,
+          "w": 1200,
+          "h": 590
+        }
+      ]
+    },
+    {
+      "board": "component sheet",
+      "page": "Components",
+      "png": "design/ihkd/shots/component sheet.png",
+      "out": "design/ihkd/shots/component-sheet",
+      "primary": null,
+      "regions": [
+        {
+          "slug": "button-states",
+          "name": "button-primary and button-secondary, five states each",
+          "x": 20,
+          "y": 330,
+          "w": 1400,
+          "h": 230
+        },
+        {
+          "slug": "field-states",
+          "name": "field, five states",
+          "x": 20,
+          "y": 1120,
+          "w": 700,
+          "h": 330
+        }
+      ]
+    },
+    {
+      "board": "19-giris",
+      "page": "Üyelik",
+      "png": "design/ihkd/shots/19-giris.png",
+      "out": "design/ihkd/shots/19-giris",
+      "primary": "f submit",
+      "regions": [
+        {
+          "slug": "login-form",
+          "name": "login form with the error field and the one primary",
+          "x": 800,
+          "y": 230,
+          "w": 560,
+          "h": 500
+        },
+        {
+          "slug": "auth-photo",
+          "name": "the replaced ECG-print photo in the red panel",
+          "x": 60,
+          "y": 510,
+          "w": 600,
+          "h": 260
+        }
+      ]
+    },
+    {
+      "board": "20-panel",
+      "page": "Üyelik",
+      "png": "design/ihkd/shots/20-panel.png",
+      "out": "design/ihkd/shots/20-panel",
+      "primary": null,
+      "regions": [
+        {
+          "slug": "member-card",
+          "name": "member card: label, name, no, group, valid, QR note",
+          "x": 300,
+          "y": 196,
+          "w": 520,
+          "h": 300
+        }
+      ]
+    },
+    {
+      "board": "13-kilavuzlar",
+      "page": "Akademi",
+      "png": "design/ihkd/shots/13-kilavuzlar.png",
+      "out": "design/ihkd/shots/13-kilavuzlar",
+      "primary": null,
+      "regions": [
+        {
+          "slug": "guide-photo",
+          "name": "the replaced ECG-print photo and its caption",
+          "x": 900,
+          "y": 560,
+          "w": 440,
+          "h": 360
+        }
+      ]
+    },
+    {
+      "board": "16-makale",
+      "page": "İçerik",
+      "png": "design/ihkd/shots/16-makale.png",
+      "out": "design/ihkd/shots/16-makale",
+      "primary": null,
+      "regions": [
+        {
+          "slug": "article-photo",
+          "name": "the replaced journal-spread photo and its caption",
+          "x": 0,
+          "y": 400,
+          "w": 1440,
+          "h": 500
+        }
+      ]
+    }
+  ]
+}

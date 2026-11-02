@@ -1,0 +1,112 @@
+{
+ "board": "07-program",
+ "source": "07-program.png",
+ "source_sha256": "76aca7d3be5bebd61b2ec81109a6b7b331fefd96b8375d55a47b1eb741a3f038",
+ "image": {
+  "w": 1440,
+  "h": 2856
+ },
+ "tile": {
+  "w": 1440,
+  "h": 900,
+  "overlap": 0.1
+ },
+ "tiles": [
+  {
+   "file": "tile-01.png",
+   "x0": 0,
+   "y0": 0,
+   "x1": 1440,
+   "y1": 900,
+   "reviewed": true,
+   "note": "Header/day tabs/filters/table head at 1:1; the page's only saturated CTA is the nav 'Üye ol', matching the spec's primaryCta."
+  },
+  {
+   "file": "tile-02.png",
+   "x0": 0,
+   "y0": 810,
+   "x1": 1440,
+   "y1": 1710,
+   "reviewed": true,
+   "note": "Schedule rows 11:00 and 13:00: the repaired cards 2 and 8 now share their row-mates' height and 16px title→meta joint."
+  },
+  {
+   "file": "tile-03.png",
+   "x0": 0,
+   "y0": 1620,
+   "x1": 1440,
+   "y1": 2520,
+   "reviewed": true,
+   "note": "Rows 14:30–16:30 + program notes; bars keep their padding, no card overflows its row."
+  },
+  {
+   "file": "tile-04.png",
+   "x0": 0,
+   "y0": 1956,
+   "x1": 1440,
+   "y1": 2856,
+   "reviewed": true,
+   "note": "Board tail: notes and footer; the footer docks 56px under the last note."
+  }
+ ],
+ "regions": [
+  {
+   "file": "region-smallest-text.png",
+   "subject": "masthead sub",
+   "x": 200,
+   "y": 15,
+   "w": 163,
+   "h": 65,
+   "origin": "auto",
+   "reviewed": true,
+   "note": "13px 'SAAT' / hall heads (ink.500 on paper)."
+  },
+  {
+   "file": "region-densest.png",
+   "subject": "86 texts near x=120",
+   "x": 96,
+   "y": 0,
+   "w": 768,
+   "h": 948,
+   "origin": "auto",
+   "reviewed": true,
+   "note": "Densest schedule window: cards align on the 4px grid, meta lines never cross a card edge."
+  },
+  {
+   "file": "region-primary-action.png",
+   "subject": "masthead cta",
+   "x": 1160,
+   "y": 0,
+   "w": 184,
+   "h": 88,
+   "origin": "auto",
+   "reviewed": true,
+   "note": "Nav 'Üye ol' at 1:1 — the real saturated primary (prog add is secondary by design)."
+  },
+  {
+   "file": "region-sess-cards.png",
+   "subject": "session rows with the repaired cards 2/3 and 7/8",
+   "x": 220,
+   "y": 900,
+   "w": 1110,
+   "h": 520,
+   "origin": "declared",
+   "reviewed": true,
+   "note": "The repaired rows: cards 2/7 and 8/3 read 104px with a 16px joint, matching the neighbours (live geometry: all 19 cards joint 16)."
+  }
+ ],
+ "coverage": {
+  "required": [
+   "smallest-text",
+   "densest",
+   "primary-action"
+  ],
+  "present": [
+   "smallest-text",
+   "densest",
+   "primary-action",
+   "sess-cards"
+  ],
+  "missing": []
+ }
+}

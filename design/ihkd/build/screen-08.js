@@ -4,7 +4,7 @@
 const S = IK;
 const pb = S.start("Kongre", "08-bildiri", 2566);
 
-S.masthead(pb, "Kongre");
+S.masthead(pb, "Kongre", { cta: "ghost" });  /* one saturated primary per board: the form s "Gönder" is the page action (same rule as 09) */
 S.pageHead(pb, "BİLDİRİ", "Bildiri gönderimi",
   "Özetler kör değerlendirmeye girer; kabul edilen bildiriler 8 dakikalık sözlü sunum veya poster olarak programlanır.",
   { w: 900, ledeW: 720 });

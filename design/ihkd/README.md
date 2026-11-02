@@ -125,11 +125,11 @@ Fresh this round: 01 (reused), 01-bos, 02, 04, 06, 07, 07-program-loading, 08, 0
 | `img-venue` | 10-konaklama | https://www.pexels.com/photo/35877127/ by Mark Stebnicki |
 | `img-seminar` | 11-akademi | https://www.pexels.com/photo/1170979/ by EVG Kowalievska |
 | `img-lab` | 12-kurs-detay | https://www.pexels.com/photo/28585011/ by Marta Branco |
-| `img-desk` | 13-kilavuzlar | https://www.pexels.com/photo/35044388/ by Marta Branco |
+| `img-desk` | 13-kilavuzlar | https://www.pexels.com/photo/415779/ by Pixabay |
 | `img-issue` | 14-dergi | https://www.pexels.com/photo/3860983/ by Robert Munteanu |
 | `img-round` | 15-haberler | https://www.pexels.com/photo/6129043/ by RDNE Stock project |
-| `img-team` | 16-makale | https://www.pexels.com/photo/20370745/ by Michael Obiero |
-| `img-auth` | 19-giris | https://www.pexels.com/photo/8460227/ by Los Muertos Crew |
+| `img-team` | 16-makale | https://www.pexels.com/photo/3860983/ by Robert Munteanu |
+| `img-auth` | 19-giris | https://www.pexels.com/photo/415779/ by Pixabay |
 
 The pinned URL in `tools/media.py` is the single source, so a rebuild reimports the accepted
 frame. The parked candidates' slots are also in provenance (`…@cand-2-kapak`,
@@ -159,16 +159,61 @@ Cross-page journeys stay unwired by design (the API stores a hollow destination 
    never uses `ink.400` (principles §6).
 5. **`fs.12`** remains in the token set as an unbound orphan (`tokens_sync` is additive). No
    shape binds it; QA coverage is 100% without it.
-6. **Crop tool is provisional.** `crop_board`'s region heuristic picks the topmost
-   CTA/label (often the nav) and its off-origin frame mis-framed three state-board crops;
-   those manifest notes say so, and the coordinator re-cuts after the tool fix. Tiles are
-   real; the region frames are not all trustworthy.
-7. **Contrast on photographs** cannot be proven from token pairs. The 01 hero was measured
-   against the pixels behind each ink box (worst 5.17:1) and 19/20's red-panel labels on
-   their render (6.04 / 4.88 / 4.64:1); any new photo needs the same measurement.
+6. **Crop regions need an explicit primary on nav-carrying boards.** The repaired
+   `crop_board` resolves regions from a node dump and accepts `--primary-action`; without it
+   the heuristic can still pick a nav label on boards whose CTA lives in the chrome. Every
+   board's choice is in `tools/crop-plan.json`, and `--attest` now fails a missing PNG.
+7. **Contrast on photographs** cannot be proven from token pairs (the audit prints MANUAL, not
+   pass). The 01 hero was measured against the pixels behind each ink box (worst 5.17:1) and
+   19/20's red-panel labels on their render (6.04 / 4.88 / 4.64:1); 13/16/19's replaced photos
+   carry their captions on paper below the frame, so no text sits on an image there.
 8. **Exporter collision risk:** `export_png` accepts only a PNG of the exact size, so two
    boards of identical dimensions could still swap renders on the disk-rescue path.
 9. **`_scratch` remains.** Three hero candidates (kept at the user's request, one is the live
    hero's source) and two parked concepts live there. Nothing is deleted without the user.
 10. **State coverage is desktop-only and partial**: empty (01), loading (07), registration
     error (09). Success/disabled/offline states are not drawn.
+11. **`contrast_audit.py` mis-reads an unset shape opacity** (`Number(null) === 0`), so on this
+    file it reports every text as "translucent (opacity 0)" and checks nothing automatically.
+    The audit in § Verification ran from a patched copy; the repository tool still needs the
+    null guard (see § Verification item 2).
+12. **The Penpot file is still named "New File 3"** (live check this round). Renaming is a
+    live write on the shared file and is left to the owner of the handoff, not a build step.
+13. **Component instances are not used by the screens** (see § Component inventory); the
+    library is the handoff object.
+
+## Verification — 2026-11-03 final acceptance (integrated tools, main `32ce45c`)
+
+Run on this checkout with the cherry-picked evidence tools (`2420380`, `2279557`, `a0e3b01`).
+
+| check | result |
+|---|---|
+| `python -m unittest …` (4 modules) | **272 tests OK** (266 + 6 palette-config tests added this round) |
+| `docs_check.py` | 0 findings, 12 files |
+| `design_lint … --rules craft-rules.json` on five pages + `Components` | **0 high, 0 unexplained medium** everywhere; Üyelik's 3 mediums are its `acknowledge` entries |
+| `design_qa` on Kurumsal/Kongre/Components/Üyelik | fills 764/764 · 885/885 · 120/120 · 261/261, text sizes 100%, `findings: none` except Components' advisory "no prototype flow" (a library page has no journey — printed, not called clean) |
+| `ux_gate --spec` | **0 findings**, 3 screens |
+| `contrast_audit` (Kurumsal, Üyelik, Components) | Kurumsal 0 automatic fails, 7 ghost numerals ignored, 8 MANUAL over `img-hero`; Üyelik 0 fails, 4 MANUAL (the retained .85/.88 lines, measured 4.88 / 4.64 on the render); Components 6 automatic fails, all **disabled-state** labels (1.91–2.28) — inactive controls, no live-content failure |
+| `crop_board` re-cut (11 boards) + `--attest` | exit 0 on every board; no blank CTA region; the hero CTA, 07's nav CTA, 08's `f send` and 09's `reg cta` are the crop subjects |
+| negative attest (temp fixture, one PNG removed) | exit 1 with "1 referenced PNG(s) missing" — the real evidence files were copied, never deleted |
+| `penpot_exec.py --read` | returns the live file and all seven pages (`Kurumsal…_scratch`) |
+
+Two tool/data facts this round produced, recorded so the next reader does not rediscover them:
+
+1. **`craft-rules.json` surface palette must be a list.** Written as scalars it iterated as
+   characters, `surface.role` silently reported nothing, and every page looked green for the
+   whole previous milestone. It is `["#FFFFFF"]` / `["#E8EBED"]` now; `design_lint.py` rejects a
+   non-list or non-string entry with exit 2 at the rules-loading boundary, and
+   `test_lint_rules.ProjectPaletteConfigTest` proves the shipped config activates the rule
+   (fixture → 1 medium) and that no `design/*/craft-rules.json` carries a scalar again.
+2. **`contrast_audit.py` treats an unset shape opacity as 0.** `num(null, 1)` → `Number(null)=0`,
+   so on this file every text was reported "translucent (opacity 0)" and nothing was checked
+   automatically. The audit above ran from a one-line-patched **copy** (`value == null` →
+   fallback) in the task temp dir; the repository tool is untouched and needs that guard
+   (`if (value === null || value === undefined || value === "") return fallback;`).
+
+Photo compliance: `img-auth`, `img-desk` and `img-team` were replaced with already-sourced
+instrument/publication frames (415779, 3860983) and their captions corrected; a contact sheet of
+the remaining candidates shows `img-round` (physician writing, no patient) and `img-angio`
+(cath-lab equipment, masked team at the frame edge) as compliant. 13, 16 and 19 were rebuilt;
+photos 1/1 each.

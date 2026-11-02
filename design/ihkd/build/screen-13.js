@@ -32,7 +32,7 @@ S.text(sheet, "feat cal", "25 mm/s · 10 mm/mV", "data", "doc.muted", { x: sx + 
 S.text(sheet, "feat meta", "2027 · Kanıt A · 48 sayfa · 3,2 MB", "data", "doc.muted", { x: sx + 300, y: sy + 268 });
 S.btn(sheet, "feat dl", "Kılavuzu indir", sx + 56, sy + 300, 200, 48, "primary");
 S.link(sheet, "feat sum", "Özet", sx + 284, sy + 314, "doc.text");
-S.photo(pb, "img-desk", 912, 572, 408, 320, "Stetoskop ve yazdırılmış EKG, masa");
+S.photo(pb, "img-desk", 912, 572, 408, 320, "EKG kaydı · 25 mm/s · 10 mm/mV");
 
 /* -------------------------------------------------------------------- liste */
 S.head(pb, 120, 976, "KILAVUZ LİSTESİ", "Yıl · kanıt · sayfa", { index: "2024–2027" });

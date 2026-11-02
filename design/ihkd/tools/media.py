@@ -51,14 +51,14 @@ IMAGES = {
     "img-round": ("internal medicine ward round doctors", "İçerik", "15-haberler"),
     "img-cath": ("catheterization laboratory angiography", "Kongre", "06-kongre"),
     "img-hall": ("medical conference audience lecture hall", "Kongre", "06-kongre"),
-    "img-desk": ("stethoscope electrocardiogram paper desk", "Akademi", "13-kilavuzlar"),
+    "img-desk": ("https://images.pexels.com/photos/415779/pexels-photo-415779.jpeg", "Akademi", "13-kilavuzlar", "https://www.pexels.com/photo/415779/ by Pixabay"),
     "img-issue": ("https://images.pexels.com/photos/3860983/pexels-photo-3860983.jpeg", "Akademi", "14-dergi", "https://www.pexels.com/photo/3860983/ by Robert Munteanu"),
     "img-lab": ("https://images.pexels.com/photos/28585011/pexels-photo-28585011.jpeg", "Akademi", "12-kurs-detay", "https://www.pexels.com/photo/28585011/ by Marta Branco"),
     "img-angio": ("https://images.pexels.com/photos/39459346/pexels-photo-39459346.jpeg", "Kurumsal", "05-grup-detay", "https://www.pexels.com/photo/39459346/ by Stéf -b."),
     "img-corridor": ("hospital corridor morning light", "Kongre", "10-konaklama"),
     "img-seminar": ("doctors small group seminar meeting", "Akademi", "11-akademi"),
-    "img-team": ("two doctors reviewing images screen", "İçerik", "16-makale"),
-    "img-auth": ("cardiology monitor hospital equipment", "Üyelik", "19-giris"),
+    "img-team": ("https://images.pexels.com/photos/3860983/pexels-photo-3860983.jpeg", "İçerik", "16-makale", "https://www.pexels.com/photo/3860983/ by Robert Munteanu"),
+    "img-auth": ("https://images.pexels.com/photos/415779/pexels-photo-415779.jpeg", "Üyelik", "19-giris", "https://www.pexels.com/photo/415779/ by Pixabay"),
     "img-venue": ("convention center exterior modern", "Kongre", "10-konaklama"),
 }
 

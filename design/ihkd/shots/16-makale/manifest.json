@@ -1,0 +1,103 @@
+{
+ "board": "16-makale",
+ "source": "16-makale.png",
+ "source_sha256": "06c585e2267472b904d75b48d8d84f3c9f30d6ef2961c6bbfc20557f9b5b1a7b",
+ "image": {
+  "w": 1440,
+  "h": 2416
+ },
+ "tile": {
+  "w": 1440,
+  "h": 900,
+  "overlap": 0.1
+ },
+ "tiles": [
+  {
+   "file": "tile-01.png",
+   "x0": 0,
+   "y0": 0,
+   "x1": 1440,
+   "y1": 900,
+   "reviewed": true,
+   "note": "Article header + share row + the replaced full-bleed image at 1:1: an open journal spread with the caption 'Kardiyovasküler Klinik, cilt 12 · açık sayfa' on paper beneath it."
+  },
+  {
+   "file": "tile-02.png",
+   "x0": 0,
+   "y0": 810,
+   "x1": 1440,
+   "y1": 1710,
+   "reviewed": true,
+   "note": "Body, pull quote, data list. Area unchanged by the photo replacement (same render as the accepted round)."
+  },
+  {
+   "file": "tile-03.png",
+   "x0": 0,
+   "y0": 1516,
+   "x1": 1440,
+   "y1": 2416,
+   "reviewed": true,
+   "note": "Related rows and author card. Unchanged area."
+  }
+ ],
+ "regions": [
+  {
+   "file": "region-smallest-text.png",
+   "subject": "masthead sub",
+   "x": 200,
+   "y": 15,
+   "w": 163,
+   "h": 65,
+   "origin": "auto",
+   "reviewed": true,
+   "note": "13px meta (author · reading time · date) at 1:1."
+  },
+  {
+   "file": "region-densest.png",
+   "subject": "51 texts near x=120",
+   "x": 96,
+   "y": 0,
+   "w": 768,
+   "h": 948,
+   "origin": "auto",
+   "reviewed": true,
+   "note": "Article body column: measure and paragraph rhythm."
+  },
+  {
+   "file": "region-article-photo.png",
+   "subject": "the replaced journal-spread photo and its caption",
+   "x": 0,
+   "y": 400,
+   "w": 1440,
+   "h": 500,
+   "origin": "declared",
+   "reviewed": true,
+   "note": "The replaced photographic band at 1:1: a publication object (open journal), no patient and no instrument."
+  },
+  {
+   "file": "region-primary-action.png",
+   "subject": "masthead cta / label",
+   "x": 1206,
+   "y": 9,
+   "w": 91,
+   "h": 67,
+   "origin": "manual",
+   "reviewed": true,
+   "note": "Share links (article pages carry no saturated primary; the nav ghost is excluded)."
+  }
+ ],
+ "coverage": {
+  "required": [
+   "smallest-text",
+   "densest",
+   "primary-action"
+  ],
+  "present": [
+   "smallest-text",
+   "densest",
+   "article-photo",
+   "primary-action"
+  ],
+  "missing": []
+ }
+}

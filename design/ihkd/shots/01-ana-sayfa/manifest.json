@@ -1,6 +1,7 @@
 {
  "board": "01-ana-sayfa",
  "source": "01-ana-sayfa.png",
+ "source_sha256": "681e714c59d8db57a16bfc514ade7a75454b301f2f1220dfdc1217da9d66f72d",
  "image": {
   "w": 1440,
   "h": 4076
@@ -18,7 +19,7 @@
    "x1": 1440,
    "y1": 900,
    "reviewed": true,
-   "note": "Hero 0-900: poster 108-776 (photo, white type, vector 12 at 904-1296), stat strip 776-894. Date 80px is the dominant type, the only red is the one primary, no gap over 100px, the poster edge is the paper joint."
+   "note": "Hero viewport at 1:1 (same render as the approved hero round): poster 108–776, the 12 at 904–1296, one red primary, the stat strip below. No text clipped by the photo."
   },
   {
    "file": "tile-02.png",
@@ -27,7 +28,7 @@
    "x1": 1440,
    "y1": 1710,
    "reviewed": true,
-   "note": "Proof labels + çalışma grupları: 576+48+576 columns, rules on the block bottoms, group rows share one top, link red.700 at the section foot."
+   "note": "Proof labels + groups section at 1:1: two 576 columns, rules on block bottoms, red section link."
   },
   {
    "file": "tile-03.png",
@@ -36,7 +37,7 @@
    "x1": 1440,
    "y1": 2520,
    "reviewed": true,
-   "note": "Akademi rows (title 640, meta right edge 1200, Başla at 1320) and the Yayın head; journal photo 280x300 at the grid edge."
+   "note": "Akademi + Yayın head at 1:1: meta right edge 1200, Başla at 1320, journal photo 280x300."
   },
   {
    "file": "tile-04.png",
@@ -45,7 +46,7 @@
    "x1": 1440,
    "y1": 3330,
    "reviewed": true,
-   "note": "Yayın contents + guide ECG strip; Gündem three rows with date/category/title/reading time on one top; no repeated congress band."
+   "note": "Yayın contents, guide ECG strip, Gündem rows: one row per news item, reading time right-aligned."
   },
   {
    "file": "tile-05.png",
@@ -54,7 +55,7 @@
    "x1": 1440,
    "y1": 4076,
    "reviewed": true,
-   "note": "Gündem note, üyelik band (white, one red link, 72/72 padding) and footer with its 2px bar; 56px paper between band and footer."
+   "note": "Gündem note, üyelik band (white, one red link), footer with its 2px bar."
   }
  ],
  "regions": [
@@ -65,8 +66,9 @@
    "y": 15,
    "w": 163,
    "h": 65,
+   "origin": "auto",
    "reviewed": true,
-   "note": "Heuristic picked the nav kicker 'ÜYE PLATFORMU' (13px ink.500 on paper, 5.04:1) - clean, but the hero's smallest text is checked in region-hero-imprint-2x and region-proof-strip instead."
+   "note": "13px nav kicker at 1:1 (ink.500 on paper)."
   },
   {
    "file": "region-densest.png",
@@ -75,90 +77,143 @@
    "y": 0,
    "w": 768,
    "h": 948,
+   "origin": "auto",
    "reviewed": true,
-   "note": "Hero stack at 1:1: label, date, venue, countdown, CTA, brand line and imprint all inside the poster, no cross-ink, no clipped glyph."
+   "note": "Hero type stack at 1:1: no cross-ink between label, date, venue, countdown, CTA."
   },
   {
    "file": "region-primary-action.png",
-   "subject": "masthead cta / label",
-   "x": 1206,
-   "y": 9,
-   "w": 91,
-   "h": 67,
+   "subject": "hero cta",
+   "x": 96,
+   "y": 384,
+   "w": 284,
+   "h": 100,
+   "origin": "auto",
    "reviewed": true,
-   "note": "Heuristic picked the NAV ghost 'Üye ol' (topmost *cta* text), not the hero primary: the real primary is region-hero-cta.png. The nav CTA is a ghost by design - the home page carries exactly one saturated primary."
+   "note": "The board's one saturated primary 'Kongreye kayıt ol' (red.600) — correct subject; the nav CTA is a ghost, so the crop heuristic cannot pick it."
+  },
+  {
+   "file": "region-icons-arrows.png",
+   "subject": "6 icon/arrow shape(s)",
+   "x": 656,
+   "y": 1161,
+   "w": 688,
+   "h": 287,
+   "origin": "auto",
+   "reviewed": true,
+   "note": "Arrow row at 1:1: the group/course/journal arrows sit on their column's right edge."
+  },
+  {
+   "file": "region-hero-imprint.png",
+   "subject": "13px association imprint on the poster's dark band",
+   "x": 100,
+   "y": 700,
+   "w": 660,
+   "h": 62,
+   "origin": "declared",
+   "reviewed": true,
+   "note": "13px association imprint at 1:1: full line to 'ANKARA' on the poster's darkest band; the 2x zoom (hero-imprint-zoom.png, outside the manifest) confirms the ending is not clipped. White-on-photo measured 5.17:1 at the 95th-percentile background."
+  },
+  {
+   "file": "region-proof-strip.png",
+   "subject": "poster edge to the 44px stat strip",
+   "x": 0,
+   "y": 750,
+   "w": 1440,
+   "h": 150,
+   "origin": "declared",
+   "reviewed": true,
+   "note": "Poster edge to the 44px stat strip: values 120/426/732/1038, dividers on cell boundaries, 13px labels (5.83:1). The dark edge is the joint, no white band."
   },
   {
    "file": "region-hero-cta.png",
+   "subject": "hero-cta",
    "x": 100,
    "y": 395,
    "w": 520,
    "h": 75,
+   "origin": "manual",
    "reviewed": true,
-   "note": "Hero primary 'Kongreye kayıt ol' (red.600, 236x52, label centred) + ghost 'Programı gör' (white, white underline) sharing one vertical centre; no clipping."
+   "note": "Hero primary + ghost at 1:1: one saturated button, ghost link with a white underline sharing its centre."
   },
   {
    "file": "region-hero-top.png",
+   "subject": "hero-top",
    "x": 100,
    "y": 130,
    "w": 1340,
    "h": 200,
+   "origin": "manual",
    "reviewed": true,
-   "note": "Label 13 / date 80 / venue 16 at 1:1: crisp white on the dark ceiling band, 120px left margin, the date's ink ends at 745 so the 12 (904+) never crowds it."
+   "note": "Label/date/venue at 1:1: white on the dark ceiling band, no crowding of the 12."
   },
   {
    "file": "region-hero-numeral.png",
+   "subject": "hero-numeral",
    "x": 860,
    "y": 200,
    "w": 580,
    "h": 420,
+   "origin": "manual",
    "reviewed": true,
-   "note": "Vector 12 at 1:1 (392x321 at 904): clean path edges, no font fallback; it covers the right balcony but leaves the left audience and both counters open - the approved poster layer, scaled to its original share of the poster."
+   "note": "The vector 12 at 1:1: clean path edges, covers the right balcony only."
   },
   {
    "file": "region-hero-foot.png",
+   "subject": "hero-foot",
    "x": 100,
    "y": 515,
    "w": 720,
    "h": 265,
+   "origin": "manual",
    "reviewed": true,
-   "note": "'Hastanın hekimi.' 30px white over the crowd, the white ECG trace, then the 13px association imprint on the dark foreground: readable, no collision, no scrim."
+   "note": "Brand line, ECG trace and imprint at 1:1: all white, no collision, no scrim."
   },
   {
    "file": "region-hero-cta-2x.png",
+   "subject": "hero-cta-2x",
    "x": 100,
    "y": 395,
    "w": 300,
    "h": 75,
+   "origin": "manual",
    "reviewed": true,
-   "note": "2x: button label centred, radius 2, white on red.600 (6.04:1)."
-  },
-  {
-   "file": "region-hero-imprint-2x.png",
-   "x": 100,
-   "y": 715,
-   "w": 600,
-   "h": 50,
-   "reviewed": true,
-   "note": "2x: 13px tracked mono imprint at its new y (ink 734-751 on the render); crisp strokes, brightest background pixel 5.17:1 white-on-photo, no scrim."
-  },
-  {
-   "file": "region-proof-strip.png",
-   "x": 0,
-   "y": 750,
-   "w": 1440,
-   "h": 190,
-   "reviewed": true,
-   "note": "Poster edge -> paper strip: 44px figures at 120/426/732/1038, dividers on the cell boundaries, 13px labels (5.83:1); no white band and no seam."
+   "note": "2x: button label centred, radius 2, white on red.600."
   },
   {
    "file": "region-transition.png",
+   "subject": "transition",
    "x": 0,
    "y": 900,
    "w": 1440,
    "h": 300,
+   "origin": "manual",
    "reviewed": true,
-   "note": "Strip bottom 894 -> groups head 1006 (112 rhythm) -> rule 1118 -> first row 1158; the 01 ghost numeral is ink.400 by design, not body copy."
+   "note": "Strip bottom to the groups head (112 rhythm) at 1:1."
   }
- ]
+ ],
+ "coverage": {
+  "required": [
+   "smallest-text",
+   "densest",
+   "primary-action",
+   "icons-arrows"
+  ],
+  "present": [
+   "smallest-text",
+   "densest",
+   "primary-action",
+   "icons-arrows",
+   "hero-imprint",
+   "proof-strip",
+   "hero-cta",
+   "hero-top",
+   "hero-numeral",
+   "hero-foot",
+   "hero-cta-2x",
+   "hero-imprint-2x",
+   "transition"
+  ],
+  "missing": []
+ }
 }

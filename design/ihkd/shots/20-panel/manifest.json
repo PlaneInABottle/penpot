@@ -1,6 +1,7 @@
 {
  "board": "20-panel",
  "source": "20-panel.png",
+ "source_sha256": "e0fe2c7c10bc30f4d1cb1186f978a31179f4c6c0ac723e9b494364136297a994",
  "image": {
   "w": 1440,
   "h": 1680
@@ -18,7 +19,7 @@
    "x1": 1440,
    "y1": 900,
    "reviewed": true,
-   "note": "Panel 1:1: ink sidebar (Çıkış docked), greeting, member card 520x300 with QR block, aidat card, kurslar rows with progress; card labels all legible."
+   "note": "Panel at 1:1 (same render): sidebar, greeting, member card, aidat card, course rows."
   },
   {
    "file": "tile-02.png",
@@ -27,7 +28,7 @@
    "x1": 1440,
    "y1": 1680,
    "reviewed": true,
-   "note": "Second tile: Yaklaşan rows, ECG card, Duyurular, footer note; no red band, the trace is the only red data mark."
+   "note": "Board tail: Yaklaşan, ECG card, Duyurular, footer note; sidebar sign-out docked."
   }
  ],
  "regions": [
@@ -38,8 +39,9 @@
    "y": 39,
    "w": 137,
    "h": 65,
+   "origin": "auto",
    "reviewed": true,
-   "note": "Heuristic picked the sidebar 'ÜYE MASASI' (13px red.700 on white): 8.42:1."
+   "note": "13px sidebar kicker (red.700 on white, 8.42:1)."
   },
   {
    "file": "region-densest.png",
@@ -48,8 +50,9 @@
    "y": 0,
    "w": 768,
    "h": 948,
+   "origin": "auto",
    "reviewed": true,
-   "note": "Densest window: the member card at 1:1 — 'İHKD ÜYE KARTI' now opaque (6.04:1), name 30, member no, group .88 (4.88:1), 'Geçerli' .88, QR note .85 (4.64:1)."
+   "note": "Member card window at 1:1: label/name/no/group/valid/QR note, none clipped."
   },
   {
    "file": "region-primary-action.png",
@@ -58,35 +61,70 @@
    "y": 57,
    "w": 167,
    "h": 67,
+   "origin": "auto",
    "reviewed": true,
-   "note": "Heuristic picked the secondary 'Kongreye kayıt ol' (the panel's action is deliberately secondary; the sidebar is the page's chrome)."
+   "note": "'Kongreye kayıt ol' — the page's CTA is deliberately secondary; the sidebar is the chrome."
+  },
+  {
+   "file": "region-member-card.png",
+   "subject": "member card: label, name, no, group, valid, QR note",
+   "x": 300,
+   "y": 196,
+   "w": 520,
+   "h": 300,
+   "origin": "declared",
+   "reviewed": true,
+   "note": "Member card at 1:1 after the opacity fix: label/name/no full white, group/valid .88 (4.88:1), QR note .85 (4.64:1); nothing clipped."
   },
   {
    "file": "region-mc-card.png",
+   "subject": "mc-card",
    "x": 300,
    "y": 196,
    "w": 520,
    "h": 244,
+   "origin": "manual",
    "reviewed": true,
-   "note": "Member card at 1:1 after the fix: label full white, group/valid/qr-note intentionally softer but >=4.5; no glyph clipped by the card edge."
+   "note": "Member card at 1:1: label full white, .88/.85 secondary lines legible."
   },
   {
    "file": "region-mc-label-2x.png",
+   "subject": "mc-label-2x",
    "x": 326,
    "y": 220,
    "w": 200,
    "h": 30,
+   "origin": "manual",
    "reviewed": true,
-   "note": "2x: 'İHKD ÜYE KARTI' strokes crisp, 6.04:1 against red.600."
+   "note": "2x: 'İHKD ÜYE KARTI' strokes crisp."
   },
   {
    "file": "region-qr-note.png",
+   "subject": "qr-note",
    "x": 620,
    "y": 400,
    "w": 180,
    "h": 44,
+   "origin": "manual",
    "reviewed": true,
-   "note": "'Girişte gösterin' at 13px/0.85: 4.64:1 measured on the render, legible, 2px above the card's bottom ink limit."
+   "note": "'Girişte gösterin' at 1:1"
   }
- ]
+ ],
+ "coverage": {
+  "required": [
+   "smallest-text",
+   "densest",
+   "primary-action"
+  ],
+  "present": [
+   "smallest-text",
+   "densest",
+   "primary-action",
+   "member-card",
+   "mc-card",
+   "mc-label-2x",
+   "qr-note"
+  ],
+  "missing": []
+ }
 }

@@ -17,7 +17,7 @@ S.link(pb, "a share mail", "e-posta", 360, 348, "ink.900");
 S.rule(pb, "a rule", 120, 400, 1200, "line.strong", 1);
 
 S.photo(pb, "img-team", 0, 432, 1440, 420);
-S.text(pb, "img-team caption", "Kongre programı çalışması, Ankara", "meta", "ink.500", { x: 120, y: 864, w: 1200 });
+S.text(pb, "img-team caption", "Kardiyovasküler Klinik, cilt 12 · açık sayfa", "meta", "ink.500", { x: 120, y: 864, w: 1200 });
 
 /* ------------------------------------------------------------------ TOC rail (canvas) */
 S.text(pb, "rail label", "BU YAZIDA", "label", "ink.500", { x: 120, y: 932 });

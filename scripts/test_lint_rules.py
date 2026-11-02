@@ -815,5 +815,81 @@ class RegressionMuseumTest(unittest.TestCase):
         self.assertIn(("cta.float", "high"), _rules(nodes(352)))
 
 
+
+
+class PaletteConfigTest(unittest.TestCase):
+    """The declared surface palette must be readable before any rule runs.
+
+    A scalar (`"surface_white": "#FFFFFF"`) iterates as characters, so no shape
+    matches and `surface.role` reports nothing — a silent false PASS that hid
+    İHKD's palette for a whole milestone (2026-11-03). Configuration that the
+    rule cannot read is an error (exit 2), never a green page.
+    """
+
+    @staticmethod
+    def _card(node_id, x, fill, w=200, h=100, y=500):
+        text = _text(node_id + "t", parent=node_id, x=x + 12, y=y + 12,
+                     w=w - 24, h=20, ink_w=80)
+        return [_node(id=node_id, name=node_id, type="board", parentId="pg",
+                      parent="pg", x=x, y=y, w=w, h=h, fill=fill, stroke=True), text]
+
+    def _project_configs(self):
+        root = HERE.parent
+        return sorted((root / "design").glob("*/craft-rules.json"))
+
+    def test_scalar_palette_is_rejected(self):
+        problems = design_lint.palette_problems(
+            {"surface_white": "#FFFFFF", "surface_alt": "#E8EBED"})
+        self.assertEqual(len(problems), 2)
+        self.assertIn("must be a list", problems[0])
+
+    def test_non_string_entry_is_rejected(self):
+        problems = design_lint.palette_problems(
+            {"surface_white": ["#FFFFFF", 3], "surface_alt": ["#E8EBED"]})
+        self.assertEqual(len(problems), 1)
+        self.assertIn("only hex strings", problems[0])
+
+    def test_empty_list_stays_legal(self):
+        self.assertEqual(design_lint.palette_problems(
+            {"surface_white": [], "surface_alt": []}), [])
+
+    def test_cli_exits_2_on_scalar_config(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            bad = pathlib.Path(tmp) / "craft-rules.json"
+            bad.write_text(json.dumps({"surface_white": "#FFFFFF", "surface_alt": ["#E8EBED"]}))
+            err = io.StringIO()
+            with contextlib.redirect_stderr(err), self.assertRaises(SystemExit) as exit_info:
+                with mock.patch.object(sys, "argv", ["design_lint.py", "--rules", str(bad)]):
+                    design_lint.main()
+            self.assertEqual(exit_info.exception.code, 2)
+            self.assertIn("surface_white must be a list", err.getvalue())
+
+    def test_project_configs_declare_palette_lists(self):
+        configs = self._project_configs()
+        self.assertTrue(configs, "no design/*/craft-rules.json to check")
+        for path in configs:
+            rules = {**design_lint.DEFAULTS, **json.loads(path.read_text())}
+            self.assertEqual(design_lint.palette_problems(rules), [], str(path))
+
+    def test_project_config_activates_surface_role(self):
+        """The shipped config, loaded as the CLI loads it, must produce a finding.
+
+        Uses whichever project declares the #E8EBED alt surface (no project path
+        is hardcoded) and the existing SurfaceRoleTest fixture: with the palette
+        readable the mixed-surface pair is one medium finding; with a scalar it
+        was silently zero.
+        """
+        fixture = [_board(), *self._card("a", 120, "#FFFFFF"),
+                   *self._card("b", 340, "#E8EBED")]
+        for path in self._project_configs():
+            rules = {**design_lint.DEFAULTS, **json.loads(path.read_text())}
+            if "#E8EBED" not in [value.upper() for value in rules["surface_alt"]]:
+                continue
+            findings = _findings(fixture, "different surface tokens", rules=rules)
+            self.assertEqual(len(findings), 1, str(path))
+            self.assertEqual(findings[0]["severity"], "medium")
+            return
+        self.fail("no project craft-rules.json declares the #E8EBED alt surface")
+
 if __name__ == "__main__":
     unittest.main()

@@ -1,6 +1,7 @@
 {
  "board": "07-program-loading",
  "source": "07-program-loading.png",
+ "source_sha256": "108bdd8aca030e27ba41b18f675fe02235a9acb97ea24fc2279ef01a9ab25f51",
  "image": {
   "w": 1440,
   "h": 1300
@@ -18,7 +19,7 @@
    "x1": 1440,
    "y1": 900,
    "reviewed": true,
-   "note": "Loading state at 1:1: header, day tabs with 22 Nisan active (red), hall chips, table head, skeleton rows; the p note reads 'program yükleniyor'."
+   "note": "Loading state at 1:1 (same render): day tabs with 22 active, hall chips, table head, first skeleton rows."
   },
   {
    "file": "tile-02.png",
@@ -27,7 +28,7 @@
    "x1": 1440,
    "y1": 1300,
    "reviewed": true,
-   "note": "Skeleton grid 8 rows x 4 halls (surface.alt blocks) + footer note 'Oturumlar yükleniyor; gün sekmeleri ve salon filtresi hazır.'; time-gutter placeholders stay ticks, no text clipped."
+   "note": "Skeleton grid tail + the loading note; no text inside the blocks."
   }
  ],
  "regions": [
@@ -35,31 +36,59 @@
    "file": "region-smallest-text.png",
    "subject": "masthead sub",
    "x": 200,
-   "y": 455,
+   "y": 15,
    "w": 163,
    "h": 65,
+   "origin": "auto",
    "reviewed": true,
-   "note": "13px table head ('SAAT', 'SALON A-D') at 1:1: ink.500 on paper, crisp."
+   "note": "13px table heads at 1:1."
   },
   {
    "file": "region-densest.png",
-   "subject": "358 texts near x=120",
+   "subject": "26 texts near x=120",
    "x": 96,
-   "y": 424,
+   "y": 0,
    "w": 768,
    "h": 948,
+   "origin": "auto",
    "reviewed": true,
-   "note": "Skeleton block field: uniform 4px-grid blocks, no stray shapes between halls."
+   "note": "Skeleton block field: uniform 4px-grid blocks."
   },
   {
    "file": "region-primary-action.png",
-   "subject": "masthead cta / label",
-   "x": 1206,
-   "y": 449,
-   "w": 91,
-   "h": 67,
+   "subject": "masthead cta",
+   "x": 1160,
+   "y": 0,
+   "w": 184,
+   "h": 88,
+   "origin": "auto",
    "reviewed": true,
-   "note": "Crop is blank (paper + a hairline): the picked shape is the nested nav 'masthead cta' and the tool's region frame missed it. The nav CTA was read in tile-01 (top right, saturated); re-cut after the tool fix."
+   "note": "Nav 'Üye ol' at 1:1 — the only saturated primary on this state board."
+  },
+  {
+   "file": "region-skeleton.png",
+   "subject": "skeleton grid and its note",
+   "x": 120,
+   "y": 440,
+   "w": 1200,
+   "h": 420,
+   "origin": "declared",
+   "reviewed": true,
+   "note": "Skeleton grid at 1:1: 4 halls x 8 rows on surface.alt, time-gutter ticks, no text in the blocks; the loading note sits below."
   }
- ]
+ ],
+ "coverage": {
+  "required": [
+   "smallest-text",
+   "densest",
+   "primary-action"
+  ],
+  "present": [
+   "smallest-text",
+   "densest",
+   "primary-action",
+   "skeleton"
+  ],
+  "missing": []
+ }
 }

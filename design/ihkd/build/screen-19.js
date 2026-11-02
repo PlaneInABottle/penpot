@@ -11,7 +11,7 @@ S.text(left, "al sub", "ÜYE MASASI", "label", "on.red", { x: 72, y: 104 });
 S.text(left, "al claim", "Hekimin evi.", "display", "on.red", { x: 72, y: 228, w: 576 });
 S.text(left, "al body", "Kılavuzlar, kurslar ve kongre kaydı tek hesapta. 6.847 hekim tek adreste.", "lead", "on.red", { x: 72, y: 400, w: 480, opacity: 0.88 });
 S.photo(pb, "img-auth", 72, 520, 576, 240);
-S.text(left, "al caption", "Kardiyoloji monitörü, hastane", "meta", "on.red", { x: 72, y: 856, w: 576 });
+S.text(left, "al caption", "EKG kaydı · 25 mm/s · 10 mm/dk", "meta", "on.red", { x: 72, y: 856, w: 576 });
 S.text(left, "al foot", "© 1998'den beri · Ankara · KVKK", "meta", "on.red", { x: 72, y: 944 });
 
 /* --------------------------------------------------------------------- sağ form */

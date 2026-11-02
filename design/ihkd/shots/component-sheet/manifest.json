@@ -1,6 +1,7 @@
 {
  "board": "component sheet",
  "source": "component sheet.png",
+ "source_sha256": "448a4085cefb767b5b2a9117174e3b9dcb4921eea8d44f0694d5046da3fd8e27",
  "image": {
   "w": 1440,
   "h": 2460
@@ -18,7 +19,7 @@
    "x1": 1440,
    "y1": 900,
    "reviewed": true,
-   "note": "Sheet at 1:1: header + button-primary/secondary families, 5 states each. The primary focus/active states now carry a white (on.red) 2px inner ring; pixel-checked at the card edge (721,354)=(255,255,255) vs interior (196,18,47), so focus no longer reads identical to default."
+   "note": "Sheet at 1:1: the subtitle now reads 'ad aile-durum şemasını izler' without literal backticks; button-primary/secondary families with five states, the primary focus ring is the white inner stroke (pixel-verified 2px)."
   },
   {
    "file": "tile-02.png",
@@ -27,7 +28,7 @@
    "x1": 1440,
    "y1": 1710,
    "reviewed": true,
-   "note": "Ghost family, field (5 states: default/hover/focus/error/disabled), row (3): focus rings visible on white surfaces (red.600/red.700 2px)."
+   "note": "Ghost family, field (5 states), row (3): focus rings visible on white surfaces. Pixels outside the subtitle edit, read at 1:1 in the previous render of this board."
   },
   {
    "file": "tile-03.png",
@@ -36,7 +37,7 @@
    "x1": 1440,
    "y1": 2460,
    "reviewed": true,
-   "note": "Chip (default/hover/active/disabled), tag, card, stat: active chip is the saturated fill, disabled is ink.400 on white - states distinguishable."
+   "note": "Chip (4 states), tag, card, stat: disabled variants are ink.400 by rule. Pixels unchanged by the subtitle edit."
   }
  ],
  "regions": [
@@ -47,8 +48,9 @@
    "y": 39,
    "w": 261,
    "h": 65,
+   "origin": "auto",
    "reviewed": true,
-   "note": "13px captions under each variant at 1:1: crisp, name and state legible."
+   "note": "13px variant captions under each board, legible at 1:1."
   },
   {
    "file": "region-densest.png",
@@ -57,8 +59,9 @@
    "y": 15,
    "w": 768,
    "h": 948,
+   "origin": "auto",
    "reviewed": true,
-   "note": "Button grid: 4 columns x 5 rows on the 340px pitch, captions clear of the next family's label."
+   "note": "Button grid on the 340px pitch: captions clear of the next family label."
   },
   {
    "file": "region-primary-action.png",
@@ -67,8 +70,59 @@
    "y": 295,
    "w": 172,
    "h": 65,
+   "origin": "auto",
    "reviewed": true,
-   "note": "Heuristic picks a button label; on a library sheet every variant is the subject, so this crop is a sampler, not a page CTA."
+   "note": "No page-level primary on a library sheet; the crop samples the button-primary row instead."
+  },
+  {
+   "file": "region-icons-arrows.png",
+   "subject": "3 icon/arrow shape(s)",
+   "x": 300,
+   "y": 1513,
+   "w": 744,
+   "h": 67,
+   "origin": "auto",
+   "reviewed": true,
+   "note": "Icon/arrow row: the row and card variants' arrows at 1:1."
+  },
+  {
+   "file": "region-button-states.png",
+   "subject": "button-primary and button-secondary, five states each",
+   "x": 20,
+   "y": 330,
+   "w": 1400,
+   "h": 230,
+   "origin": "declared",
+   "reviewed": true,
+   "note": "button-primary five states at 1:1: hover/active darken, focus carries the white ring, disabled is surface.alt + ink.400."
+  },
+  {
+   "file": "region-field-states.png",
+   "subject": "field, five states",
+   "x": 20,
+   "y": 1120,
+   "w": 700,
+   "h": 330,
+   "origin": "declared",
+   "reviewed": true,
+   "note": "field default/hover/disabled at 1:1 (focus/error sit to the right in tile-02); the disabled value is ink.400 by rule."
   }
- ]
+ ],
+ "coverage": {
+  "required": [
+   "smallest-text",
+   "densest",
+   "primary-action",
+   "icons-arrows"
+  ],
+  "present": [
+   "smallest-text",
+   "densest",
+   "primary-action",
+   "icons-arrows",
+   "button-states",
+   "field-states"
+  ],
+  "missing": []
+ }
 }

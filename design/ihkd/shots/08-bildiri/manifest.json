@@ -1,0 +1,112 @@
+{
+ "board": "08-bildiri",
+ "source": "08-bildiri.png",
+ "source_sha256": "21e4cf6b39013d33846355b9bb33e1e1dfd7da481868d54215b6e2579b946b5d",
+ "image": {
+  "w": 1440,
+  "h": 2632
+ },
+ "tile": {
+  "w": 1440,
+  "h": 900,
+  "overlap": 0.1
+ },
+ "tiles": [
+  {
+   "file": "tile-01.png",
+   "x0": 0,
+   "y0": 0,
+   "x1": 1440,
+   "y1": 900,
+   "reviewed": true,
+   "note": "Header and deadline band at 1:1; the nav CTA is a ghost now, so the only saturated primary is the form's 'Gönder' (below)."
+  },
+  {
+   "file": "tile-02.png",
+   "x0": 0,
+   "y0": 810,
+   "x1": 1440,
+   "y1": 1710,
+   "reviewed": true,
+   "note": "Form card mid-section: fields, abstract, 248/300 counter; pixels unchanged by the nav edit (it lands in tile-01)."
+  },
+  {
+   "file": "tile-03.png",
+   "x0": 0,
+   "y0": 1620,
+   "x1": 1440,
+   "y1": 2520,
+   "reviewed": true,
+   "note": "Rules + SSS + footer at 1:1: four 16px answers, one line each, rules 16px under the ink; 'Taslak kaydet' secondary beside 'Gönder'."
+  },
+  {
+   "file": "tile-04.png",
+   "x0": 0,
+   "y0": 1732,
+   "x1": 1440,
+   "y1": 2632,
+   "reviewed": true,
+   "note": "Board tail at 1:1 after the +64px growth: SSS block, footer docked under the last rule, no dead band."
+  }
+ ],
+ "regions": [
+  {
+   "file": "region-smallest-text.png",
+   "subject": "masthead sub",
+   "x": 200,
+   "y": 15,
+   "w": 163,
+   "h": 65,
+   "origin": "auto",
+   "reviewed": true,
+   "note": "13px labels and hints (ink.500 on paper / red.700 on white)."
+  },
+  {
+   "file": "region-densest.png",
+   "subject": "75 texts near x=120",
+   "x": 96,
+   "y": 0,
+   "w": 768,
+   "h": 948,
+   "origin": "auto",
+   "reviewed": true,
+   "note": "Form field grid: two columns, 4px rhythm, no label/line collision."
+  },
+  {
+   "file": "region-primary-action.png",
+   "subject": "f send",
+   "x": 980,
+   "y": 1660,
+   "w": 364,
+   "h": 100,
+   "origin": "auto",
+   "reviewed": true,
+   "note": "The form's 'Gönder' (f send) at 1:1 — the board's one saturated primary."
+  },
+  {
+   "file": "region-faq-block.png",
+   "subject": "SSS block: four 16px answers, one line each",
+   "x": 740,
+   "y": 1880,
+   "w": 600,
+   "h": 360,
+   "origin": "declared",
+   "reviewed": true,
+   "note": "SSS block at 1:1: question 16/600 ink.900 over answer 16/400 ink.600, rules between, no wrap and no overlap."
+  }
+ ],
+ "coverage": {
+  "required": [
+   "smallest-text",
+   "densest",
+   "primary-action"
+  ],
+  "present": [
+   "smallest-text",
+   "densest",
+   "primary-action",
+   "faq-block"
+  ],
+  "missing": []
+ }
+}

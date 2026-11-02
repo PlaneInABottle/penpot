@@ -193,7 +193,7 @@ const FAMILIES = [
 S.text(sheet, "sheet label", "BİLEŞEN KİTAPLIĞI · İHKD", "label", "ink.500", { x: 40, y: 64 });
 S.text(sheet, "sheet title", "Bileşen kitaplığı", "display", "ink.900", { x: 40, y: 88, w: 900 });
 S.text(sheet, "sheet lede",
-  "Dokuz aile, durum varyantlarıyla. Her tahta bir kütüphane bileşenidir; ad `aile-durum` şemasını izler.",
+  "Dokuz aile, durum varyantlarıyla. Her tahta bir kütüphane bileşenidir; ad aile-durum şemasını izler.",
   "body", "ink.600", { x: 40, y: 190, w: 760 });
 S.rule(sheet, "sheet rule", 40, 288, 1360, "line.strong", 2);
 

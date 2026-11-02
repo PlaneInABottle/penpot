@@ -85,6 +85,27 @@ DEFAULTS = {
     "dead_pad_tol": 8.0,         # trailing void within this of the entry inset is padding
 }
 
+def palette_problems(rules: dict) -> list[str]:
+    """Reject a surface palette the rule cannot read.
+
+    `surface.role` compares hex strings against the project's declared surfaces.
+    A scalar (`"surface_white": "#FFFFFF"`) iterates as characters, so no shape
+    ever matches and the rule reports nothing — a silent false PASS that hid the
+    project palette for a whole milestone (2026-11-03). A non-list or a non-string
+    entry is a configuration error, not a finding. An empty list stays legal: the
+    rule is then unconfigured and says so out loud.
+    """
+    problems: list[str] = []
+    for field in ("surface_white", "surface_alt"):
+        value = rules.get(field, [])
+        if not isinstance(value, list):
+            problems.append(f"{field} must be a list of hex strings, got {type(value).__name__} "
+                            f"({value!r}) — a scalar silently disables surface.role")
+        elif not all(isinstance(entry, str) for entry in value):
+            problems.append(f"{field} must contain only hex strings, got {value!r}")
+    return problems
+
+
 BANNED_EXACT = {"Text", "Rectangle", "Board", "Group"}
 
 # Above this share of unmeasured texts the page was never laid out: `textBounds`
@@ -1429,6 +1450,11 @@ def main() -> int:
             rules.update(json.loads(args.rules.read_text()))
         except (OSError, json.JSONDecodeError) as error:
             fail(f"{args.rules}: {error}")
+        problems = palette_problems(rules)
+        if problems:
+            # Config error (exit 2), never a silent skip: an unreadable palette
+            # would report a green surface.role for a page it never checked.
+            fail(f"{args.rules}: " + "; ".join(problems))
 
     if args.rules_report:
         print(rules_report())

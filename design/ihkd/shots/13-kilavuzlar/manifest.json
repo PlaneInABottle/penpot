@@ -1,0 +1,103 @@
+{
+ "board": "13-kilavuzlar",
+ "source": "13-kilavuzlar.png",
+ "source_sha256": "fe0aee5c1b352454b84927e358bf0f2fc2399c9684c29b89f3f570eaf423df20",
+ "image": {
+  "w": 1440,
+  "h": 2400
+ },
+ "tile": {
+  "w": 1440,
+  "h": 900,
+  "overlap": 0.1
+ },
+ "tiles": [
+  {
+   "file": "tile-01.png",
+   "x0": 0,
+   "y0": 0,
+   "x1": 1440,
+   "y1": 900,
+   "reviewed": true,
+   "note": "Guidelines header/search/chips + the featured guideline at 1:1: the replaced ECG-print photo sits in the feature's right column with its caption under it on paper; no text over the photo."
+  },
+  {
+   "file": "tile-02.png",
+   "x0": 0,
+   "y0": 810,
+   "x1": 1440,
+   "y1": 1710,
+   "reviewed": true,
+   "note": "Guideline rows and pocket cards. Area unchanged by the photo replacement (same render as the accepted round; only the feature image changed)."
+  },
+  {
+   "file": "tile-03.png",
+   "x0": 0,
+   "y0": 1500,
+   "x1": 1440,
+   "y1": 2400,
+   "reviewed": true,
+   "note": "Board tail: pocket cards and the method note. Unchanged area."
+  }
+ ],
+ "regions": [
+  {
+   "file": "region-smallest-text.png",
+   "subject": "masthead sub",
+   "x": 200,
+   "y": 15,
+   "w": 163,
+   "h": 65,
+   "origin": "auto",
+   "reviewed": true,
+   "note": "13px search hint/labels at 1:1."
+  },
+  {
+   "file": "region-densest.png",
+   "subject": "63 texts near x=120",
+   "x": 96,
+   "y": 0,
+   "w": 768,
+   "h": 948,
+   "origin": "auto",
+   "reviewed": true,
+   "note": "Row table: year/scope/evidence/pages/size columns, no collision."
+  },
+  {
+   "file": "region-guide-photo.png",
+   "subject": "the replaced ECG-print photo and its caption",
+   "x": 900,
+   "y": 560,
+   "w": 440,
+   "h": 360,
+   "origin": "declared",
+   "reviewed": true,
+   "note": "The replaced image at 1:1: three ECG traces on ECG paper (Pexels 415779) and the truthful caption 'EKG kaydı · 25 mm/s · 10 mm/mV' — instrument object, no patient, no stethoscope."
+  },
+  {
+   "file": "region-primary-action.png",
+   "subject": "masthead cta / label",
+   "x": 1206,
+   "y": 9,
+   "w": 91,
+   "h": 67,
+   "origin": "manual",
+   "reviewed": true,
+   "note": "Featured guideline's 'Kılavuzu indir' (primary btn) at 1:1."
+  }
+ ],
+ "coverage": {
+  "required": [
+   "smallest-text",
+   "densest",
+   "primary-action"
+  ],
+  "present": [
+   "smallest-text",
+   "densest",
+   "guide-photo",
+   "primary-action"
+  ],
+  "missing": []
+ }
+}

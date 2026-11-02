@@ -274,8 +274,8 @@ Ink sidebar 260: member name, `İHKD-24817`, nav, `Çıkış`. Header `İyi gün
 
 ## 6. Photography (Pexels, graded)
 
-Twelve placements of eleven photographs, one cool grade (light desaturation, contrast lift,
-neutral shadows) so they read as one set. Captions are 13px `meta`, sentence case, no
+Fourteen placements of eleven photographs across eight boards, one cool grade (light
+desaturation, contrast lift, neutral shadows) so they read as one set. Captions are 13px `meta`, sentence case, no
 uppercase.
 
 **Subject rule (2026-11-02, amended by M7).** A photo may show the society's *place* (hall,
@@ -294,18 +294,21 @@ happen in a hospital is stock filling, not evidence.
 | `img-corridor` | hospital corridor, morning light | 10 |
 | `img-venue` | convention centre exterior | 10 |
 | `img-seminar` | small seminar room, physicians | 11 |
-| `img-desk` | stethoscope and printed ECG on a desk | 13 |
+| `img-desk` | ECG print close-up: three traces on ECG paper, no patient (Pexels 415779, same source as `img-auth`) | 13 |
 | `img-round` | internal medicine ward round | 15 |
-| `img-team` | congress programme workshop | 16 |
+| `img-team` | open journal spread, no masthead (same source as `img-journal`/`img-issue`) | 16 |
 | `img-auth` | cardiology monitor, hospital equipment | 19 |
 | `img-issue` | open book, small body-text texture (same source as `img-journal`) | 14 |
 | `img-lab` | 12-lead ECG paper with limb/precordial electrodes, closeup | 12 |
 
-Images still carrying the pre-rule subject (replacement is a separate round, listed so the
-rule and the file do not disagree): `img-desk` (stethoscope as an object), `img-round` (ward
-round at a patient), `img-team` (physician and patient at a screen), `img-auth` (patient
-beside a monitor), `img-angio` (cath team, masked). `img-hero`, `img-journal` and `img-lab`
-already follow the amended rule.
+Subject audit (2026-11-03, contact sheet of every image that could violate the rule): the
+masked-patient frame on 19, the stethoscope-on-ECG still on 13 and the physician-with-patient
+frame on 16 were replaced with already-sourced instrument/publication assets (`img-auth` and
+`img-desk` → Pexels 415779, `img-team` → Pexels 3860983); their captions were corrected to
+match the frame. The other two inspected frames are compliant: `img-round` is a physician
+writing at a chart with no patient, and `img-angio` is cath-lab equipment (monitors, injector)
+with a masked team only at the frame's edge — no patient. `img-hero` (auditorium), `img-journal`
+and `img-lab` already followed the amended rule.
 
 Provenance (Pexels URL + photographer) is recorded in `media/provenance.json`; the pinned
 URL in `tools/media.py` is the single source, so a rebuild reimports the accepted frame.
@@ -493,7 +496,23 @@ tutulur; kullanıcı aksini söyleyene kadar silinmez.
   measured 4.88 / 4.64:1 on the render.
 - **Surface tokens.** `craft-rules.json` gains `surface_white` / `surface_alt` (values read
   from `tokens.json`) for the tool-side surface audit.
-- **Verification limits.** Crop tiles come from `crop_board`, whose region heuristic still
-  picks the nav CTA and whose off-origin bug mis-framed three state crops; those manifest
-  notes say so and the coordinator re-cuts after the tool fix. Contrast on photographs is
-  measured against the pixels behind each ink box, never against token pairs alone.
+- **One saturated primary per board, enforced on the nav too.** 08-bildiri's masthead CTA is
+  a ghost now, like 09's: the form's `Gönder` (and 09's `Kaydı tamamla`) is the board's action,
+  so the nav must not compete with it.
+- **Photo compliance finished.** `img-auth` (19), `img-desk` (13) and `img-team` (16) were
+  replaced with already-sourced instrument/publication frames (Pexels 415779 and 3860983) and
+  their captions corrected to the frame; a contact sheet of the remaining candidates shows
+  `img-round` and `img-angio` compliant (no patient, no stethoscope). Brief §6 carries the
+  audit.
+- **Surface palette is a list, and the lint enforces it.** `surface_white`/`surface_alt` were
+  scalars, so `surface.role` read them character by character and reported nothing for a whole
+  milestone; they are one-element arrays now, `design_lint.py` exits 2 on a non-list or
+  non-string entry at the rules-loading boundary, and a fixture test proves the shipped config
+  activates the rule (1 medium) instead of silently skipping it.
+- **Evidence plan.** `tools/crop-plan.json` + `tools/crop_plan.py` re-cut every board's 1:1
+  evidence from an existing render plus a node dump, with the real primary action named per
+  board; the coordinator re-runs one command after a tool change.
+- **Verification limits.** Crop tiles are real and attested, but contrast on photographs is
+  measured against the pixels behind each ink box (never token pairs alone), and the
+  `contrast_audit.py` shipped this round mis-reads an unset shape opacity (`Number(null) → 0`),
+  so the audit above ran from a patched copy — the repository tool needs that null guard.

@@ -26,10 +26,9 @@ S.link(card, "empty cta", "Arşivi aç →", S.X + 48, CY + 268, "red.700");
 S.text(card, "empty meta", "Son yayım 4 Mart 2027.", "meta", "ink.500",
   { x: S.X + S.CW - 300, y: CY + 276, w: 252, align: "right" });
 
-let y = CY + CH + 40;
-S.text(pb, "empty note", "Veri güncellemesi her Pazartesi 09:00'da yayımlanır; bu tahta o an boş görünür.",
-  "meta", "ink.500", { x: S.X, y: y, w: S.CW });
-y += 48;
+/* No footnote: the card already says when the gündem publishes and what the
+   archive holds, and a second line repeated the schedule (review, 2026-11-03). */
+let y = CY + CH + 40 + 48;
 
 pb.resize(S.W, S.snap(y));
 

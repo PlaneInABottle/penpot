@@ -1,6 +1,7 @@
 {
  "board": "19-giris",
  "source": "19-giris.png",
+ "source_sha256": "8183d7bbc3e31cc53f2449c619294246761c88dea770c7d66dbd4e2df8a2864f",
  "image": {
   "w": 1440,
   "h": 1024
@@ -18,7 +19,7 @@
    "x1": 1440,
    "y1": 900,
    "reviewed": true,
-   "note": "Split 720/720 login at 1:1: red panel (Hekimin evi., al body .88), img-auth photo 576x240 with 8px radius sitting above the panel and below the caption, right form with field error state; no clipping, photo stacking correct after the media order fix."
+   "note": "Board top at 1:1: the red panel now carries an ECG-print photograph (Pexels 415779) in place of the masked clinical frame; caption 'EKG kaydı · 25 mm/s · 10 mm/dk' below it on red."
   },
   {
    "file": "tile-02.png",
@@ -27,7 +28,7 @@
    "x1": 1440,
    "y1": 1024,
    "reviewed": true,
-   "note": "Second tile (10% overlap): 'Giriş yap' primary, e-Devlet secondary, footer note; al foot '© 1998'den beri · Ankara · KVKK' now opaque white on red.600 (6.04:1) and unclipped."
+   "note": "Board foot: photo, caption and legal line on red; 'Giriş yap' is the only saturated primary; no clipping."
   }
  ],
  "regions": [
@@ -38,8 +39,9 @@
    "y": 79,
    "w": 137,
    "h": 65,
+   "origin": "auto",
    "reviewed": true,
-   "note": "Heuristic picked 'ÜYE MASASI' (13px label, on.red, now opaque): crisp, 6.04:1."
+   "note": "13px 'ÜYE MASASI' on red (opaque, 6.04:1)."
   },
   {
    "file": "region-densest.png",
@@ -48,45 +50,93 @@
    "y": 15,
    "w": 768,
    "h": 948,
+   "origin": "auto",
    "reviewed": true,
-   "note": "Densest window: brand block + al body (22px, opacity .88 kept) + caption + foot; the two fixed 13px lines read full white against red, the 22px lead stays slightly softer (4.88:1, AA normal text)."
+   "note": "Densest window: brand block, lead, photo, caption, foot — the photo is a sibling rect with the radius, texts stay above it."
   },
   {
    "file": "region-primary-action.png",
-   "subject": "f join cta",
-   "x": 916,
-   "y": 877,
-   "w": 109,
-   "h": 64,
+   "subject": "f submit",
+   "x": 784,
+   "y": 608,
+   "w": 548,
+   "h": 100,
+   "origin": "auto",
    "reviewed": true,
-   "note": "Heuristic picked the 'Başvuru →' link, not the saturated 'Giriş yap': the real primary is in tile-01. Same crop-tool heuristic weakness as 01."
+   "note": "'Giriş yap' (f submit) at 1:1 — the real primary, previously a link was picked."
+  },
+  {
+   "file": "region-login-form.png",
+   "subject": "login form with the error field and the one primary",
+   "x": 800,
+   "y": 230,
+   "w": 560,
+   "h": 500,
+   "origin": "declared",
+   "reviewed": true,
+   "note": "Login form at 1:1: error field (red line + hint), remember row, primary, e-Devlet secondary."
+  },
+  {
+   "file": "region-auth-photo.png",
+   "subject": "the replaced ECG-print photo in the red panel",
+   "x": 60,
+   "y": 510,
+   "w": 600,
+   "h": 260,
+   "origin": "declared",
+   "reviewed": true,
+   "note": "The replaced photograph at 1:1: three ECG traces on ECG paper — an instrument object, no patient, no hand, no mask."
   },
   {
    "file": "region-al-sub.png",
+   "subject": "al-sub",
    "x": 60,
    "y": 92,
    "w": 320,
    "h": 40,
+   "origin": "manual",
    "reviewed": true,
-   "note": "'ÜYE MASASI' 13px at 1:1 after the fix: opaque white on red.600, no antialias fringe below the 4.5 threshold."
+   "note": "'ÜYE MASASI' 13px, opaque on red."
   },
   {
    "file": "region-al-caption-foot.png",
+   "subject": "al-caption-foot",
    "x": 60,
    "y": 840,
    "w": 580,
    "h": 130,
+   "origin": "manual",
    "reviewed": true,
-   "note": "Caption 'Kardiyoloji monitörü, hastane' and foot '© 1998'den beri · Ankara · KVKK' at 1:1: both opaque, 6.04:1, 72px apart as the panel's dock."
+   "note": "Caption and legal foot at 1:1: both opaque white on red (6.04:1), 72px apart as the panel dock."
   },
   {
    "file": "region-al-sub-2x.png",
+   "subject": "al-sub-2x",
    "x": 66,
    "y": 98,
    "w": 234,
    "h": 28,
+   "origin": "manual",
    "reviewed": true,
-   "note": "2x: 13px tracked mono strokes crisp, no overlap with the İHKD mark above."
+   "note": "2x: the tracked mono strokes crisp, no fringe."
   }
- ]
+ ],
+ "coverage": {
+  "required": [
+   "smallest-text",
+   "densest",
+   "primary-action"
+  ],
+  "present": [
+   "smallest-text",
+   "densest",
+   "primary-action",
+   "login-form",
+   "auth-photo",
+   "al-sub",
+   "al-caption-foot",
+   "al-sub-2x"
+  ],
+  "missing": []
+ }
 }

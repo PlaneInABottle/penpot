@@ -38,8 +38,8 @@
   "img-desk": {
     "board": "13-kilavuzlar",
     "page": "Akademi",
-    "source": "https://images.pexels.com/photos/35044388/pexels-photo-35044388.jpeg",
-    "credit": "https://www.pexels.com/photo/35044388/ by Marta Branco"
+    "source": "https://images.pexels.com/photos/415779/pexels-photo-415779.jpeg",
+    "credit": "https://www.pexels.com/photo/415779/ by Pixabay"
   },
   "img-issue": {
     "board": "14-dergi",
@@ -56,14 +56,14 @@
   "img-team": {
     "board": "16-makale",
     "page": "İçerik",
-    "source": "https://images.pexels.com/photos/20370745/pexels-photo-20370745.jpeg",
-    "credit": "https://www.pexels.com/photo/20370745/ by Michael Obiero"
+    "source": "https://images.pexels.com/photos/3860983/pexels-photo-3860983.jpeg",
+    "credit": "https://www.pexels.com/photo/3860983/ by Robert Munteanu"
   },
   "img-auth": {
     "board": "19-giris",
     "page": "Üyelik",
-    "source": "https://images.pexels.com/photos/8460227/pexels-photo-8460227.jpeg",
-    "credit": "https://www.pexels.com/photo/8460227/ by Los Muertos Crew"
+    "source": "https://images.pexels.com/photos/415779/pexels-photo-415779.jpeg",
+    "credit": "https://www.pexels.com/photo/415779/ by Pixabay"
   },
   "img-lab": {
     "board": "12-kurs-detay",
@@ -116,8 +116,8 @@
   "img-auth@19-giris": {
     "board": "19-giris",
     "page": "Üyelik",
-    "source": "https://images.pexels.com/photos/8460227/pexels-photo-8460227.jpeg",
-    "credit": "https://www.pexels.com/photo/8460227/ by Los Muertos Crew"
+    "source": "https://images.pexels.com/photos/415779/pexels-photo-415779.jpeg",
+    "credit": "https://www.pexels.com/photo/415779/ by Pixabay"
   },
   "img-round@15-haberler": {
     "board": "15-haberler",
@@ -134,8 +134,8 @@
   "img-desk@13-kilavuzlar": {
     "board": "13-kilavuzlar",
     "page": "Akademi",
-    "source": "https://images.pexels.com/photos/35044388/pexels-photo-35044388.jpeg",
-    "credit": "https://www.pexels.com/photo/35044388/ by Marta Branco"
+    "source": "https://images.pexels.com/photos/415779/pexels-photo-415779.jpeg",
+    "credit": "https://www.pexels.com/photo/415779/ by Pixabay"
   },
   "img-issue@14-dergi": {
     "board": "14-dergi",
@@ -158,8 +158,8 @@
   "img-team@16-makale": {
     "board": "16-makale",
     "page": "İçerik",
-    "source": "https://images.pexels.com/photos/20370745/pexels-photo-20370745.jpeg",
-    "credit": "https://www.pexels.com/photo/20370745/ by Michael Obiero"
+    "source": "https://images.pexels.com/photos/3860983/pexels-photo-3860983.jpeg",
+    "credit": "https://www.pexels.com/photo/3860983/ by Robert Munteanu"
   },
   "img-venue@10-konaklama": {
     "board": "10-konaklama",
