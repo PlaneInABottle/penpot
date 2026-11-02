@@ -40,9 +40,10 @@
       ],
       "mobile": "n/a",
       "firstViewport": ["p label", "p title", "p note", "sess title 0"],
-      "accentMaxRatio": 0.004,
+      "accentMaxRatio": 0.01,
       "claims": [
-        {"pattern": "sess title", "count": 96, "label": "programda listelenen oturum"}
+        {"pattern": "sess title", "count": 19, "label": "22 Nisan oturumları"},
+        {"pattern": "day [0-9]", "count": 5, "label": "gün sekmeleri"}
       ]
     }
   ]

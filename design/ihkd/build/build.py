@@ -74,7 +74,8 @@ return JSON.stringify({{ opened: p.name }});
                  " if (s.type === 'text' && !(s.textBounds && s.textBounds.height)) nulls++;"
                  " (s.children || []).forEach(walk); };"
                  " (p.root.children || []).forEach(walk);"
-                 " return { nulls: nulls, fitted: IK.fit(" + json.dumps(page) + ") }; })());")
+                 " return { nulls: nulls, fitted: IK.fit(" + json.dumps(page) + "),"
+                 " bars: (IK.fitBars ? IK.fitBars(" + json.dumps(page) + ") : 0) }; })());")
     for i in range(10):
         time.sleep(3.0)
         try:
@@ -82,7 +83,7 @@ return JSON.stringify({{ opened: p.name }});
             st = json.loads(st) if isinstance(st, str) else st
         except McpError:
             break
-        if not st.get("nulls") and not st.get("fitted"):
+        if not st.get("nulls") and not st.get("fitted") and not st.get("bars"):
             print(f"{screen}: fit quiet after {i + 1} pass(es)")
             break
     else:

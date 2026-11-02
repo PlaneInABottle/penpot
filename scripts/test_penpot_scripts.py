@@ -629,6 +629,55 @@ class UxGateTest(unittest.TestCase):
         self.assertTrue(any("accent fills" in f["finding"] for f in findings), findings)
 
 
+class OverlapBlindSpotTest(unittest.TestCase):
+    def _side(self):
+        return _node(id="side", name="side", type="board", parentId="pg",
+                     parent="pg", x=944, y=400, w=376, h=500, fill="#FFFFFF", stroke=True)
+
+    def _button(self):
+        return _node(id="cta", name="s cta", type="board", parentId="side",
+                     parent="side", x=992, y=672, w=296, h=48, fill="#E0364B")
+
+    def test_text_inside_sibling_button_is_high(self):
+        # DAHİL/Devam-et sınıfı: butonun kendi etiketine ek olarak, ebeveyni
+        # olmayan doygun bir kardeş kutunun tamamen içinde kalan metinler.
+        lab = _node(id="l", name="s cta / label", type="text", parentId="cta",
+                    parent="s cta", x=992, y=688, w=120, h=23, fill="#FFF",
+                    fontSize=16, lineHeight="1.5", text="Devam et",
+                    inkX=1106, inkY=689, inkW=66.9, inkH=19.5)
+        inc = _ink_text(node_id="i0", parent="side", x=992, y=696, w=81, h=19,
+                        inkX=992, inkY=698, inkW=78.6, inkH=16.5)
+        findings = design_lint.lint([_page_board(), self._side(), self._button(), lab, inc],
+                                    dict(design_lint.DEFAULTS))
+        self.assertTrue(any("sibling control" in f["finding"] and f["severity"] == "high"
+                            for f in findings),
+                        [f["finding"] for f in findings])
+
+    def test_text_inside_muted_band_stays_clean(self):
+        band = _node(id="zebra", name="row zebra 1", type="rectangle", parentId="pg",
+                     parent="pg", x=120, y=600, w=1200, h=92, fill="#F4F5F6")
+        findings = design_lint.lint([_page_board(), band, _ink_text(inkY=610, inkH=40)],
+                                    dict(design_lint.DEFAULTS))
+        self.assertEqual([f for f in findings if "sibling control" in f["finding"] or
+                          "overflows its container" in f["finding"]], [])
+
+    def test_lone_label_on_active_pill_stays_clean(self):
+        pill = _node(id="pill", name="sidebar active", type="rectangle", parentId="pg",
+                     parent="pg", x=0, y=186, w=264, h=36, fill="#E0364B")
+        label = _ink_text(node_id="nav", parent="pg", x=28, y=192, w=120, h=22,
+                          inkX=28, inkY=193, inkW=80, inkH=17)
+        findings = design_lint.lint([_page_board(), pill, label], dict(design_lint.DEFAULTS))
+        self.assertEqual([f for f in findings if "sibling control" in f["finding"] or
+                          "paints over shape" in f["finding"]], [])
+    def test_cross_parent_text_overlap_still_flags(self):
+        a = _ink_text(node_id="a", parent="pg", x=120, y=540, inkX=120, inkY=540)
+        b = _ink_text(node_id="b", parent="side", x=200, y=540, inkX=200, inkY=540)
+        side = _node(id="side", name="side", type="board", parentId="pg",
+                     parent="pg", x=100, y=400, w=400, h=300, fill="#FFFFFF", stroke=True)
+        findings = design_lint.lint([_page_board(), side, a, b], dict(design_lint.DEFAULTS))
+        self.assertTrue(any("collides with text" in f["finding"] for f in findings))
+
+
 class TopVoidTest(unittest.TestCase):
     def _report(self, first_y):
         board = _node(id="b", name="board", type="board", parentId=None,

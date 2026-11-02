@@ -53,7 +53,9 @@ declared ratio.
 
 Write the copy before the grid. The number a screen claims is the number it
 shows: `claims` in `ux-spec.json` pairs a name pattern with the expected
-count, and the gate fails a mismatch (19 shown vs 96 claimed). When content
+count, and the gate fails a mismatch (19 shown vs 96 claimed). A claim the
+file cannot show is rewritten to what the file shows ("19 today · 96 across
+four days", never a bare "96" over 19 cards). When content
 grows, either show all of it or change the claim — never keep the number and
 crop the list. Fixed grids (calendars, tables) derive their row heights from
 the tallest measured content via `fit-slot.js`, or fail the build; the lint

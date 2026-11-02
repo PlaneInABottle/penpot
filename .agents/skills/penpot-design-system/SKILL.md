@@ -161,6 +161,19 @@ build it right the first time instead.
   by; an error stops the screen.
 - After any copy swap, re-run the slot fit on the touched board before
   exporting: `lint` proves the last build, `FIT` prevents the next defect.
+- **Rows come from one helper, never from hand-written y.** A repeating
+  row (list, table, schedule, curriculum) is built with a single
+  `rows(items)` call: each item declares its content-derived block height
+  and a `draw(yRow, hRow)` that centers its content; the separator always
+  lands on the block's bottom edge. A manual `y + 64` next to a manual
+  rule y is how a separator drifts into a text's middle — the helper makes
+  that shape of code unwritable. Fixed-pitch grids throw when content
+  exceeds the pitch instead of overlapping.
+- **One arithmetic chain per screen.** Every y below the masthead derives
+  from a cursor (`y = rows(...); y = head(y + gap...)`), never from a
+  literal. Cards, lists, schedules and side panels share the same chain,
+  so a taller row above pushes everything below instead of burying it.
+  A literal y past the head is a defect, not a shortcut.
 
 ## Media and rhythm (generic)
 
@@ -271,6 +284,19 @@ build it right the first time instead.
   `TOP-VOID` line guards exactly this joint.
 
 ## Verification protocol
+
+- **Lint before eyes.** A new or rebuilt component/screen is not opened
+  for visual review until `design_lint.py` reports 0 high on its page —
+  the eye forgives, the gate does not.
+- **A missed visual defect becomes a rule first.** When eyes catch what
+  lint missed (a text sitting on a sibling control, a rule through a
+  middle line), write the failing test, then the rule, then the fix — in
+  that order. The DAHİL/'Devam et' overlap and the mid-row separator both
+  entered the gate this way.
+- **A "looked at 1:1" claim without an attested manifest is not evidence.**
+  Tile the render with `crop_board.py`, review every tile and region, mark
+  `reviewed` with a finding note, and let `--attest` pass — that is the
+  1:1 review, not a sentence in a report.
 
 - **Structure**: read back name, size, position, children and token bindings for every
   claimed shape in a later call than the write.

@@ -370,6 +370,38 @@ const IK = (function () {
     return y + h;
   }
 
+  /**
+   * One list, one pitch discipline. items: [{h, draw}] where h is the
+   * content-derived block height (estimate with estLines, add padding,
+   * snap) and draw(yRow, hRow) places the row's shapes starting at yRow.
+   * The separator always lands on the block's bottom edge — callers never
+   * write a manual rule y, so a rule can never drift into a text's middle.
+   * In fixed-pitch mode (opts.pitch) content taller than the pitch THROWS:
+   * a grid that cannot hold its content is a build error, not an overlap.
+   * Center content with vcenter(hRow, estH). Returns the y below the
+   * last row (gap included).
+   */
+  function rows(parent, name, x, y, w, items, opts) {
+    const o = opts || {};
+    let cy = y;
+    items.forEach((it, i) => {
+      let h = it.h;
+      if (o.pitch) {
+        if (it.h > o.pitch + 1) {
+          throw new Error("rows: " + name + " row " + i + " needs " + Math.round(it.h) +
+            "px in a fixed " + o.pitch + "px pitch — shorten the copy or grow the pitch");
+        }
+        h = o.pitch;
+      }
+      it.draw(snap(cy), snap(h));
+      if (!o.bare && (i < items.length - 1 || o.trailing)) rule(parent, name + " rule " + i, x, snap(cy) + snap(h) - 1, w, o.rule || "line.soft");
+      cy = snap(cy + h + (o.gap || 0));
+    });
+    return cy;
+  }
+
+  const vcenter = (hRow, contentH) => Math.max(0, Math.round((hRow - contentH) / 2));
+
   function fit(pageName) {
     const p = page(pageName);
     let n = 0;
@@ -393,14 +425,45 @@ const IK = (function () {
 
   function end(name) { return { board: name, warnings: warnings.slice(0, 20), gaps: gaps.slice(0, 20) }; }
 
+  /**
+   * Post-fit pass: thin accent bars ("<base> bar <i>") resize to the measured
+   * ink union of their "<base> title <i>" / "<base> meta <i>" siblings.
+   * Bars are drawn from estimates; ink is truth. A bar that cannot find its
+   * texts is left alone (naming, not geometry, is wrong there).
+   */
+  function fitBars(pageName) {
+    const p = page(pageName);
+    let n = 0;
+    const walk = (s) => {
+      (s.children || []).forEach(walk);
+      const m = s.type === "rectangle" && s.width <= 3 ? s.name.match(/^(.*) bar (\d+)$/) : null;
+      if (!m || !s.parent) return;
+      const texts = (s.parent.children || []).filter((c) =>
+        c.type === "text" && (c.name === m[1] + " title " + m[2] || c.name === m[1] + " meta " + m[2]) &&
+        c.textBounds && c.textBounds.height);
+      if (!texts.length) return;
+      const top = Math.min(...texts.map((t) => t.textBounds.y));
+      const bot = Math.max(...texts.map((t) => t.textBounds.y + t.textBounds.height));
+      const h = Math.ceil(bot - top) + 4;
+      const y = Math.floor(top) - 2;
+      if (Math.abs(s.height - h) > 1 || Math.abs(s.y - y) > 1) {
+        s.resize(s.width, h);
+        s.y = y;
+        n++;
+      }
+    };
+    (p.root.children || []).forEach(walk);
+    return n;
+  }
+
   function report(pageName) {
     return page(pageName).root.children.map((b) => ({ name: b.name, x: b.x, y: b.y, w: b.width, h: b.height, children: (b.children || []).length }));
   }
 
   return {
     SET, W, X, CW, ROLE, FONT, warnings, gaps,
-    start, end, fit, report, page, rect, board, text, rule, vrule, bind, paint, stroke, corners,
+    start, end, fit, fitBars, report, page, rect, board, text, rule, vrule, bind, paint, stroke, corners,
     btn, link, tag, head, pageHead, stat, field, photo, sheet, masthead, footer, sidebar, crumbs,
-    progress, ecg, row, snap, nrm, token, estLines,
+    progress, ecg, row, rows, vcenter, snap, nrm, token, estLines,
   };
 })();

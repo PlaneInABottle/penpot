@@ -119,6 +119,24 @@ def is_panel(node: dict, rules: dict) -> bool:
         return False
 
 
+def is_background(solid: dict, board_w: float) -> bool:
+    """A solid a text may legitimately sit ON (full containment is not a
+    defect): imagery overlays, muted surfaces (zebra bands, cards, panels)
+    and full-width bands. A compact SATURATED sibling — a red button, an
+    accent chip — is a control, never a background: a text fully inside it
+    is a collision the old straddle-only check could not see (the DAHİL /
+    'Devam et' overlap read as a 'label on its pill'). Ancestors are handled
+    separately by the caller; this answers the sibling case only."""
+    if solid.get("img"):
+        return True
+    try:
+        if not solid.get("fill") or saturation(solid["fill"]) <= 0.5:
+            return True
+    except (ValueError, TypeError):
+        return True
+    return (solid.get("w") or 0) >= 0.8 * (board_w or 0)
+
+
 def lint(nodes: list[dict], rules: dict) -> list[dict]:
     findings: list[dict] = []
     boards = [n for n in nodes if n["type"] == "board" and n["parentId"] is None]
@@ -267,6 +285,18 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
             return False
         solids = [n for n in inside if n["type"] in ("rectangle", "board")
                   and (n["w"] or 0) > 4 and (n["h"] or 0) > 4 and (n.get("fill") or n.get("img"))]
+        ink_boxes = {}
+        for t in inks:
+            if t["inkW"] and t["inkH"]:
+                x = t["inkX"] if t.get("inkX") is not None else t["x"]
+                y = t["inkY"] if t.get("inkY") is not None else t["y"]
+                ink_boxes[t["id"]] = (x, y, x + t["inkW"], y + t["inkH"])
+        occupants: dict[str, list[str]] = {}
+        for n in solids:
+            inside_ids = [tid for tid, (lx, ty, rx, by) in ink_boxes.items()
+                          if lx >= n["x"] - 1 and ty >= n["y"] - 1
+                          and rx <= n["x"] + n["w"] + 1 and by <= n["y"] + n["h"] + 1]
+            occupants[n["id"]] = inside_ids
         for t in inks:
             if not t["inkW"] or not t["inkH"]:
                 continue
@@ -277,11 +307,20 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
                 oy = min(t["inkY"] + t["inkH"], n["y"] + n["h"]) - max(t["inkY"], n["y"])
                 if ox <= 8 or oy <= 8 or ox * oy <= 200:
                     continue
-                # full containment = label sitting ON its pill/panel (legitimate
-                # background); only a straddled edge is a collision
+                # full containment in a background solid (muted band, photo,
+                # full-width strip) is a text sitting ON its surface; a lone
+                # text inside a compact saturated sibling is that control's
+                # own label (the active-pill pattern) and is equally clean.
+                # Anything beyond the label — DAHİL/'Devam et' — collides.
                 straddles = t["inkX"] < n["x"] - 2 or t["inkX"] + t["inkW"] > n["x"] + n["w"] + 2
                 if not straddles:
-                    continue
+                    if is_background(n, board["w"]):
+                        continue
+                    if occupants.get(n["id"]) == [t["id"]]:
+                        continue
+                    add("high", f"text {t['name']} sits on sibling control {n['name']} "
+                               f"(ink fully inside {n['w']:.0f}x{n['h']:.0f}px solid)")
+                    break
                 add("high", f"text {t['name']} paints over shape {n['name']} ({ox:.0f}x{oy:.0f}px ink overlap)")
                 break
 
@@ -394,12 +433,13 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
             if over:
                 add("high", f"text {t['name']} overflows its container {slot['name']} ({', '.join(over)} ink outside)")
 
-        # 2. boundary entry: ink that overlaps a sibling container without
-        # being contained by it has entered the next slot — including the
-        # zebra/row bands a schedule paints behind alternating rows. Full
-        # containment is sitting ON a background and stays clean; only an
-        # edge crossing flags. Hairline rules are too thin for an area
-        # check, so they get their own strict crossing test below.
+        # 2. boundary entry: ink that straddles a sibling container's edge has
+        # entered the next slot — including the zebra/row bands a schedule
+        # paints behind alternating rows. Full containment is owned by the
+        # paints-over-shape check above (background solid: clean; compact
+        # saturated sibling: control collision), so this loop only flags edge
+        # crossings. Hairline rules are too thin for an area check, so they
+        # get their own strict crossing test below.
         entered: set[str] = set()
         for t in inked:
             ix, iy, ir, ib = ink_box(t)
@@ -415,7 +455,7 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
                 if ox <= tol or oy <= tol:
                     continue
                 if contains(s, ix, iy, ir, ib):
-                    continue
+                    continue  # owned by paints-over-shape: background or control-sit
                 add("high", f"text {t['name']} enters sibling container {s['name']} ({ox:.0f}x{oy:.0f}px ink inside)")
                 entered.add(t["id"])
                 break
