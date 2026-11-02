@@ -65,6 +65,21 @@ hero; the thumbnail test is an elimination gate, not a taste note. (e) In a
 dispatch, ask for "different objects", never "different compositions" — the
 second wording produces restyled layouts and burns a round.
 
+### Finished candidates, and who decides
+
+- For a hero, a brand-defining surface or any taste-bearing choice, show four
+  or five **finished** candidates and let the user choose; the maker still
+  decides every non-taste question (layout, rhythm, spacing, overflow)
+  without asking. This overrides the "never ask which direction" line above
+  for those surfaces, and the coordinator checks the renders before handing
+  them over.
+- A candidate is a filled first viewport: nav, a real visual, proof and one
+  primary, no dead band. A schema or wireframe without its visual, or a layout
+  variation of one object, is not a candidate.
+- A hand-drawn organic figure (a heart) that does not read at 1:1 is replaced
+  by a photograph or a prepared asset; a candidate is never presented before
+  its render has been read at 1:1.
+
 ## 4. Content-first density
 
 Write the copy before the grid. The number a screen claims is the number it

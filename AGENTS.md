@@ -66,7 +66,9 @@ docker exec penpot-penpot-postgres-1 pg_dump -U penpot penpot > ~/penpot-$(date 
   directions (mechanism + "refuses" clause each), build only the chosen one.
 - **Hero candidates are objects, not layouts.** A dispatch asks for different
   "this page is a ___" objects (cover, algorithm, plate, map, poster), never
-  "different compositions"; layouts of one object are one candidate.
+  "different compositions"; layouts of one object are one candidate. For a
+  taste-bearing hero, present 4–5 finished first viewports and let the user
+  choose; the maker decides the rest.
 - **No screens before a direction.** Sketch on a scratch page, one-sentence pick.
 - **A decision not in a file does not exist.** Record in
   `design/<project>/brief.md` (+ stance in `principles.md`).
