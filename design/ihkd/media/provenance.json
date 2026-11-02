@@ -1,0 +1,164 @@
+{
+  "img-echo": {
+    "board": "01-ana-sayfa",
+    "page": "Kurumsal",
+    "source": "https://images.pexels.com/photos/6129683/pexels-photo-6129683.jpeg",
+    "credit": "https://www.pexels.com/photo/6129683/ by RDNE Stock project"
+  },
+  "img-journal": {
+    "board": "01-ana-sayfa",
+    "page": "Kurumsal",
+    "source": "https://images.pexels.com/photos/3860983/pexels-photo-3860983.jpeg",
+    "credit": "https://www.pexels.com/photo/3860983/ by Robert Munteanu"
+  },
+  "img-cath": {
+    "board": "05-grup-detay",
+    "page": "Kurumsal",
+    "source": "https://images.pexels.com/photos/28583897/pexels-photo-28583897.jpeg",
+    "credit": "https://www.pexels.com/photo/28583897/ by محمد عزام الشيخ يوسف"
+  },
+  "img-hall": {
+    "board": "06-kongre",
+    "page": "Kongre",
+    "source": "https://images.pexels.com/photos/9275222/pexels-photo-9275222.jpeg",
+    "credit": "https://www.pexels.com/photo/9275222/ by Atlantic Ambience"
+  },
+  "img-corridor": {
+    "board": "10-konaklama",
+    "page": "Kongre",
+    "source": "https://images.pexels.com/photos/37770089/pexels-photo-37770089.jpeg",
+    "credit": "https://www.pexels.com/photo/37770089/ by Svet Svet"
+  },
+  "img-venue": {
+    "board": "10-konaklama",
+    "page": "Kongre",
+    "source": "https://images.pexels.com/photos/35877127/pexels-photo-35877127.jpeg",
+    "credit": "https://www.pexels.com/photo/35877127/ by Mark Stebnicki"
+  },
+  "img-seminar": {
+    "board": "11-akademi",
+    "page": "Akademi",
+    "source": "https://images.pexels.com/photos/1170979/pexels-photo-1170979.jpeg",
+    "credit": "https://www.pexels.com/photo/1170979/ by EVG Kowalievska"
+  },
+  "img-desk": {
+    "board": "13-kilavuzlar",
+    "page": "Akademi",
+    "source": "https://images.pexels.com/photos/35044388/pexels-photo-35044388.jpeg",
+    "credit": "https://www.pexels.com/photo/35044388/ by Marta Branco"
+  },
+  "img-issue": {
+    "board": "14-dergi",
+    "page": "Akademi",
+    "source": "https://images.pexels.com/photos/3860983/pexels-photo-3860983.jpeg",
+    "credit": "https://www.pexels.com/photo/3860983/ by Robert Munteanu"
+  },
+  "img-round": {
+    "board": "15-haberler",
+    "page": "İçerik",
+    "source": "https://images.pexels.com/photos/6129043/pexels-photo-6129043.jpeg",
+    "credit": "https://www.pexels.com/photo/6129043/ by RDNE Stock project"
+  },
+  "img-team": {
+    "board": "16-makale",
+    "page": "İçerik",
+    "source": "https://images.pexels.com/photos/20370745/pexels-photo-20370745.jpeg",
+    "credit": "https://www.pexels.com/photo/20370745/ by Michael Obiero"
+  },
+  "img-auth": {
+    "board": "19-giris",
+    "page": "Üyelik",
+    "source": "https://images.pexels.com/photos/8460227/pexels-photo-8460227.jpeg",
+    "credit": "https://www.pexels.com/photo/8460227/ by Los Muertos Crew"
+  },
+  "img-lab": {
+    "board": "12-kurs-detay",
+    "page": "Akademi",
+    "source": "https://images.pexels.com/photos/7659573/pexels-photo-7659573.jpeg",
+    "credit": "https://www.pexels.com/photo/7659573/ by Thirdman"
+  },
+  "img-cath@05-grup-detay": {
+    "board": "05-grup-detay",
+    "page": "Kurumsal",
+    "source": "https://images.pexels.com/photos/28583897/pexels-photo-28583897.jpeg",
+    "credit": "https://www.pexels.com/photo/28583897/ by محمد عزام الشيخ يوسف"
+  },
+  "img-cath@06-kongre": {
+    "board": "06-kongre",
+    "page": "Kongre",
+    "source": "https://images.pexels.com/photos/28583897/pexels-photo-28583897.jpeg",
+    "credit": "https://www.pexels.com/photo/28583897/ by محمد عزام الشيخ يوسف"
+  },
+  "img-echo@01-ana-sayfa": {
+    "board": "01-ana-sayfa",
+    "page": "Kurumsal",
+    "source": "https://images.pexels.com/photos/6129683/pexels-photo-6129683.jpeg",
+    "credit": "https://www.pexels.com/photo/6129683/ by RDNE Stock project"
+  },
+  "img-journal@01-ana-sayfa": {
+    "board": "01-ana-sayfa",
+    "page": "Kurumsal",
+    "source": "https://images.pexels.com/photos/3860983/pexels-photo-3860983.jpeg",
+    "credit": "https://www.pexels.com/photo/3860983/ by Robert Munteanu"
+  },
+  "img-auth@19-giris": {
+    "board": "19-giris",
+    "page": "Üyelik",
+    "source": "https://images.pexels.com/photos/8460227/pexels-photo-8460227.jpeg",
+    "credit": "https://www.pexels.com/photo/8460227/ by Los Muertos Crew"
+  },
+  "img-round@15-haberler": {
+    "board": "15-haberler",
+    "page": "İçerik",
+    "source": "https://images.pexels.com/photos/6129043/pexels-photo-6129043.jpeg",
+    "credit": "https://www.pexels.com/photo/6129043/ by RDNE Stock project"
+  },
+  "img-hall@06-kongre": {
+    "board": "06-kongre",
+    "page": "Kongre",
+    "source": "https://images.pexels.com/photos/9275222/pexels-photo-9275222.jpeg",
+    "credit": "https://www.pexels.com/photo/9275222/ by Atlantic Ambience"
+  },
+  "img-desk@13-kilavuzlar": {
+    "board": "13-kilavuzlar",
+    "page": "Akademi",
+    "source": "https://images.pexels.com/photos/35044388/pexels-photo-35044388.jpeg",
+    "credit": "https://www.pexels.com/photo/35044388/ by Marta Branco"
+  },
+  "img-issue@14-dergi": {
+    "board": "14-dergi",
+    "page": "Akademi",
+    "source": "https://images.pexels.com/photos/3860983/pexels-photo-3860983.jpeg",
+    "credit": "https://www.pexels.com/photo/3860983/ by Robert Munteanu"
+  },
+  "img-corridor@10-konaklama": {
+    "board": "10-konaklama",
+    "page": "Kongre",
+    "source": "https://images.pexels.com/photos/37770089/pexels-photo-37770089.jpeg",
+    "credit": "https://www.pexels.com/photo/37770089/ by Svet Svet"
+  },
+  "img-seminar@11-akademi": {
+    "board": "11-akademi",
+    "page": "Akademi",
+    "source": "https://images.pexels.com/photos/1170979/pexels-photo-1170979.jpeg",
+    "credit": "https://www.pexels.com/photo/1170979/ by EVG Kowalievska"
+  },
+  "img-team@16-makale": {
+    "board": "16-makale",
+    "page": "İçerik",
+    "source": "https://images.pexels.com/photos/20370745/pexels-photo-20370745.jpeg",
+    "credit": "https://www.pexels.com/photo/20370745/ by Michael Obiero"
+  },
+  "img-venue@10-konaklama": {
+    "board": "10-konaklama",
+    "page": "Kongre",
+    "source": "https://images.pexels.com/photos/35877127/pexels-photo-35877127.jpeg",
+    "credit": "https://www.pexels.com/photo/35877127/ by Mark Stebnicki"
+  },
+  "img-lab@12-kurs-detay": {
+    "board": "12-kurs-detay",
+    "page": "Akademi",
+    "source": "https://images.pexels.com/photos/7659573/pexels-photo-7659573.jpeg",
+    "credit": "https://www.pexels.com/photo/7659573/ by Thirdman"
+  }
+}
