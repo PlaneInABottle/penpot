@@ -74,6 +74,25 @@ drop while its interactions remain — audit `page.flows` and repair with `creat
 Run the protocol below on every screen claimed as finished — a written board is inferred,
 not done — then hand off.
 
+## One system per project, not one palette
+
+A new project inside an existing workspace is the highest-risk case for sameness: the
+previous `lib.js`, section blocks and page rhythm are right there to copy. Reusing the
+primitive library reuses the grammar, and a new accent colour on old primitives produces
+the old page.
+
+Before the first screen, write down four structural axes and make them differ:
+
+1. **Surface** — light / dark / tinted, and what the text colour is.
+2. **Density** — the section rhythm and the data-row height in px.
+3. **Navigation model** — masthead, rail, status bar, or none.
+4. **One element that exists only in this product** — a numeral spine, a viewer chrome,
+   a schedule gutter. If it can be removed without loss, it is decoration.
+
+Then write a new `lib.js` from those axes. Do not import the previous project's atoms.
+Thumbnail test before building 20 screens: at 200px wide, the home page must not be
+mistakable for the previous project. If it is, change an axis, not the accent.
+
 ## Design rules
 
 1. **One set per brand area, active, reused.** A second palette is a theme, not a second
@@ -91,9 +110,101 @@ not done — then hand off.
    library is file-scoped, so deleting a page leaves its sets behind.
 8. **Content is real.** Real strings, real dates, real prices; no lorem ipsum and no
    placeholder that a reviewer would mistake for copy.
+   When the direction changes, grep the old vocabulary project-wide BEFORE freezing the
+   new scope — frozen leftovers contradict the new story. Sync every changed string back
+   into brief §5 (as-built conformance), or the brief stops being the source of truth and
+   the next milestone re-introduces the old words.
 9. **States are part of the screen.** Hover, disabled, empty and error states are designed
    where they are reachable, not invented later in code.
 10. **Prove with a render.** A token binding is intent; the exported image is evidence.
+
+## Origins are never zero (boards, slots, shapes)
+
+Shape coords are page-absolute even inside a board, so any placer that takes
+board-local numbers must add `board.x/board.y` before assigning. A photo that renders
+exactly one board-height too high is this bug, not a bad crop. Prefer reading live
+slot geometry (already absolute) over passing numbers in.
+
+## Grid is code, not documentation
+
+Incident (İHKD 01, Oct 2026): the hero photo was written as x=800 w=640 on a 1440 board,
+so it ended at 1440 — the board edge — instead of the 1320 content edge. Lint was clean
+(overflow only fires past the *board*), QA was clean, the page-scale render looked almost
+right. A 120px asymmetry survived every gate because the grid lived only in prose.
+
+- Derive, don't decorate. Every content x/w comes from the grid constants (X, CW):
+  a right-aligned block is `x = X + CW - w`, a half is `(CW - gap) / 2`. A literal that
+  was hand-added to "reach the edge" is a defect until proven otherwise.
+- Declared bleeds. Each screen lists the shapes allowed to touch the board edge
+  (x=0, w=board width) — bands, bleeds, footers. Anything else must satisfy
+  X <= x and x + w <= X + CW. An undeclared edge-touch is a finding, not a style.
+- Audit from geometry, not eyes. `design_lint.py --page <p> --json` already collects
+  x/y/w/h per node; assert the grid edges from that file with a ten-line check. Eyeballing
+  a page-scale render is how the 120px survived — it is not a verification method.
+- 1:1 the margins. The four verification crops gain a fifth: left/right margin symmetry
+  at the hero and at one dense section. Asymmetry hides at page scale and nowhere else.
+
+## Media and rhythm (generic)
+
+- **Rebuilds wipe photos; reimport every slot on the board, not just the touched
+  one.** `build` clears all children including placed images, so a milestone that
+  rebuilds for slot A and re-imports only slot A silently deletes slot B (İHKD 01:
+  hero rebuild restored img-echo, img-journal stayed an empty mat through green
+  lint+QA — token coverage counts the placeholder's bound fill, so gates can't see
+  it). After ANY rebuild, re-import ALL slots of that board and prove each with
+  `media-audit --live` (photo placed, not merely slot present) plus a 1:1 look.
+- **A photo replaces its slot, never covers it.** Name every image slot, import by that
+  name, and delete the placeholder rect in the placing call. Before/after the import the
+  board holds exactly one shape under that name. A render showing an empty mat next to
+  (or under) a photo is a finding, not a style.
+- **Slots are measured, not assumed.** Read the slot's committed `width`/`height` in the
+  call before the import and crop to that aspect; re-cropping to a guessed size is how a
+  face ends up behind a caption. Cropping to the slot is allowed to change — cropping to
+  a stale number is not.
+- **Copy edits re-budget geometry.** A headline that gains width or loses a line
+  invalidates every neighbor clearance the old copy had — re-measure ink against
+  adjacent shapes instead of trusting the old box (İHKD 01: one-line hero slid 14px
+  under its photo). The text-over-shape lint check exists for exactly this; a new flag
+  after a copy edit means the layout moved, not that the rule is noisy.
+  Line-count changes cascade: body text in auto-height boxes absorbs the new copy,
+  but followers at fixed y do NOT move — a shortened paragraph leaves a dead void
+  (İHKD 19: 2-line claim became 1 line, body stayed, 170px gap), a lengthened one
+  overlaps (the text-overlap lint catches that direction). After any copy swap,
+  re-run the rhythm audit on the touched boards and read the section, not just the
+  edited line.
+- **1:1 the joint, not the element.** A crop centered on a headline proves the headline;
+  the defect lives where two things meet. Frame verification crops on boundaries:
+  text/photo edges, row/meta joints, panel/footer seams.
+- **Rows align from one shared top, never three hand-tuned offsets.** A meta+title
+  row (date, category, headline) tempts three different y values that "look aligned";
+  they never are, because each size carries its own ink offset (İHKD 01 gündem: three
+  offsets, all wrong). Start every box in the row at the SAME y, then nudge the small
+  text as a group from a 2x crop until ink tops agree within 2px (max two rounds, keep
+  the best). The `inline mixed-size pair` lint flags exactly this pattern — clear the
+  flag instead of explaining it.
+- **One line, one box — or computed baselines.** A value+unit line faked with two
+  top-aligned boxes at different sizes always drifts, because box tops are not
+  baselines and nobody measures the joint. Either use a single text node, stack the
+  parts vertically (value over unit label — no baseline math, looks deliberate), or
+  compute both baselines from committed `textBounds` in a later call and nudge. The
+  lint rule `inline mixed-size pair` flags every top-aligned mixed-size adjacency for
+  a 1:1 baseline read; a flag is a review pointer, not a failure.
+- **Footers dock to content, panels are sums not slabs.** A footer sits at
+  last-content-bottom + section rhythm; a board ends at footer + footer height. A
+  hardcoded footer y survives every layout change above it and leaves a dead canvas
+  void (İHKD 04: 556px of nothing). After any block move, recompute both numbers and
+  confirm with the rhythm audit — a trailing void is a finding, never air.
+- **Stale renders lie.** Never open a PNG older than the last build that touched its
+  board — check mtime first. Reviewing yesterday's export as today's state invents
+  defects and hides real ones.
+- **Panels are sums, not slabs.** A panel's height is paddings plus its stacked
+  content; after any content move, recompute it. A panel with a dead middle third is
+  a recompose signal, not whitespace.
+- **Rhythm is declared, then audited.** The brief states the section rhythm in px (and
+  the data-row height). After the build, list every board's top-level y-gaps from the
+  lint `--json` geometry: gaps cluster at the rhythm, and any gap beyond 2× the rhythm
+  needs a reason written in the brief, not a shrug. Margin symmetry (left vs right at
+  the hero) is checked at 1:1, never at page scale.
 
 ## Verification protocol
 
@@ -107,6 +218,9 @@ not done — then hand off.
 - **Geometry is not a render.** Clean coordinates coexist with overlapping bands and
   clipped glyphs; after any layout, measurement or icon change, take the crop again instead
   of trusting the read-back.
+- **Baselines, not boxes.** Any line composed of two text nodes at different sizes gets
+  a 2× crop checking baseline continuity. Eye-measured offsets always drift; the lint
+  geometry cannot see optical alignment, only you can.
 - **Coverage**: run the audit — unexplained hard-coded fills, unnamed shapes, orphan
   components and render mismatches are findings, not noise.
 - **Craft**: measure the render against the thresholds and tells in
