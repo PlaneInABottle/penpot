@@ -654,8 +654,15 @@ const IK = (function () {
    * measured ink. Only boards named "<base> card <i>" are touched (the
    * schedule's session cards): height = ink bottom − card top + pad, up to
    * 4px. The row pitch keeps its estimate, so the air a conservative
-   * estimate leaves behind falls OUTSIDE the card, never inside it (a
-   * 3-line estimate over 2-line ink put 20px of white under one meta).
+   * estimate leaves behind falls OUTSIDE the card, never inside it.
+   *
+   * A card that carries a "<base> title <i>" and a "<base> meta <i>" gets its
+   * meta re-settled on the title's measured ink first: the build places it
+   * from an estimated line count, and a character model cannot tell where a
+   * title wraps, so two one-line titles carried 24px of slack (İHKD 07 sess
+   * card 2/8: 128px card and a 40px joint while the row's cards read 104/16).
+   * The joint is 14 = a 16px ink gap after the 2px ink offset inside the box.
+   * The accent bar keeps its padding when the card shrinks.
    */
   function fitCards(pageName, boardName, pad) {
     const p = page(pageName), gap = pad === undefined ? 14 : pad;
@@ -668,9 +675,31 @@ const IK = (function () {
       if (s.type !== "board" || !/ card \d+$/.test(s.name)) return;
       const texts = (s.children || []).filter((c) => c.type === "text" && c.textBounds && c.textBounds.height);
       if (!texts.length) return;
-      const bottom = Math.max(...texts.map((t) => t.textBounds.y + t.textBounds.height));
+      const title = texts.filter((t) => / title \d+$/.test(t.name))[0];
+      const meta = texts.filter((t) => / meta \d+$/.test(t.name))[0];
+      let metaBottom = 0;
+      if (title && meta) {
+        const want = Math.round((title.textBounds.y + title.textBounds.height + 14) / 4) * 4;
+        if (Math.abs(meta.y - want) > 1) {
+          const offset = meta.textBounds.y - meta.y;   // ink offset inside the box
+          const mh = meta.textBounds.height;
+          meta.y = want;
+          metaBottom = want + offset + mh;
+          n++;
+        }
+      }
+      const rest = texts.filter((t) => t !== meta);
+      const restBottom = rest.length ? Math.max(...rest.map((t) => t.textBounds.y + t.textBounds.height)) : 0;
+      const movedBottom = metaBottom || (meta ? meta.textBounds.y + meta.textBounds.height : 0);
+      const bottom = Math.max(restBottom, movedBottom);
       const h = Math.ceil((bottom - s.y + gap) / 4) * 4;
-      if (Math.abs(s.height - h) > 1) { s.resize(s.width, h); n++; }
+      if (Math.abs(s.height - h) > 1) {
+        const dh = s.height - h;
+        (s.children || []).filter((c) => c.type === "rectangle" && / bar \d+$/.test(c.name))
+          .forEach((b) => { if (b.height - dh > 8) b.resize(b.width, b.height - dh); });
+        s.resize(s.width, h);
+        n++;
+      }
     };
     roots.forEach(walk);
     return n;
@@ -681,7 +710,7 @@ const IK = (function () {
   }
 
   /** Bumped when this file changes: build.py re-sends it only on a mismatch. */
-  const VERSION = "1.2.1";
+  const VERSION = "1.2.2";
 
   return {
     SET, W, X, CW, ROLE, FONT, warnings, gaps, VERSION, HELPERS: H.version,

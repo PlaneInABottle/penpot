@@ -1,0 +1,65 @@
+{
+ "board": "07-program-loading",
+ "source": "07-program-loading.png",
+ "image": {
+  "w": 1440,
+  "h": 1300
+ },
+ "tile": {
+  "w": 1440,
+  "h": 900,
+  "overlap": 0.1
+ },
+ "tiles": [
+  {
+   "file": "tile-01.png",
+   "x0": 0,
+   "y0": 0,
+   "x1": 1440,
+   "y1": 900,
+   "reviewed": true,
+   "note": "Loading state at 1:1: header, day tabs with 22 Nisan active (red), hall chips, table head, skeleton rows; the p note reads 'program yükleniyor'."
+  },
+  {
+   "file": "tile-02.png",
+   "x0": 0,
+   "y0": 400,
+   "x1": 1440,
+   "y1": 1300,
+   "reviewed": true,
+   "note": "Skeleton grid 8 rows x 4 halls (surface.alt blocks) + footer note 'Oturumlar yükleniyor; gün sekmeleri ve salon filtresi hazır.'; time-gutter placeholders stay ticks, no text clipped."
+  }
+ ],
+ "regions": [
+  {
+   "file": "region-smallest-text.png",
+   "subject": "masthead sub",
+   "x": 200,
+   "y": 455,
+   "w": 163,
+   "h": 65,
+   "reviewed": true,
+   "note": "13px table head ('SAAT', 'SALON A-D') at 1:1: ink.500 on paper, crisp."
+  },
+  {
+   "file": "region-densest.png",
+   "subject": "358 texts near x=120",
+   "x": 96,
+   "y": 424,
+   "w": 768,
+   "h": 948,
+   "reviewed": true,
+   "note": "Skeleton block field: uniform 4px-grid blocks, no stray shapes between halls."
+  },
+  {
+   "file": "region-primary-action.png",
+   "subject": "masthead cta / label",
+   "x": 1206,
+   "y": 449,
+   "w": 91,
+   "h": 67,
+   "reviewed": true,
+   "note": "Crop is blank (paper + a hairline): the picked shape is the nested nav 'masthead cta' and the tool's region frame missed it. The nav CTA was read in tile-01 (top right, saturated); re-cut after the tool fix."
+  }
+ ]
+}

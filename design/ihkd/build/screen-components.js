@@ -4,20 +4,27 @@
  *   python3 design/ihkd/build/build.py screen-components
  *
  * Her tahta gerçek bir Penpot kütüphane bileşenidir (`penpot.library.local
- * .createComponent`), adı `aile/durum` şemasındadır:
- *   button/primary · button/primary-hover · field/error · chip/active · tag …
- * Varsayılan durum yalnız varyant adını taşır (`button/primary`), etkileşim
- * durumları `-durum` ile eklenir: adın içine ikinci bir `/` koymak Penpot'un
- * path'ini bozar (bilinen hata: `nav/top` ataması `nav / nav`a dönüşür).
+ * .createComponent`), adı `aile-durum` şemasındadır:
+ *   button-primary · button-primary-hover · field-error · chip-active · tag …
+ * Varsayılan durum yalnız taban adını taşır (`button-primary`), etkileşim
+ * durumları `-durum` ile eklenir.
+ *
+ * NEDEN TİRE, EĞİK ÇİZGİ DEĞİL (2026-11-03, canlı): Penpot bir tahta/bileşen
+ * adındaki `/` karakterini path ayırıcısı sayıp adı `button / primary`ya
+ * normalize ediyor (bilinen `nav/top` → `nav / nav` hatası). İlk build'de 30
+ * tahtanın 15'i (`button/*`) bu yüzden bileşene dönüşmedi: script adı
+ * `button/primary` ile aradı, tahta `button / primary` adıyla duruyordu ve
+ * eşleşme sessizce boş döndü. Aile kimliği artık ön ekte taşınır
+ * (`button-`, `field-`, `row-`, `chip-`); eski normalize adlı tahtalar build
+ * başında temizlenir.
  *
  * KİMLİK KORUNUR: ekranlar bu bileşenleri HENÜZ KULLANMAZ (instance'a geçmek
  * kırıcı bir değişiklik; sonraki iş). Bu sayfa tasarımcı devri için kütüphanedir.
  *
  * Yeniden çalıştırma kayıpsızdır: tahtalar adla bulunur, çocukları temizlenip
  * yeniden çizilir; bileşen yalnız eksikse yaratılır (kütüphanede adı varsa
- * ikinci bir kopya açılmaz). async commit yüzünden ilk çağrıda bileşen
- * yaratılamayan tahta ikinci çalıştırmada tamamlanır — bu yüzden build
- * sonrası komut iki kez koşulur (QUEUE.md).
+ * ikinci bir kopya açılmaz). async commit yüzden ilk çağrıda bileşen
+ * yaratılamayan tahta ikinci çalıştırmada tamamlanır.
  */
 const S = IK;
 
@@ -38,6 +45,19 @@ if (!sheet) {
 sheet.x = 0;
 sheet.y = 0;
 sheet.resize(1440, 2400);
+
+/* The 2026-11-03 first run left 15 slot boards + their captions whose names
+   Penpot normalised to "button / primary". They are this script's own
+   leftovers, not design: drop anything on the sheet that still carries the
+   path separator before the re-layout. */
+(sheet.children || []).filter((c) => c.name.indexOf("/") >= 0).forEach((c) => c.remove());
+
+/* The sheet is authored here and never cleared by S.start: labels, rules and
+   captions are re-created on every run, so a second run doubled them (16 high
+   text.overlap findings). Drop every non-board child; the slot boards stay,
+   because the 30 library components are their main instances. */
+(sheet.children || []).filter((c) => c.type !== "board").forEach((c) => c.remove());
+
 
 /* --------------------------------------------------------------- tahta yerleşimi */
 /** Adla bul-veya-yarat, çocukları temizle, boyut/konum yaz (idempotent). */
@@ -71,8 +91,11 @@ const BTN = {
 function buttonStyle(spec, state) {
   const s = { fill: spec.fill, ink: spec.ink, stroke: spec.stroke || null, strokeW: 1 };
   if (state === "hover") s.fill = spec.fill === "white" ? "red.050" : "red.700";
-  if (state === "focus") { s.stroke = spec.stroke === "red.600" ? "red.700" : "red.600"; s.strokeW = 2; }
-  if (state === "active") { s.fill = spec.fill === "white" ? "red.050" : "red.700"; s.stroke = spec.stroke || "red.600"; s.strokeW = 2; }
+  /* A focus ring on the saturated primary must be white: red.600 on red.600
+     painted nothing and the focus variant read identical to default (1:1
+     sheet check, 2026-11-03). Ghost/secondary keep the red ring. */
+  if (state === "focus") { s.stroke = spec.fill === "red.600" ? "on.red" : (spec.stroke === "red.600" ? "red.700" : "red.600"); s.strokeW = 2; }
+  if (state === "active") { s.fill = spec.fill === "white" ? "red.050" : "red.700"; s.stroke = spec.stroke || (spec.fill === "red.600" ? "on.red" : "red.600"); s.strokeW = 2; }
   if (state === "disabled") { s.fill = "surface.alt"; s.ink = "ink.400"; s.stroke = "line.soft"; s.strokeW = 1; }
   return s;
 }
@@ -155,9 +178,9 @@ function drawStat(b, x, y) {
 
 /* ------------------------------------------------------------------- aileler */
 const FAMILIES = [
-  { base: "button/primary", w: 240, h: 52, states: STATES, draw: drawButton("primary") },
-  { base: "button/secondary", w: 240, h: 52, states: STATES, draw: drawButton("secondary") },
-  { base: "button/ghost", w: 240, h: 52, states: STATES, draw: drawButton("ghost") },
+  { base: "button-primary", w: 240, h: 52, states: STATES, draw: drawButton("primary") },
+  { base: "button-secondary", w: 240, h: 52, states: STATES, draw: drawButton("secondary") },
+  { base: "button-ghost", w: 240, h: 52, states: STATES, draw: drawButton("ghost") },
   { base: "field", w: 320, h: 104, states: ["default", "hover", "focus", "error", "disabled"], draw: drawField },
   { base: "row", w: 320, h: 84, states: ["default", "hover", "focus"], draw: drawRow },
   { base: "chip", w: 160, h: 44, states: ["default", "hover", "active", "disabled"], draw: drawChip },
@@ -170,7 +193,7 @@ const FAMILIES = [
 S.text(sheet, "sheet label", "BİLEŞEN KİTAPLIĞI · İHKD", "label", "ink.500", { x: 40, y: 64 });
 S.text(sheet, "sheet title", "Bileşen kitaplığı", "display", "ink.900", { x: 40, y: 88, w: 900 });
 S.text(sheet, "sheet lede",
-  "Dokuz aile, durum varyantlarıyla. Her tahta bir kütüphane bileşenidir; ad `aile/durum` şemasını izler.",
+  "Dokuz aile, durum varyantlarıyla. Her tahta bir kütüphane bileşenidir; ad `aile-durum` şemasını izler.",
   "body", "ink.600", { x: 40, y: 190, w: 760 });
 S.rule(sheet, "sheet rule", 40, 288, 1360, "line.strong", 2);
 

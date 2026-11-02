@@ -4,7 +4,7 @@
 const S = IK;
 const pb = S.start("Kongre", "09-kayit", 2000);
 
-S.masthead(pb, "Kongre");
+S.masthead(pb, "Kongre", { cta: "ghost" });  /* the page's one primary is "Kaydı tamamla" (ux_gate counts saturated CTAs) */
 S.pageHead(pb, "KAYIT", "Kayıt ve ücretler",
   "Erken kayıt 31 Ocak 2027'de kapanır. Ücretler kişi başı ve KDV dahildir.",
   { w: 900, ledeW: 760 });

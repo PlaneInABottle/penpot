@@ -1,0 +1,65 @@
+{
+ "board": "09-kayit-hata",
+ "source": "09-kayit-hata.png",
+ "image": {
+  "w": 1440,
+  "h": 1104
+ },
+ "tile": {
+  "w": 1440,
+  "h": 900,
+  "overlap": 0.1
+ },
+ "tiles": [
+  {
+   "file": "tile-01.png",
+   "x0": 0,
+   "y0": 0,
+   "x1": 1440,
+   "y1": 900,
+   "reviewed": true,
+   "note": "Error state at 1:1: red.100 summary band with red.700 text, form card with two red fields (label + line + hint), chips with one active; nav CTA is now a ghost so 'Kaydı tamamla' is the board's one saturated primary."
+  },
+  {
+   "file": "tile-02.png",
+   "x0": 0,
+   "y0": 204,
+   "x1": 1440,
+   "y1": 1104,
+   "reviewed": true,
+   "note": "Action row: 'Kaydı tamamla' primary + 'Taslak kaydet' secondary, KVKK row, footer error note; nothing clipped."
+  }
+ ],
+ "regions": [
+  {
+   "file": "region-smallest-text.png",
+   "subject": "masthead sub",
+   "x": 200,
+   "y": 455,
+   "w": 163,
+   "h": 65,
+   "reviewed": true,
+   "note": "13px form labels at 1:1 (ink.500 on white, 5.56:1) and the red error hint (red.700 on white, 8.42:1)."
+  },
+  {
+   "file": "region-densest.png",
+   "subject": "358 texts near x=120",
+   "x": 96,
+   "y": 424,
+   "w": 768,
+   "h": 948,
+   "reviewed": true,
+   "note": "Form card: two columns, 4px rhythm, error lines land on the field rules."
+  },
+  {
+   "file": "region-primary-action.png",
+   "subject": "masthead cta / label",
+   "x": 1206,
+   "y": 449,
+   "w": 91,
+   "h": 67,
+   "reviewed": true,
+   "note": "Crop is blank: the picked nav 'masthead cta' frame missed its target (crop tool off-origin bug). The nav CTA is a ghost now and was read in tile-01; 'Kaydı tamamla' is the real primary, read in tile-02. Re-cut after the tool fix."
+  }
+ ]
+}

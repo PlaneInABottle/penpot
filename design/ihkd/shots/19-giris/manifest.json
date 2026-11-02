@@ -1,0 +1,92 @@
+{
+ "board": "19-giris",
+ "source": "19-giris.png",
+ "image": {
+  "w": 1440,
+  "h": 1024
+ },
+ "tile": {
+  "w": 1440,
+  "h": 900,
+  "overlap": 0.1
+ },
+ "tiles": [
+  {
+   "file": "tile-01.png",
+   "x0": 0,
+   "y0": 0,
+   "x1": 1440,
+   "y1": 900,
+   "reviewed": true,
+   "note": "Split 720/720 login at 1:1: red panel (Hekimin evi., al body .88), img-auth photo 576x240 with 8px radius sitting above the panel and below the caption, right form with field error state; no clipping, photo stacking correct after the media order fix."
+  },
+  {
+   "file": "tile-02.png",
+   "x0": 0,
+   "y0": 124,
+   "x1": 1440,
+   "y1": 1024,
+   "reviewed": true,
+   "note": "Second tile (10% overlap): 'Giriş yap' primary, e-Devlet secondary, footer note; al foot '© 1998'den beri · Ankara · KVKK' now opaque white on red.600 (6.04:1) and unclipped."
+  }
+ ],
+ "regions": [
+  {
+   "file": "region-smallest-text.png",
+   "subject": "al sub",
+   "x": 48,
+   "y": 79,
+   "w": 137,
+   "h": 65,
+   "reviewed": true,
+   "note": "Heuristic picked 'ÜYE MASASI' (13px label, on.red, now opaque): crisp, 6.04:1."
+  },
+  {
+   "file": "region-densest.png",
+   "subject": "6 texts near x=72",
+   "x": 48,
+   "y": 15,
+   "w": 768,
+   "h": 948,
+   "reviewed": true,
+   "note": "Densest window: brand block + al body (22px, opacity .88 kept) + caption + foot; the two fixed 13px lines read full white against red, the 22px lead stays slightly softer (4.88:1, AA normal text)."
+  },
+  {
+   "file": "region-primary-action.png",
+   "subject": "f join cta",
+   "x": 916,
+   "y": 877,
+   "w": 109,
+   "h": 64,
+   "reviewed": true,
+   "note": "Heuristic picked the 'Başvuru →' link, not the saturated 'Giriş yap': the real primary is in tile-01. Same crop-tool heuristic weakness as 01."
+  },
+  {
+   "file": "region-al-sub.png",
+   "x": 60,
+   "y": 92,
+   "w": 320,
+   "h": 40,
+   "reviewed": true,
+   "note": "'ÜYE MASASI' 13px at 1:1 after the fix: opaque white on red.600, no antialias fringe below the 4.5 threshold."
+  },
+  {
+   "file": "region-al-caption-foot.png",
+   "x": 60,
+   "y": 840,
+   "w": 580,
+   "h": 130,
+   "reviewed": true,
+   "note": "Caption 'Kardiyoloji monitörü, hastane' and foot '© 1998'den beri · Ankara · KVKK' at 1:1: both opaque, 6.04:1, 72px apart as the panel's dock."
+  },
+  {
+   "file": "region-al-sub-2x.png",
+   "x": 66,
+   "y": 98,
+   "w": 234,
+   "h": 28,
+   "reviewed": true,
+   "note": "2x: 13px tracked mono strokes crisp, no overlap with the İHKD mark above."
+  }
+ ]
+}

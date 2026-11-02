@@ -13,7 +13,7 @@ S.btn(pb, "p cta", "Kongreye kayıt ol", 1044, 64, 276, 52, "secondary");
 
 /* ---------------------------------------------------------------- üyelik kartı */
 const card = S.board(pb, "member card", 300, 196, 520, 300, "red.600");
-S.text(card, "mc label", "İHKD ÜYE KARTI", "label", "on.red", { x: 332, y: 228, opacity: 0.72 });
+S.text(card, "mc label", "İHKD ÜYE KARTI", "label", "on.red", { x: 332, y: 228 });
 S.text(card, "mc name", "Dr. Selin Aydın", "h3", "on.red", { x: 332, y: 262, w: 300 });
 S.text(card, "mc no", "İHKD-24817", "dataLg", "on.red", { x: 332, y: 310 });
 S.text(card, "mc group", "Kardiyoloji · Kalp yetersizliği grubu", "meta", "on.red", { x: 332, y: 344, w: 290, opacity: 0.88 });

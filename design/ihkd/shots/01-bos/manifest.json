@@ -1,0 +1,56 @@
+{
+ "board": "01-bos",
+ "source": "01-bos.png",
+ "image": {
+  "w": 1440,
+  "h": 592
+ },
+ "tile": {
+  "w": 1440,
+  "h": 900,
+  "overlap": 0.1
+ },
+ "tiles": [
+  {
+   "file": "tile-01.png",
+   "x0": 0,
+   "y0": 0,
+   "x1": 1440,
+   "y1": 592,
+   "reviewed": true,
+   "note": "Empty state at 1:1: kicker, white card 1200x320, 80px display 'Bu hafta gündem yok.', lead, red link 'Arşivi aç →', meta, note. One action and it is a link - no saturated button on the board."
+  }
+ ],
+ "regions": [
+  {
+   "file": "region-smallest-text.png",
+   "subject": "masthead sub",
+   "x": 200,
+   "y": 455,
+   "w": 163,
+   "h": 65,
+   "reviewed": true,
+   "note": "13px label ('GÜNDEM · BU HAFTA' / 'YAYIMLANMIŞ GÜNDEM YOK') at 1:1: ink.500 on paper (5.04:1), no clipping."
+  },
+  {
+   "file": "region-densest.png",
+   "subject": "395 texts near x=120",
+   "x": 96,
+   "y": 424,
+   "w": 768,
+   "h": 948,
+   "reviewed": true,
+   "note": "Card text block: display + lead + link share the card without collisions; the lead wraps at 2 lines as designed."
+  },
+  {
+   "file": "region-primary-action.png",
+   "subject": "masthead cta / label",
+   "x": 1206,
+   "y": 449,
+   "w": 91,
+   "h": 67,
+   "reviewed": true,
+   "note": "Crop is mis-framed by the crop tool's off-origin bug: it shows the neighbouring meta 'Son yayım 4 Mart 2027.' instead of the picked 'empty cta'. The CTA (a red link, 'Arşivi aç →') was read in tile-01; this region adds no new evidence and must be re-cut after the tool fix."
+  }
+ ]
+}

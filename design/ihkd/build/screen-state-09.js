@@ -10,7 +10,7 @@
 const S = IK;
 const pb = S.start("Kongre", "09-kayit-hata", 1100);
 
-S.masthead(pb, "Kongre");
+S.masthead(pb, "Kongre", { cta: "ghost" });  /* matches 09-kayit: the form action is the board s one primary */
 S.text(pb, "p label", "KAYIT", "label", "ink.500", { x: 120, y: 156 });
 S.text(pb, "p title", "Kayıt formu", "h2", "ink.900", { x: 120, y: 188 });
 S.text(pb, "p note", "Adım 2 / 4 · katılımcı bilgileri", "meta", "ink.500",

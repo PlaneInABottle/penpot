@@ -46,6 +46,26 @@
         {"pattern": "sess title", "count": 19, "label": "22 Nisan oturumları"},
         {"pattern": "day [0-9]", "count": 5, "label": "gün sekmeleri"}
       ]
+    },
+    {
+      "board": "09-kayit",
+      "page": "Kongre",
+      "task": "Katılımcı kongre ücretini ve koşullarını görür, kaydını tamamlar.",
+      "primaryCta": "k cta",
+      "story": {
+        "hook": "ph label + ph title: Kayıt ve ücretler",
+        "proof": "fee name 0-4: beş ücret satırı, üç sütun (erken / standart / geç), üye rozeti",
+        "path": "fee satırları → group kartı → iptal koşulları (can when 0-2)",
+        "action": "k cta: kaydı tamamla; hatalı gönderimde 09-kayit-hata alanı ve özeti gösterir"
+      },
+      "states": [
+        {"state": "default", "board": "09-kayit"},
+        {"state": "error", "board": "09-kayit-hata"}
+      ],
+      "firstViewport": ["ph title", "fee h 0", "fee name 0", "inc label"],
+      "claims": [
+        {"pattern": "fee name [0-9]", "count": 5, "label": "beş ücret satırı"}
+      ]
     }
   ]
 }

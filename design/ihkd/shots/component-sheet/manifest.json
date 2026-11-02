@@ -1,0 +1,74 @@
+{
+ "board": "component sheet",
+ "source": "component sheet.png",
+ "image": {
+  "w": 1440,
+  "h": 2460
+ },
+ "tile": {
+  "w": 1440,
+  "h": 900,
+  "overlap": 0.1
+ },
+ "tiles": [
+  {
+   "file": "tile-01.png",
+   "x0": 0,
+   "y0": 0,
+   "x1": 1440,
+   "y1": 900,
+   "reviewed": true,
+   "note": "Sheet at 1:1: header + button-primary/secondary families, 5 states each. The primary focus/active states now carry a white (on.red) 2px inner ring; pixel-checked at the card edge (721,354)=(255,255,255) vs interior (196,18,47), so focus no longer reads identical to default."
+  },
+  {
+   "file": "tile-02.png",
+   "x0": 0,
+   "y0": 810,
+   "x1": 1440,
+   "y1": 1710,
+   "reviewed": true,
+   "note": "Ghost family, field (5 states: default/hover/focus/error/disabled), row (3): focus rings visible on white surfaces (red.600/red.700 2px)."
+  },
+  {
+   "file": "tile-03.png",
+   "x0": 0,
+   "y0": 1560,
+   "x1": 1440,
+   "y1": 2460,
+   "reviewed": true,
+   "note": "Chip (default/hover/active/disabled), tag, card, stat: active chip is the saturated fill, disabled is ink.400 on white - states distinguishable."
+  }
+ ],
+ "regions": [
+  {
+   "file": "region-smallest-text.png",
+   "subject": "sheet label",
+   "x": 16,
+   "y": 39,
+   "w": 261,
+   "h": 65,
+   "reviewed": true,
+   "note": "13px captions under each variant at 1:1: crisp, name and state legible."
+  },
+  {
+   "file": "region-densest.png",
+   "subject": "71 texts near x=40",
+   "x": 16,
+   "y": 15,
+   "w": 768,
+   "h": 948,
+   "reviewed": true,
+   "note": "Button grid: 4 columns x 5 rows on the 340px pitch, captions clear of the next family's label."
+  },
+  {
+   "file": "region-primary-action.png",
+   "subject": "family label button-primary",
+   "x": 16,
+   "y": 295,
+   "w": 172,
+   "h": 65,
+   "reviewed": true,
+   "note": "Heuristic picks a button label; on a library sheet every variant is the subject, so this crop is a sampler, not a page CTA."
+  }
+ ]
+}

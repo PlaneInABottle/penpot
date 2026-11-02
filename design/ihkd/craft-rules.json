@@ -1,7 +1,11 @@
 {
   "_why": "The type scale's body/meta pair is 13 -> 16px (1.23). The 1.25 default assumes a prose scale; this project's 13px labels and table meta are a deliberate step. This is the only project deviation: the uppercase ceiling is a lint DEFAULT (0.35), not a rule here.",
   "min_step_ratio": 1.2,
-  "_acknowledge": "A lint finding this project accepts on purpose. Every entry needs a reason and a 1:1 look at the board; it stays in the lint output counted apart, and only the unexplained count is watched. No entry without a reason is honoured.",
+  "_surface": "Surface roles for the tool-side surface audit (F11): white is the card/content sheet, surface.alt the inset/secondary panel. Values copied from tokens.json color.white / color.surface.alt (verified 2026-11-03); craft-rules names them because the audit reads this file, not the token set.",
+  "surface_white": "#FFFFFF",
+  "surface_alt": "#E8EBED",
+  "_acknowledge":
+ "A lint finding this project accepts on purpose. Every entry needs a reason and a 1:1 look at the board; it stays in the lint output counted apart, and only the unexplained count is watched. No entry without a reason is honoured.",
   "acknowledge": [
     {
       "rule": "gap.intra_card",
