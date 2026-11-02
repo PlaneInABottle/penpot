@@ -109,6 +109,9 @@ python3 scripts/crop_board.py --attest shots/<b>/manifest.json
 python3 scripts/export_board.py --board <board> --page <page> --out design/<project>/shots
 python3 scripts/check_contrast.py --file design/<project>/tokens.json --pair fg:bg
 python3 scripts/rhythm.py nodes.json [--rhythm 80]
+python3 scripts/gate.py --pages <p1,p2> [--boards 01,05]   # lint+qa+ux, export+crop only for --boards
+python3 scripts/gate.py stage design/<project>/build/build.py   # the only supported `git add -f design/…`
+python3 scripts/patch_file.py <file> --old-file a.txt --new-file b.txt   # exact block, .bak, syntax check
 ```
 
 - `design_lint.py` owns the **fit family**: text ink must stay inside its
@@ -116,6 +119,11 @@ python3 scripts/rhythm.py nodes.json [--rhythm 80]
   HIGH), accent bars must match their text span (MEDIUM). Thresholds live in
   its `DEFAULTS` (uppercase ceiling 0.25 with the label-UI rationale there);
   `--rules` is a written deviation, not a silent one.
+- `gate.py` runs lint → QA → `ux_gate` per page, export+crop only for `--boards`, one
+  table of per-step seconds; `gate.py stage` is the only `git add -f design/…` path.
+- `build.py` holds `build/.build.lock` (stale after 5 min), polls fit 250 ms up to
+  `--fit-deadline` (20 s) on the built board, **exits 1** when it never settles, and
+  reports a timed-out call against live state instead of retrying (`PENPOT_HTTP_TIMEOUT`, 240 s).
 - `export_board.py` is the only path to an image, one board per call — the
   bulk renderer (`design/<project>/tools/render.py --all`) is unreliable past
   the MCP task limit, so export board-by-board and retry `render.py` per
@@ -133,7 +141,8 @@ python3 scripts/rhythm.py nodes.json [--rhythm 80]
 - The MCP text wraps the plugin return in a second `result` field; unwrap
   before decoding.
 - Tests, one form only: `python3 -m unittest scripts.test_penpot_scripts`
-  (74 cases, no network; the slash form without `.py` does not resolve).
+  and `scripts.test_speed_tools` (no network; the slash form without `.py` does not
+  resolve).
   A visual defect lint missed becomes a failing test, then a rule, then the
   fix — in that order. `python -m py_compile` for `scripts/*.py`,
   `node --check` for helpers/build JS — never cross-check (py_compile on a

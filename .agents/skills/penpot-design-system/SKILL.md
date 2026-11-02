@@ -100,7 +100,9 @@ mistakable for the previous project. If it is, change an axis, not the accent.
 2. **No undeclared value.** A colour, size or gap that a token owns is applied through the
    token; a gap in the scale is reported, not filled with a literal.
 3. **One accent per view.** The accent marks action and time; a second accent means the
-   hierarchy is wrong.
+   hierarchy is wrong. Likewise one saturated primary button per board — every other
+   action is a ghost or a link. Dominance is visual: the gate counts saturated fills,
+   so a white secondary never passes as a second primary.
 4. **Rhythm before detail.** One spacing scale (4/8 based), one radius scale, one type
    scale; hierarchy comes from weight and colour before size.
 5. **Same token names on every rebuild.** A regenerated screen must reconcile, not
@@ -206,10 +208,12 @@ checks; build it right the first time instead.
 - **Scope every reimport with `--only`.** A bare `--board` retargets ALL table slots
   to that board and misfires photos across pages (İHKD: one unscoped call sprayed
   slots; correct form is always `--only a,b --board B --page P --force`).
-- **Slots are measured, not assumed.** Read the slot's committed `width`/`height` in the
+- **Slots are measured, and crops are verified.** Read the slot's committed `width`/`height` in the
   call before the import and crop to that aspect; re-cropping to a guessed size is how a
-  face ends up behind a caption. Cropping to the slot is allowed to change — cropping to
-  a stale number is not.
+  face ends up behind a caption. After placing, open the 1:1 tile and confirm the subject
+  survives the crop (face, hands, equipment — whatever the art direction names). A crop
+  that decapitates the subject is a reshoot, not a shrug. No working notes in canvas
+  captions; provenance lives in the media table, not on the board.
 - **Copy edits re-budget geometry.** A headline that gains width or loses a line
   invalidates every neighbor clearance the old copy had — re-measure ink against
   adjacent shapes instead of trusting the old box (İHKD 01: one-line hero slid 14px
@@ -312,6 +316,11 @@ checks; build it right the first time instead.
   dictionary flags a real word in the wrong place). After any copy-touching
   change, read the diff's string lines one by one: kicker against title,
   numbers against claims, names against the brief.
+- **Edit build scripts with `scripts/patch_file.py`, not by hand.** One exact
+  `--old` block → `--new` (files or stdin), a `.bak` kept, and `py_compile` /
+  `node --check` / `json.load` run before the edit is accepted; a failed check
+  restores the file. Re-reading a 500-line `lib.js` and re-typing its context
+  is what produces a broken edit every dozen tries.
 
 - **Structure**: read back name, size, position, children and token bindings for every
   claimed shape in a later call than the write.

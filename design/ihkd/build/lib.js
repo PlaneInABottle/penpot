@@ -49,8 +49,7 @@ const IK = (function () {
   const nrm = (n) => String(n).replace(/\s*\/\s*/g, " / ");
 
   function token(name) {
-    const set = penpot.library.local.tokens.sets.filter((s) => s.name === SET)[0];
-    return set ? set.tokens.filter((t) => t.name === name)[0] || null : null;
+    return H.tokens(SET).byName[name] || null;
   }
 
   function bind(shape, name, props) {
@@ -108,8 +107,10 @@ const IK = (function () {
     r.name = nrm(name);
     (parent || PB).appendChild(r);
     r.resize(w, h);
-    r.x = OX + snap(x);
-    r.y = OY + snap(y);
+    // raw: a bullet dot is centred on a line's ink, and the 4px grid would
+    // pull it up to 2px off that centre — dots opt out, layout does not.
+    r.x = OX + (o.raw ? Math.round(x) : snap(x));
+    r.y = OY + (o.raw ? Math.round(y) : snap(y));
     if (fillToken) paint(r, fillToken); else r.fills = [];
     if (o.stroke) stroke(r, o.stroke, o.strokeWidth || 1);
     if (o.radius) corners(r, o.radius);
@@ -249,7 +250,8 @@ const IK = (function () {
     return slot;
   }
 
-  function masthead(parent, active) {
+  function masthead(parent, active, opts) {
+    const o = opts || {};
     rect(parent, "top bar", 0, 0, W, 4, "red.600");
     text(parent, "masthead mark", "İHKD", "wordmark", "ink.900", { x: X, y: 34 });
     text(parent, "masthead sub", "ÜYE PLATFORMU", "label", "ink.500", { x: X + 104, y: 38 });
@@ -263,7 +265,10 @@ const IK = (function () {
       x += w + 26;
     });
     text(parent, "masthead login", "Üye girişi", "nav", "ink.700", { x: X + CW - 236, y: 32 });
-    btn(parent, "masthead cta", "Üye ol", X + CW - 136, 22, 136, 40, "primary");
+    // cta: "primary" (default, converting pages) or "ghost" (a quiet white
+    // button where the screen already carries its own red action, e.g. home).
+    // Dominance is visual: the ux-gate counts only saturated-fill buttons.
+    if (o.cta !== false) btn(parent, "masthead cta", "Üye ol", X + CW - 136, 22, 136, 40, o.cta === "ghost" ? "ghost" : "primary");
     rule(parent, "masthead rule", 0, 84, W, "line.soft");
     return 108;
   }
@@ -408,10 +413,59 @@ const IK = (function () {
     return cy;
   }
 
+  /**
+   * One bullet list, one alignment. The dot's centre sits on the first line's
+   * cap centre — the ink is centred in its line box, so the centre is
+   * `lineBox / 2` below the box top, not "row + 6" — and an optional
+   * separator lands on the block's bottom edge with the same air above it as
+   * below. Hand-placed dots sat 2-4px high and hand-written rule y landed 3px
+   * above the next line (İHKD 05). Items are strings, or {text, sub} for a
+   * title+note feature cell; the block height comes from estLines, and `pad`
+   * keeps an existing pitch when a list migrates (h = 2*pad + lines*lb).
+   * Returns the y below the last row, like rows().
+   */
+  function bullets(parent, name, x, y, w, items, opts) {
+    const o = opts || {};
+    const role = o.role || "body";
+    const subRole = o.subRole || "meta";
+    const r = ROLE[role], sr = ROLE[subRole];
+    const pad = o.pad === undefined ? 6 : o.pad;
+    const textX = o.textX === undefined ? 20 : o.textX;
+    const textW = w - textX;
+    const lb = r.size * r.lh, slb = sr.size * sr.lh;
+    const dot = o.dot || 6;
+    return rows(parent, name, x, y, w, items.map((it, i) => {
+      const main = typeof it === "string" ? it : it.text;
+      const sub = typeof it === "string" ? null : it.sub;
+      const lines = estLines(main, textW, r.size, r.font === "mono");
+      const subLines = sub ? estLines(sub, textW, sr.size, sr.font === "mono") : 0;
+      return {
+        h: Math.ceil((2 * pad + lines * lb + (sub ? 4 + subLines * slb : 0)) / 4) * 4,
+        draw(yRow) {
+          const ty = snap(yRow + pad);
+          rect(parent, name + " dot " + i, x, ty + lb / 2 - dot / 2, dot, dot,
+            o.color || "red.600", { raw: true });
+          text(parent, name + " item " + i, main, role, o.ink || "ink.700",
+            { x: x + textX, y: yRow + pad, w: textW });
+          if (sub) text(parent, name + " sub " + i, sub, subRole, o.subInk || "ink.600",
+            { x: x + textX, y: yRow + pad + lines * lb + 4, w: textW });
+        },
+      };
+    }), { rule: o.rule === undefined ? false : o.rule, bare: o.bare });
+  }
+
   const vcenter = (hRow, contentH) => Math.max(0, Math.round((hRow - contentH) / 2));
 
-  function fit(pageName) {
+  /**
+   * Resizes texts to their measured ink. `boardName` scopes the pass to one
+   * board: a build only moved that board, and fitting every board on the page
+   * costs the other screens' geometry for nothing.
+   */
+  function fit(pageName, boardName) {
     const p = page(pageName);
+    const roots = boardName
+      ? (p.root.children || []).filter((b) => b.name === boardName)
+      : (p.root.children || []);
     let n = 0;
     const walk = (s) => {
       if (s.type === "text" && s.textBounds && s.textBounds.height) {
@@ -427,7 +481,7 @@ const IK = (function () {
       }
       (s.children || []).forEach(walk);
     };
-    (p.root.children || []).forEach(walk);
+    roots.forEach(walk);
     return n;
   }
 
@@ -439,8 +493,11 @@ const IK = (function () {
    * Bars are drawn from estimates; ink is truth. A bar that cannot find its
    * texts is left alone (naming, not geometry, is wrong there).
    */
-  function fitBars(pageName) {
+  function fitBars(pageName, boardName) {
     const p = page(pageName);
+    const roots = boardName
+      ? (p.root.children || []).filter((b) => b.name === boardName)
+      : (p.root.children || []);
     let n = 0;
     const walk = (s) => {
       (s.children || []).forEach(walk);
@@ -452,15 +509,42 @@ const IK = (function () {
       if (!texts.length) return;
       const top = Math.min(...texts.map((t) => t.textBounds.y));
       const bot = Math.max(...texts.map((t) => t.textBounds.y + t.textBounds.height));
-      const h = Math.ceil(bot - top) + 4;
-      const y = Math.floor(top) - 2;
+      const h = Math.ceil(bot - top) + 2;
+      const y = Math.floor(top) - 1;
       if (Math.abs(s.height - h) > 1 || Math.abs(s.y - y) > 1) {
         s.resize(s.width, h);
         s.y = y;
         n++;
       }
     };
-    (p.root.children || []).forEach(walk);
+    roots.forEach(walk);
+    return n;
+  }
+
+  /**
+   * Post-fit pass: a card seeded from estimated line counts settles on its
+   * measured ink. Only boards named "<base> card <i>" are touched (the
+   * schedule's session cards): height = ink bottom − card top + pad, up to
+   * 4px. The row pitch keeps its estimate, so the air a conservative
+   * estimate leaves behind falls OUTSIDE the card, never inside it (a
+   * 3-line estimate over 2-line ink put 20px of white under one meta).
+   */
+  function fitCards(pageName, boardName, pad) {
+    const p = page(pageName), gap = pad === undefined ? 14 : pad;
+    const roots = boardName
+      ? (p.root.children || []).filter((b) => b.name === boardName)
+      : (p.root.children || []);
+    let n = 0;
+    const walk = (s) => {
+      (s.children || []).forEach(walk);
+      if (s.type !== "board" || !/ card \d+$/.test(s.name)) return;
+      const texts = (s.children || []).filter((c) => c.type === "text" && c.textBounds && c.textBounds.height);
+      if (!texts.length) return;
+      const bottom = Math.max(...texts.map((t) => t.textBounds.y + t.textBounds.height));
+      const h = Math.ceil((bottom - s.y + gap) / 4) * 4;
+      if (Math.abs(s.height - h) > 1) { s.resize(s.width, h); n++; }
+    };
+    roots.forEach(walk);
     return n;
   }
 
@@ -468,10 +552,19 @@ const IK = (function () {
     return page(pageName).root.children.map((b) => ({ name: b.name, x: b.x, y: b.y, w: b.width, h: b.height, children: (b.children || []).length }));
   }
 
+  /** Bumped when this file changes: build.py re-sends it only on a mismatch. */
+  const VERSION = "1.1.0";
+
   return {
-    SET, W, X, CW, ROLE, FONT, warnings, gaps,
-    start, end, fit, fitBars, report, page, rect, board, text, rule, vrule, bind, paint, stroke, corners,
+    SET, W, X, CW, ROLE, FONT, warnings, gaps, VERSION, HELPERS: H.version,
+    start, end, fit, fitBars, fitCards, report, page, rect, board, text, rule, vrule, bind, paint, stroke, corners,
     btn, link, tag, head, pageHead, stat, field, photo, sheet, masthead, footer, sidebar, crumbs,
-    progress, ecg, row, rows, vcenter, snap, nrm, token, estLines,
+    progress, ecg, row, rows, bullets, vcenter, snap, nrm, token, estLines,
   };
 })();
+
+// build.py polls fit without re-sending these 15 KB: keep the library in the
+// plugin's storage and refuse it when the helpers behind it changed.
+storage.IK = IK;
+storage.IK_VERSION = IK.VERSION;
+storage.IK_HELPERS = IK.HELPERS;

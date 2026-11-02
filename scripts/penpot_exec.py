@@ -11,7 +11,9 @@ Usage:
     penpot_exec.py --file snippet.js --raw      # print the raw JSON-RPC result
 
 The MCP URL (with the user token) is read from ~/.config/opencode/.penpot-mcp-url.
-The token is never printed.
+The token is never printed. One call waits up to 240 s (PENPOT_HTTP_TIMEOUT
+overrides it); on a timeout it does NOT retry — a second call would race a task
+that may still be running — and exits 2 with instructions to query live state.
 
 Exit codes: 0 success, 2 environment, transport or plugin failure (one line on
 stderr, no traceback).
@@ -21,6 +23,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import pathlib
 import re
 import sys
@@ -34,10 +37,33 @@ MCP_HEADERS = {
 }
 HELPERS_PROBE = "return JSON.stringify({ version: (storage.H && storage.H.version) || null });"
 HELPERS_VERSION = re.compile(r"""version:\s*["']([^"']+)["']""")
+DEFAULT_TIMEOUT_S = 240.0
 
 
 class McpError(Exception):
     """Environment, transport or plugin failure — never a finding."""
+
+
+class TaskTimeout(McpError):
+    """The HTTP call timed out; the plugin task may still be running.
+
+    Never retried automatically: a second call would race the first one and can
+    duplicate a write. Query the live state instead (build.py does that).
+    """
+
+
+def http_timeout() -> float:
+    """Seconds to wait for one MCP call; PENPOT_HTTP_TIMEOUT overrides the default."""
+    raw = os.environ.get("PENPOT_HTTP_TIMEOUT", "")
+    if not raw.strip():
+        return DEFAULT_TIMEOUT_S
+    try:
+        value = float(raw)
+    except ValueError:
+        raise McpError(f"PENPOT_HTTP_TIMEOUT must be seconds, got {raw!r}") from None
+    if value <= 0:
+        raise McpError(f"PENPOT_HTTP_TIMEOUT must be positive, got {raw!r}")
+    return value
 
 
 def fail(msg: str, code: int = 2) -> None:
@@ -55,18 +81,28 @@ def load_url() -> str:
     return url
 
 
-def post(url: str, payload: dict, session_id: str | None = None) -> tuple[int, dict, str]:
+def post(url: str, payload: dict, session_id: str | None = None,
+         timeout: float | None = None) -> tuple[int, dict, str]:
     headers = dict(MCP_HEADERS)
     if session_id:
         headers["mcp-session-id"] = session_id
     body = json.dumps(payload).encode()
     req = urllib.request.Request(url, data=body, headers=headers, method="POST")
+    limit = http_timeout() if timeout is None else timeout
     try:
-        with urllib.request.urlopen(req, timeout=120) as resp:
+        with urllib.request.urlopen(req, timeout=limit) as resp:
             raw = resp.read().decode("utf-8", "replace")
             return resp.status, dict(resp.headers), raw
     except urllib.error.HTTPError as exc:
         return exc.code, dict(exc.headers or {}), exc.read().decode("utf-8", "replace")
+    except (TimeoutError, OSError) as exc:
+        # urllib wraps a socket timeout in URLError on some platforms.
+        if isinstance(exc, TimeoutError) or isinstance(getattr(exc, "reason", None), TimeoutError):
+            raise TaskTimeout(
+                f"MCP call timed out after {limit:g}s — task may still be running: "
+                "wait and query the live state (no retry; PENPOT_HTTP_TIMEOUT overrides)"
+            ) from exc
+        raise
 
 
 def parse_sse(raw: str, request_id: int | None = None) -> dict:

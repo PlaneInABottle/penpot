@@ -15,7 +15,37 @@
  * - return JSON-serializable summaries, never shapes
  */
 const H = {
-  version: "1.4.0",
+  version: "1.5.0",
+
+  /**
+   * Token sets are resolved once per generation, not once per binding.
+   * `penpot.library.local.tokens.sets` is a cross-boundary read (~77 ms) and a
+   * board build binds the same set hundreds of times; the cache keeps the set
+   * object and its name→token map. `syncTokens`, `ensureSet` (when it creates)
+   * and `cleanup` bump `_tokenGen`, so a token change is visible to the next
+   * apply; an external edit in the UI is picked up after the next
+   * `invalidateTokens()` (tokens_sync runs one before every build).
+   */
+  _tokenCache: Object.create(null),
+  _tokenGen: 0,
+
+  invalidateTokens() {
+    this._tokenGen += 1;
+    this._tokenCache = Object.create(null);
+    return this._tokenGen;
+  },
+
+  /** {set, byName} for a token set, resolved at most once per generation. */
+  tokens(setName) {
+    const hit = this._tokenCache[setName];
+    if (hit && hit.gen === this._tokenGen) return hit;
+    const set = penpot.library.local.tokens.sets.filter((s) => s.name === setName)[0] || null;
+    const byName = Object.create(null);
+    if (set) set.tokens.forEach((t) => { byName[t.name] = t; });
+    const entry = { gen: this._tokenGen, set, byName };
+    this._tokenCache[setName] = entry;
+    return entry;
+  },
 
   page() { return penpot.currentPage; },
 
@@ -39,7 +69,9 @@ const H = {
     const cat = penpot.library.local.tokens;
     const existing = cat.sets.filter((s) => s.name === name)[0];
     if (existing) return { set: existing, created: false };
-    return { set: cat.addSet({ name: name, active: active !== false }), created: true };
+    const created = cat.addSet({ name: name, active: active !== false });
+    this.invalidateTokens();
+    return { set: created, created: true };
   },
 
   /**
@@ -65,6 +97,7 @@ const H = {
    */
   syncTokens(setName, specs) {
     const { set, created } = this.ensureSet(setName, true);
+    this.invalidateTokens();
     const byName = Object.create(null);
     const specsSeen = Object.create(null);
     set.tokens.forEach((t) => { byName[t.name] = t; });
@@ -91,6 +124,7 @@ const H = {
       existing.value = String(spec.value);
       updated++;
     });
+    this.invalidateTokens();
     return { set: setName, createdSet: created, added, updated, unchanged, conflicts };
   },
 
@@ -103,8 +137,8 @@ const H = {
    * binding, hence the order — literal, then bind.
    */
   apply(shape, setName, tokenName, props, fallback) {
-    const set = penpot.library.local.tokens.sets.filter((s) => s.name === setName)[0];
-    const token = set && set.tokens.filter((t) => t.name === tokenName)[0];
+    const cached = this.tokens(setName);
+    const token = cached.byName[tokenName] || null;
     if (!token) {
       if (fallback && props.indexOf("fill") !== -1) {
         shape.fills = [{ fillColor: fallback, fillOpacity: 1 }];
@@ -118,8 +152,7 @@ const H = {
 
   /** Paints the token's literal colour and binds it, in the only order that works. */
   paint(shape, setName, tokenName) {
-    const set = penpot.library.local.tokens.sets.filter((s) => s.name === setName)[0];
-    const token = set && set.tokens.filter((t) => t.name === tokenName)[0];
+    const token = this.tokens(setName).byName[tokenName] || null;
     if (!token) return { painted: false };
     const value = String(token.value);
     shape.fills = [{ fillColor: value, fillOpacity: 1 }];
@@ -185,6 +218,7 @@ const H = {
         if (!dryRun) s.remove();
       }
     });
+    if (!dryRun) this.invalidateTokens();
     return { removed, dryRun };
   },
 

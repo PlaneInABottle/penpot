@@ -39,6 +39,7 @@ plugin reload, and on any version mismatch.
 | `syncTokens(set, specs)` | reconcile a whole token set by name |
 | `paint(shape, set, token)` | write the literal fill and bind it |
 | `apply(shape, set, token, props, fallback?)` | same, for any property list |
+| `tokens(set)` / `invalidateTokens()` | resolve a set once per generation (one `sets` read for a whole build) / force a re-read after a token edit made in the UI |
 | `upsertBoard(name, opts)` / `link(shape, trigger, action)` | idempotent board / interaction |
 | `cleanup(prefix, {dryRun}?)` | remove shapes and sets by prefix; throws under four characters |
 | `audit(page?)` | read-only coverage report |
