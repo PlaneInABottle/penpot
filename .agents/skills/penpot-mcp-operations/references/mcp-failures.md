@@ -69,6 +69,7 @@ The same split applies to token sets, components, page deletion and prototype li
 | 37 | background-page reads report null textBounds | every text on a non-open page reports `textBounds` null although the render is complete | open the page first (`penpot.openPage`), wait, then read; bounds-dependent checks (fit, lint dumps, rhythm) are only valid on the open page |
 | 32 | media does not survive a rebuild | image fills vanish after a rebuild and the frames come back empty | the rebuild deletes the shapes that held the media; re-import by name after the last rebuild, or keep media out of rebuilt boards |
 | 38 | a call times out at 240 s | `MCP call timed out after 240s — task may still be running` while the file looks half-built | the plugin task may still be running: do not resend the same screen, wait and query the live board (node count, `textBounds` nulls, fit quiet) before deciding anything; `PENPOT_HTTP_TIMEOUT` only changes the wait |
+| 39 | a rebuild never measures its texts | after rebuilding the page that is already open, every new text reports `textBounds: null` for minutes, so fit cannot resize anything and the board looks unfinished | `penpot.openPage` on the current page is a no-op and a no-op never re-runs layout; open another page first, then the target, and poll `currentPage` until it is the target before reading bounds |
 
 ## Render truth
 
