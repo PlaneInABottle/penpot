@@ -35,6 +35,9 @@ DEFAULTS = {
     "allowed_radii": [0, 2, 4, 8, 12, 999],
     "board_widths": [1440, 390],
     "max_uppercase_ratio": 0.15,
+    "min_card_padding": 16,
+    "min_panel_w": 200,
+    "min_panel_h": 60,
     "dominant_ignore_prefix": [],
     "banned_text": ["lorem", "ipsum", "todo", "xxx", "placeholder", "başlık buraya"],
 }
@@ -52,6 +55,7 @@ const walk = (s, parent) => {
     x: Math.round(s.x * 10) / 10, y: Math.round(s.y * 10) / 10,
     w: Math.round(s.width * 10) / 10, h: Math.round(s.height * 10) / 10,
     fill: (s.fills && s.fills[0] && s.fills[0].fillColor) || null,
+    stroke: !!((s.strokes || []).length),
     img: !!((s.fills || []).find(f => f.fillImage)),
     radius: s.borderRadius === undefined ? null : s.borderRadius,
     shadows: (s.shadows || []).length,
@@ -89,6 +93,24 @@ def line_height_multiplier(raw: str | None) -> float | None:
     except ValueError:
         return None
     return value / 100 if value > 4 else value
+
+
+def is_panel(node: dict, rules: dict) -> bool:
+    """A content board whose inner edge is a padding contract: full-bleed
+    boards (x=0) are edge-to-edge by design, and single-label pills/chips
+    carry centered labels, not padding — the two populations separate by
+    size (İHKD chips top out at 187x36, smallest panel is 1200x72)."""
+    if (node.get("x") or 0) == 0:
+        return False
+    if (node.get("w") or 0) < rules["min_panel_w"] or (node.get("h") or 0) < rules["min_panel_h"]:
+        return False
+    if node.get("stroke"):
+        return True
+    fill = node.get("fill")
+    try:
+        return bool(fill) and saturation(fill) <= 0.5
+    except (ValueError, TypeError):
+        return False
 
 
 def lint(nodes: list[dict], rules: dict) -> list[dict]:
@@ -261,6 +283,37 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
             blob = (node["text"] or "").lower()
             if any(word in blob for word in rules["banned_text"]) or (node["text"] or "").strip() in BANNED_EXACT:
                 add("high", f"placeholder copy in {node['name']}: {node['text'][:40]!r}")
+
+        # text must not hug a panel's stroked/surface edge: S.board children
+        # use page-absolute coords, so x:120 inside a board at x:120 is zero
+        # padding against the stroke (İHKD 04 propose). A label fully ON a
+        # nested pill is legitimate background (same straddle logic as the
+        # text-over-shape check) and pills themselves are not panels.
+        for panel in [n for n in inside if n["type"] == "board" and is_panel(n, rules)]:
+            kids = [n for n in inside if n.get("parentId") == panel["id"]]
+            solids = [n for n in kids if n["type"] in ("rectangle", "board")
+                      and (n.get("fill") or n.get("img"))]
+            for t in kids:
+                if t["type"] != "text" or not (t.get("inkW") or t.get("w")):
+                    continue
+                # unlaid-out texts report null bounds (read as 0): fall back to
+                # the box edge so missing layout never reads as negative inset
+                ink_l = t["x"]
+                if t.get("inkW"):
+                    ink_l = t["inkX"] if t.get("inkX") is not None else t["x"]
+                if ink_l - panel["x"] >= rules["min_card_padding"]:
+                    continue
+                ink_t = t["inkY"] if t.get("inkY") is not None else t["y"]
+                ink_r = ink_l + (t.get("inkW") or t.get("w") or 0)
+                ink_b = ink_t + (t.get("inkH") or t.get("h") or 0)
+                on_pill = any(
+                    s["x"] - 2 <= ink_l and ink_r <= s["x"] + s["w"] + 2
+                    and s["y"] - 2 <= ink_t and ink_b <= s["y"] + s["h"] + 2
+                    for s in solids
+                )
+                if on_pill:
+                    continue
+                add("medium", f"{t['name']}: ink starts {ink_l - panel['x']:.0f}px inside {panel['name']} — panel padding under {rules['min_card_padding']}px")
 
     return findings
 

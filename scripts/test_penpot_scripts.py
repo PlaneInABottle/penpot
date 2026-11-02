@@ -24,6 +24,8 @@ sys.path.insert(0, str(HERE))
 import design_qa  # noqa: E402
 import penpot_exec  # noqa: E402
 import tokens_sync  # noqa: E402
+import design_lint  # noqa: E402
+import rhythm  # noqa: E402
 
 TOKENS_FILE = HERE.parent / "design" / "tokens.json"
 
@@ -271,6 +273,114 @@ class CoverageTest(unittest.TestCase):
             ["core"],
         )
         self.assertEqual(design_qa.duplicate_set_names([{"name": "core"}, {"name": "brand"}]), [])
+
+
+def _node(**over):
+    base = {
+        "id": "n", "parentId": None, "name": "shape", "type": "rectangle",
+        "parent": None, "x": 0, "y": 0, "w": 100, "h": 40,
+        "fill": None, "stroke": False, "img": False, "radius": None,
+        "shadows": 0, "fontSize": None, "lineHeight": None, "text": None,
+        "align": "left", "inkX": None, "inkY": None, "inkW": None, "inkH": None,
+        "inkTop": None, "inkBottom": None,
+    }
+    base.update(over)
+    return base
+
+
+def _page_board(board_id="pg"):
+    return _node(id=board_id, name="page", type="board", parentId=None,
+                 x=0, y=0, w=1440, h=2000)
+
+
+def _panel(board_id="panel", x=120, y=500, w=1200, h=200, fill="#FFFFFF", stroke=True):
+    return _node(id=board_id, name="panel", type="board", parentId="pg",
+                 x=x, y=y, w=w, h=h, fill=fill, stroke=stroke)
+
+
+def _text(node_id="t", parent="panel", x=120, y=540, text="Panel label here", inkX=None):
+    return _node(id=node_id, name="label " + node_id, type="text", parentId=parent,
+                 parent="panel", x=x, y=y, w=300, h=19, fill="#0E1318",
+                 fontSize=16, lineHeight="1.5", text=text,
+                 inkX=x if inkX is None else inkX, inkY=y, inkW=120, inkH=17)
+
+
+def _padding_findings(nodes):
+    return [f for f in design_lint.lint(nodes, dict(design_lint.DEFAULTS))
+            if "panel padding" in f["finding"]]
+
+
+class CardPaddingTest(unittest.TestCase):
+    def test_flags_flush_text_in_stroked_panel(self):
+        nodes = [_page_board(), _panel(), _text(x=120, inkX=120)]
+        findings = _padding_findings(nodes)
+        self.assertEqual(len(findings), 1)
+        self.assertIn("0px", findings[0]["finding"])
+
+    def test_flags_flush_text_in_surface_panel_without_stroke(self):
+        nodes = [_page_board(), _panel(stroke=False, fill="#E8EBED"), _text(x=130, inkX=130)]
+        findings = _padding_findings(nodes)
+        self.assertEqual(len(findings), 1)
+        self.assertIn("10px", findings[0]["finding"])
+
+    def test_ok_with_enough_padding(self):
+        nodes = [_page_board(), _panel(), _text(x=144, inkX=144)]
+        self.assertEqual(_padding_findings(nodes), [])
+
+    def test_ok_full_bleed_board_is_edge_to_edge_by_design(self):
+        nodes = [_page_board(), _panel(board_id="band", x=0, y=500), _text(parent="band", x=0, inkX=0)]
+        self.assertEqual(_padding_findings(nodes), [])
+
+    def test_ok_single_label_chip_is_not_a_panel(self):
+        nodes = [_page_board(), _panel(board_id="chip", x=360, y=500, w=92, h=32),
+                 _text(node_id="c", parent="chip", x=372, inkX=372, text="Chip")]
+        self.assertEqual(_padding_findings(nodes), [])
+
+    def test_ok_label_on_nested_pill(self):
+        pill = _node(id="pill", name="pill", type="board", parentId="panel",
+                     parent="panel", x=120, y=540, w=120, h=36, fill="#FFFFFF", stroke=True)
+        label = _text(node_id="p", parent="panel", x=120, inkX=122, y=548, text="Pill")
+        label.update({"inkY": 548, "inkW": 60, "inkH": 17})
+        nodes = [_page_board(), _panel(), pill, label]
+        self.assertEqual(_padding_findings(nodes), [])
+
+    def test_unlaid_text_falls_back_to_box_edge(self):
+        bad = _text(node_id="u", parent="panel", x=120, y=560, text="Unlaid")
+        bad.update({"inkX": 0, "inkY": 0, "inkW": 0, "inkH": 0})
+        findings = _padding_findings([_page_board(), _panel(), bad])
+        self.assertEqual(len(findings), 1)
+        self.assertIn("0px", findings[0]["finding"])
+
+
+class TopVoidTest(unittest.TestCase):
+    def _report(self, first_y):
+        board = _node(id="b", name="board", type="board", parentId=None,
+                      x=0, y=400, w=1440, h=2000)
+        rule = _node(id="r", name="masthead rule", parentId="b", parent="board",
+                     x=0, y=484, w=1440, h=1, fill="#E8EBED")
+        head = _node(id="h", name="ph label", type="text", parentId="b", parent="board",
+                     x=120, y=400 + first_y, w=300, h=17, fill="#8F0F24",
+                     fontSize=12, lineHeight="1.2", text="Label",
+                     inkX=120, inkY=400 + first_y, inkW=120, inkH=14)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "nodes.json"
+            path.write_text(json.dumps([board, rule, head]))
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                code = rhythm.main([str(path)])
+        return code, buf.getvalue()
+
+    def test_flags_large_void(self):
+        code, out = self._report(236)
+        self.assertEqual(code, 0)
+        self.assertIn("TOP-VOID", out)
+        self.assertIn("151px", out)
+
+    def test_ok_small_void(self):
+        code, out = self._report(156)
+        self.assertEqual(code, 0)
+        self.assertNotIn("TOP-VOID", out)
+        self.assertIn("top-void ok", out)
 
 
 if __name__ == "__main__":

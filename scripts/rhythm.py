@@ -24,6 +24,8 @@ def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("report", type=pathlib.Path, help="lint --json output")
     ap.add_argument("--rhythm", type=float, default=0.0, help="declared section rhythm in px (0 = derive median)")
+    ap.add_argument("--top-void", type=float, default=110.0,
+                    help="flag when the first content below the masthead rule starts more than this many px after it")
     args = ap.parse_args(argv)
 
     try:
@@ -62,6 +64,16 @@ def main(argv: list[str]) -> int:
         ends = [(k.get("x") or 0) + (k.get("w") or 0) for k in kids if (k.get("w") or 0) > 0]
         if xs and ends:
             print(f"   leftmost x: {min(xs):.0f}  rightmost end: {max(ends):.0f} (board {board.get('w')})")
+        rule = next((k for k in kids if "masthead rule" in (k.get("name") or "")), None)
+        if rule is not None:
+            by = board.get("y") or 0
+            tops = [(k.get("y") or 0) for k in kids if (k.get("y") or 0) - by > 100]
+            if tops:
+                gap = round(min(tops) - (rule.get("y") or 0) - (rule.get("h") or 0), 1)
+                if gap > args.top_void:
+                    print(f"   TOP-VOID: first content {gap:g}px after the masthead rule (> {args.top_void:g}px) — review the head joint")
+                else:
+                    print(f"   top-void ok ({gap:g}px)")
         bh = board.get("h") or 0
         if prev_bottom is not None and bh > prev_bottom:
             print(f"   trailing void: {round(bh - prev_bottom):.0f}px of empty board below last shape")
