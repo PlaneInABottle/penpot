@@ -454,6 +454,8 @@ heart. None repeats A's photo+strip or another candidate's object. No eliminatio
 
 ### Decision
 
+**Superseded by M8** (2026-11-03): the user chose the afiş; the cover is parked (§ Parked concepts).
+
 **SAYI.** The site becomes the society's own publication: the issue (`Cilt 12 ·
 Sayı 1 · Mart 2027`), the cover figure (the instrument), the contents (the site's six
 paths with page numbers) and the imprint (the four figures). It keeps the M6 story
@@ -516,3 +518,82 @@ major, `25 mm/s · 10 mm/mV`); **aspect:** 640×220 (2.91:1); **source:** the bu
 - The `Bu sayıda` rows are content, not wired interactions; the masthead is the
   navigation. A later prototype pass may link the contents paths.
 - The mobile twin and the empty/loading state boards are the later milestone's work.
+
+## M8 · 01 hero — five objects, the user chose the poster (2026-11-03)
+
+**Round.** `ux-design-process` §3: five finished 1440×900 first viewports on `_scratch`
+(`cand-1-afis` … `cand-5-algoritma`), renders in `shots/hero-candidates-4/` with sources
+and risks in that folder's `README.md`. They share no part: a hall poster, a journal
+cover, an anatomy plate, a community map, a decision chart.
+
+**Decision — the user's (2026-11-03).** The hero is **cand-1-afis, "Kongre afişi"**: a
+congress poster pasted over a full auditorium. The user chose it (their words: "ilki iyi
+duruyor") and it is applied to the live `01-ana-sayfa`. Reason: **the user chose it** — a
+taste-bearing surface is decided by the user (`ux-design-process` §3), not by the maker's
+score, and the M7 decision (SAYI) is superseded.
+
+Presented, not chosen (boards stay on `_scratch`, renders stay, no parked script) — one
+line each:
+
+- **cand-3-levha (anatomy plate)** — a 1918 Gray's engraving; presented, not chosen.
+- **cand-5-algoritma (clinical decision chart)** — the guideline path as the page; its
+  terminal action is `Kılavuzu aç`, not registration; presented, not chosen.
+
+**cand-2-kapak** and **cand-4-topluluk** are kept as *parked* concepts: see § Parked
+concepts.
+
+### Hero visual contract (as applied)
+
+- **Photo:** Pexels **20733081** (BBSO) — a large auditorium seen from the audience, the
+  speaker at the left, cool grade. Pinned in `tools/media.py` (`img-hero`) and recorded in
+  `media/provenance.json`; the slot `img-hero` is a full-bleed 1440×668 rect inside the
+  `hero scene` board, so `build.py --restore` re-places and verifies it on every rebuild.
+- **Surface:** `hero scene` is a board with an `ink.900` fill and the type sits on that
+  board; the photo is the board's sibling rect. No gradient, no scrim rectangle.
+- **Type on the photo:** white (`on.ink`) — `12. ULUSAL İÇ HASTALIKLARI VE KARDİYOLOJİ
+  KONGRESİ` (label 13), `22–25 Nisan 2027` (display 80), `Antalya Kongre Merkezi, Belek ·
+  96 oturum · 214 konuşmacı` (body 16), `147` (stat 44) + `gün kaldı · erken kayıt 31
+  Ocak 2027'de kapanıyor` (meta 13), `Hastanın hekimi.` (h3 30) + `İHKD · İç Hastalıkları
+  ve Kardiyoloji Derneği · 1998'den beri Ankara` (label 13).
+- **`12`:** a **vector path** (Inter Tight 700, 520px, tracking −16, baked into
+  `screen-01.js`), 469×384, ink at 808,120 inside the poster. It is a path, not a text
+  node: at 520px a text node would be the board's seventh type size (`design_lint`
+  `type.sizes`, max 6), and the numeral is a poster layer, not copy.
+- **White ECG trace:** the project's `S.ecg` instrument, 1440×30 at the poster's lower
+  third, stroke `on.ink` — data, not a divider.
+- **Actions:** one saturated primary `Kongreye kayıt ol` (`red.600`) + ghost `Programı
+  gör` (white text, white underline). No other red field on the page.
+- **Proof, not on the photo:** `6.847 üye · 41 il · 12 çalışma grubu · 10 kılavuz` is a
+  44px `stat` strip on `paper` directly under the poster (`hero proof`): values `ink.900`,
+  labels 13px `ink.600` (AA on paper). The strip is the dark→paper joint — no white band,
+  no seam.
+- **Society identity stays in the first viewport** as a secondary line: `Hastanın hekimi.`
+  at 30px plus the association's name at 13px, bottom-left of the poster. The congress is
+  the poster's message, the society is its signature; the date is not contested.
+
+## Parked concepts
+
+Two of the five M8 candidates are kept as reproducible objects. Their boards stay on
+`_scratch` and each has an idempotent build script; neither is the live hero.
+
+| concept | "this page is a …" | when to use it | build script | render |
+|---|---|---|---|---|
+| Dergi kapağı (`cand-2-kapak`) | a journal cover | the home page after the congress, or the opening of the publication (`Yayın`) area | `design/ihkd/build/parked/cand-2-kapak.js` | `shots/hero-candidates-4/cand-2-kapak.png` |
+| Topluluk haritası (`cand-4-topluluk`) | the society's community map | the opening of `Dernek` / `Üyelik`, or when the story is "tek çatı" instead of the next congress | `design/ihkd/build/parked/cand-4-topluluk.js` | `shots/hero-candidates-4/cand-4-topluluk.png` |
+
+Run either with `python3 scripts/penpot_exec.py --file
+design/ihkd/build/parked/<file>.js`: it reuses the board on `_scratch`, clears its children
+and rebuilds them. A first run may only switch the page (Penpot switches asynchronously) —
+run it once more. Photos are not embedded: `python3 design/ihkd/tools/media.py --restore
+--board cand-2-kapak --page _scratch` (or `--board cand-4-topluluk`) places the pinned
+sources recorded in `media/provenance.json`.
+
+Sources: kapak — Pexels **415779** (Pixabay), an ECG print close-up, no patient, no hand;
+topluluk — Pexels **12319354** (poster session, Roxanne Minnish), **15325468** (audience,
+Luis Quintero), **35138560** (convention hall, Tahir Xələfquliyev), and the Turkey outline
+from **Natural Earth 110m admin-0** (public domain) with 41 dots and one Ankara marker (a
+field inside the outline, not exact province positions).
+
+`_scratch` aday board'ları ve `shots/hero-candidates-4/` render'ları kullanıcı isteğiyle
+tutulur; kullanıcı aksini söyleyene kadar silinmez.
+
