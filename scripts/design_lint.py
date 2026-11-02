@@ -315,6 +315,30 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
                     continue
                 add("medium", f"{t['name']}: ink starts {ink_l - panel['x']:.0f}px inside {panel['name']} — panel padding under {rules['min_card_padding']}px")
 
+        # two unrelated texts must never share ink: the İHKD 01 hero
+        # caption/red-label crash passed every gate because text-over-shape
+        # only looks at shapes. Stacks (a vertical gap between inks) and
+        # inline same-line pairs (adjacent, no x-overlap) can never trip this;
+        # only true rectangle overlap flags, which has no legitimate use here.
+        # Pairs without measured ink are skipped: unlaid-out boxes overlap
+        # routinely before fit, and that timing noise is not a finding.
+        texts = [n for n in inside if n["type"] == "text"]
+        for ia, a in enumerate(texts):
+            if not a.get("inkW"):
+                continue
+            al = a["inkX"] if a.get("inkX") is not None else a["x"]
+            at = a["inkY"] if a.get("inkY") is not None else a["y"]
+            ar, ab = al + a["inkW"], at + (a.get("inkH") or 0)
+            for b in texts[ia + 1:]:
+                if not b.get("inkW"):
+                    continue
+                bl = b["inkX"] if b.get("inkX") is not None else b["x"]
+                bt = b["inkY"] if b.get("inkY") is not None else b["y"]
+                ox = min(ar, bl + b["inkW"]) - max(al, bl)
+                oy = min(ab, bt + (b.get("inkH") or 0)) - max(at, bt)
+                if ox > 8 and oy > 4:
+                    add("medium", f"text {a['name']} collides with text {b['name']} ({ox:.0f}x{oy:.0f}px ink overlap)")
+
     return findings
 
 

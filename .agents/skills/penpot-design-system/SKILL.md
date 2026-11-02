@@ -153,6 +153,11 @@ right. A 120px asymmetry survived every gate because the grid lived only in pros
   lint+QA — token coverage counts the placeholder's bound fill, so gates can't see
   it). After ANY rebuild, re-import ALL slots of that board and prove each with
   `media-audit --live` (photo placed, not merely slot present) plus a 1:1 look.
+- **The media table is the single source for photo choice.** A one-off inline import
+  (different query, pinned URL tried by hand) regresses on the next rebuild
+  reimport, which re-runs the table query (İHKD 01 hero silently reverted to the
+  masked photo one milestone later). Persist the winning query or pinned URL in
+  the table the moment a photo is accepted, then reimport from the table.
 - **A photo replaces its slot, never covers it.** Name every image slot, import by that
   name, and delete the placeholder rect in the placing call. Before/after the import the
   board holds exactly one shape under that name. A render showing an empty mat next to
@@ -172,6 +177,11 @@ right. A 120px asymmetry survived every gate because the grid lived only in pros
   overlaps (the text-overlap lint catches that direction). After any copy swap,
   re-run the rhythm audit on the touched boards and read the section, not just the
   edited line.
+- **Dividers on cell boundaries, numbers inset uniformly.** In a stat row, float the
+  dividers to exact cell boundaries and give every number the same left inset;
+  dividers parked at "column minus a guess" drift with digit width and read
+  accidental (İHKD 01: 120/203/197/243px tails). Raggedness belongs inside the
+  cell's dead side, never between a digit and its divider.
 - **One right edge per row group.** A right-aligned column must terminate at the
   grid edge or at the next column's start. Two different right edges in one list
   (İHKD 01 course rows: meta ended at 1180, CTA at 1320) read as misaligned even
@@ -185,6 +195,11 @@ right. A 120px asymmetry survived every gate because the grid lived only in pros
   a stroked/surface panel edge; pills (single-label chips) and full-bleed boards
   at x=0 are exempt by design. The lint `panel padding` medium guards this —
   a flag after a board move means the layout shifted, not that the rule is noisy.
+- **One baseline zone, one voice.** Two different-size/color texts sharing a y-band
+  read as one broken line even with a few px of clearance (İHKD 01 hero: photo
+  caption vs red congress label). Give the band to one of them: delete, stack with
+  ≥1 rhythm step, or divide explicitly. The lint `text collides` medium guards true
+  ink overlap; the near-miss is a 1:1 judgment call.
 - **1:1 the joint, not the element.** A crop centered on a headline proves the headline;
   the defect lives where two things meet. Frame verification crops on boundaries:
   text/photo edges, row/meta joints, panel/footer seams.

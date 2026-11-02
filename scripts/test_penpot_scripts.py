@@ -305,6 +305,42 @@ def _text(node_id="t", parent="panel", x=120, y=540, text="Panel label here", in
                  inkX=x if inkX is None else inkX, inkY=y, inkW=120, inkH=17)
 
 
+def _collision_findings(nodes):
+    return [f for f in design_lint.lint(nodes, dict(design_lint.DEFAULTS))
+            if "collides with text" in f["finding"]]
+
+
+class TextCollisionTest(unittest.TestCase):
+    def test_flags_overlapping_inks(self):
+        nodes = [_page_board(),
+                 _text(node_id="a", parent="pg", x=120, y=540),
+                 _text(node_id="b", parent="pg", x=200, y=540)]
+        findings = _collision_findings(nodes)
+        self.assertEqual(len(findings), 1)
+        self.assertIn("collides", findings[0]["finding"])
+
+    def test_ok_stacked_pair_with_gap(self):
+        nodes = [_page_board(),
+                 _text(node_id="a", parent="pg", x=120, y=540),
+                 _text(node_id="b", parent="pg", x=120, y=600)]
+        self.assertEqual(_collision_findings(nodes), [])
+
+    def test_ok_inline_adjacent_pair(self):
+        nodes = [_page_board(),
+                 _text(node_id="a", parent="pg", x=120, y=540),
+                 _text(node_id="b", parent="pg", x=240, y=540)]
+        self.assertEqual(_collision_findings(nodes), [])
+
+    def test_ok_unmeasured_ink_is_skipped(self):
+        a = _text(node_id="a", parent="pg", x=120, y=540)
+        b = _node(id="b", name="label b", type="text", parentId="pg",
+                  parent="pg", x=150, y=540, w=300, h=19, fill="#0E1318",
+                  fontSize=16, lineHeight="1.5", text="unlaid",
+                  inkX=None, inkY=None, inkW=None, inkH=None)
+        nodes = [_page_board(), a, b]
+        self.assertEqual(_collision_findings(nodes), [])
+
+
 def _padding_findings(nodes):
     return [f for f in design_lint.lint(nodes, dict(design_lint.DEFAULTS))
             if "panel padding" in f["finding"]]

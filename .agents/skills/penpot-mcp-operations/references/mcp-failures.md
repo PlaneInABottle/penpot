@@ -66,6 +66,7 @@ The same split applies to token sets, components, page deletion and prototype li
 | 36 | photo lands one board-height off | image renders shifted up by exactly the board's y (or x) | the placer assigned board-local numbers to page-absolute coords — add `board.x/board.y`, or read the live slot geometry which is already absolute |
 | 35 | cross-page navigate-to stores hollow | `addInteraction` with a destination Board proxy from another page succeeds silently but stores `{"id":"","type":null}` — the link goes nowhere, no error | keep prototype links same-page, or wire cross-page links in the Penpot UI where the proxy resolves; verify every destination resolves to a live `Page/Board` in a later read |
 | 34 | placeholder rect survives under the photo | an empty `surface.alt` mat renders beneath every imported image | place the photo, then delete every same-named shape except the fresh one in the same call; a render must show zero empty mats |
+| 37 | background-page reads report null textBounds | every text on a non-open page reports `textBounds` null although the render is complete | open the page first (`penpot.openPage`), wait, then read; bounds-dependent checks (fit, lint dumps, rhythm) are only valid on the open page |
 | 32 | media does not survive a rebuild | image fills vanish after a rebuild and the frames come back empty | the rebuild deletes the shapes that held the media; re-import by name after the last rebuild, or keep media out of rebuilt boards |
 
 ## Render truth
