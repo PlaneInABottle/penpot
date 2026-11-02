@@ -46,13 +46,13 @@ Labels over the 137 default-rule findings: **GERÇEK 5 · FP 31 · KABUL 101**.
 | gap.intra_card | 18-uyelik form 40px | 1 | KABUL | the KVKK consent line is its own block; the break separates consent from the document rows (form_gap.png) → `acknowledge`. |
 | gap.intra_card | 19-giris auth left 72px | 1 | KABUL | the brand panel pins the photo caption to its top and the legal footer to its bottom; the 72px is the panel's spare height (auth_gap.png) → `acknowledge`. |
 
-## To fix on the design (not this round)
+## To fix on the design (closed 2026-11-03 — see § Resolved)
 
 1. `08-bildiri` — SSS answers at 16px instead of 13px (3 nodes; the `faq a *` texts).
 2. `07-program` — `sess card 8` and `sess card 2`: re-height to the content (104px, like
    `sess card 3`) so the title/meta gap returns to 14px and the row bottoms align.
 
-Both stay in the lint output: (1) as `type.small_body` LOW (present in `--json` and
+Both stayed in the lint output: (1) as `type.small_body` LOW (present in `--json` and
 `--verbose`, hidden by default), (2) as the one unexplained MEDIUM.
 
 ## Rule changes this triage justified
@@ -76,3 +76,24 @@ Both stay in the lint output: (1) as `type.small_body` LOW (present in `--json` 
 - `type.small_body` cannot distinguish a 13px *meta* from a 13px *content*
   paragraph by geometry alone; the three FAQ answers are the price of that, and
   they are the reason the rule is report-only (LOW), not silent.
+
+## Resolved (2026-11-03) — the corpus above is frozen
+
+1. **08-bildiri FAQ answers** — the four `faq a *` nodes (the triage counted three; the fourth
+   is 39 chars and stayed under the `type.small_body` threshold) are 16px `body` with a 72px
+   row pitch (was 13px `meta` / 60px); the board grew 2568 → 2632 and the footer docks to the
+   last rule. Lint no longer reports `faq a 0-2`; the SSS block was read at 1:1
+   (`shots/08-bildiri.png`, crop of 1920-2220).
+2. **07-program `sess card 2` / `sess card 8`** — `lib.fitCards` now re-settles a card's meta
+   on the title's measured ink before sizing the card (the line count was an estimate, and a
+   character model cannot tell where a title wraps). Both cards: 128px / 40px joint → 104px /
+   16px, the same as their row-mates, accent bar padding kept. The page's `gap.intra_card`
+   medium is gone; the rows were read at 1:1.
+3. **New, proven on the render (not in the frozen corpus): 19/20 shape-opacity text.**
+   `al sub` and `al foot` (13px, opacity .72) composited to 3.66:1 on `red.600`; `al caption`
+   (.80) 4.25:1; `mc label` (.72) 3.66:1 — all below AA. They are opaque `on.red` now
+   (6.04:1, pixel-verified). The intentional .88/.85 secondary lines stay: measured 4.88 and
+   4.64:1. The lint collector does not yet see shape opacity, so this finding came from a
+   tool review; both boards were rebuilt and re-read at 1:1.
+
+The triage table above is left as captured; these three notes are the closure record.

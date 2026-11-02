@@ -163,24 +163,38 @@ Card: 24px padding (32 for feature cards), 1px border, no shadow.
 | 02 | `Kurumsal` | `02-dernek` | Tüzüğü oku | 2452 |
 | 03 | `Kurumsal` | `03-yonetim` | Kurul üyesine ulaş | 2296 |
 | 04 | `Kurumsal` | `04-calisma-gruplari` | Grup seç | 2088 |
-| 05 | `Kurumsal` | `05-grup-detay` | Gruba katıl | 2684 |
+| 05 | `Kurumsal` | `05-grup-detay` | Gruba katıl | 2512 |
 | 06 | `Kongre` | `06-kongre` | Kayıt ol | 3840 |
-| 07 | `Kongre` | `07-program` | Programa ekle | 2716 |
-| 08 | `Kongre` | `08-bildiri` | Bildiri gönder | 2568 |
-| 09 | `Kongre` | `09-kayit` | Kaydı tamamla | 2000 |
+| 07 | `Kongre` | `07-program` | Programa ekle | 2856 |
+| 08 | `Kongre` | `08-bildiri` | Bildiri gönder | 2632 |
+| 09 | `Kongre` | `09-kayit` | Kaydı tamamla | 1968 |
 | 10 | `Kongre` | `10-konaklama` | Otel seç | 2400 |
 | 11 | `Akademi` | `11-akademi` | Kursa başla | 2488 |
-| 12 | `Akademi` | `12-kurs-detay` | Kursa yazıl | 1740 |
+| 12 | `Akademi` | `12-kurs-detay` | Kursa yazıl | 1736 |
 | 13 | `Akademi` | `13-kilavuzlar` | Kılavuzu indir | 2400 |
 | 14 | `Akademi` | `14-dergi` | Sayıyı oku | 2000 |
 | 15 | `İçerik` | `15-haberler` | Haberi oku | 2080 |
-| 16 | `İçerik` | `16-makale` | — (okuma) | 2540 |
+| 16 | `İçerik` | `16-makale` | — (okuma) | 2416 |
 | 17 | `İçerik` | `17-takvim` | Etkinliğe kaydol | 2096 |
 | 18 | `Üyelik` | `18-uyelik` | Başvuruyu gönder | 2292 |
 | 19 | `Üyelik` | `19-giris` | Giriş yap | 1024 |
 | 20 | `Üyelik` | `20-panel` | Kursa devam et | 1680 |
 
-`Components` holds the library sheet; `_scratch` is removed before handoff.
+Heights are the live board sizes, re-verified 2026-11-03 (the same numbers are tabled in
+`README.md`).
+
+States and the library are first-class boards now:
+
+| board | page | action | size |
+|---|---|---|---|
+| `01-bos` | `Kurumsal` | empty gündem (one link, no saturated button) | 1440×592 |
+| `07-program-loading` | `Kongre` | skeleton grid, day tabs ready | 1440×1300 |
+| `09-kayit-hata` | `Kongre` | error summary + two invalid fields | 1440×1104 |
+| `component sheet` | `Components` | 30 library components (9 families) | 1440×2460 |
+
+`_scratch` holds the hero candidates: three kept at the user's request (cand-1 the live
+hero's source, cand-3/cand-5 presented-not-chosen) and the two parked concepts (§ Parked
+concepts). Nothing there is deleted without the user's word.
 
 ## 5. Per-screen spec
 
@@ -197,7 +211,7 @@ Copy below is final Turkish; build it verbatim.
 - `Üyelik` — `white` bant: `Yazan, toplayan, öğreten.`, lede, 3 madde, `Başvuruyu başlat →` linki, aidat satırı. İkinci doygun buton yok.
 - Footer white. Board yüksekliği 4076.
 - Declared bleeds: `top bar`, `masthead rule`, `hero scene` / `img-hero` (1440 wide, the poster edge), `hero ecg` (1440 wide trace), `uyelik band`, `footer` / `footer bar`, `hero twelve` (its right edge ends on 1296, inside the poster). Diğer her şey `X..X+CW` içinde (grid denetimi: 0 ihlal).
-- Açıklanan lint medium/low'ları (düzeltildi değil, gerekçeli): `type steps too close [1.23, 1.38, 1.36, 1.47, 1.82]` — 13→16 microcopy pair and the display steps; principles §8. `type.small_body` ×6 at 13px (`hero label`, `hero countdown note`, `hero society line`, `member fee`, `akademi note`, footer microcopy) — these are the project's `label`/`meta` micro role, not body copy (13px minimum, brief §3). `dead space in uyelik band` — the band's padding is symmetric 72/72. The ghost section numerals are `ink.400` (2.07:1 on paper): a decorative-structural numeral, principles §4 "felt, not read", on every board of the set.
+- Açıklanan lint medium/low'ları (düzeltildi değil, gerekçeli): `type steps too close [1.23, 1.38, 1.36, 1.47, 1.82]` — 13→16 microcopy pair and the display steps; principles §6. `type.small_body` ×6 at 13px (`hero label`, `hero countdown note`, `hero society line`, `member fee`, `akademi note`, footer microcopy) — these are the project's `label`/`meta` micro role, not body copy (13px minimum, brief §3). `dead space in uyelik band` — the band's padding is symmetric 72/72. The ghost section numerals are `ink.400` (2.07:1 on paper): a decorative-structural numeral, principles §3.7 "felt, not read", on every board of the set.
 ### 02 · Dernek
 Hero (white card, no photo) with `1998'den beri`, display `1998'den beri tek çatı.`, lead.
 Story: 3 paragraphs + a pull quote card (accent.050). Timeline 1998 · 2004 · 2011 · 2017 · 2023 · 2027 as a vertical list with year in `data`.
@@ -260,18 +274,19 @@ Ink sidebar 260: member name, `İHKD-24817`, nav, `Çıkış`. Header `İyi gün
 
 ## 6. Photography (Pexels, graded)
 
-Thirteen placements of twelve photographs, one cool grade (light desaturation, contrast lift, neutral shadows) so they
-read as one set. Captions are 13px `meta`, sentence case, no uppercase.
+Twelve placements of eleven photographs, one cool grade (light desaturation, contrast lift,
+neutral shadows) so they read as one set. Captions are 13px `meta`, sentence case, no
+uppercase.
 
-**Subject rule (2026-11-02, user-reported):** the frame must show the product's own
-field — a heart/cardiology reading (auscultation, echo or cath lab, 12-lead trace, heart
-model), not a generic clinical scene that only *could* happen in a hospital. A plausible
-consultation still reads as stock filling; the hero's role is "the physician at the
-patient's chest", not "healthcare".
+**Subject rule (2026-11-02, amended by M7).** A photo may show the society's *place* (hall,
+venue, poster session) or a *publication object* (book, journal, ECG paper). It may not show
+a patient, an examination, a chest, a hand or a stethoscope: that image is not this
+society's visual language (principles §3.8). A generic "healthcare" scene that only *could*
+happen in a hospital is stock filling, not evidence.
 
 | image | subject | used on |
 |---|---|---|
-| `img-hero` | stethoscope bell on a bare chest, hand in frame, no face, cool teal room — the heart is being heard | 01 |
+| `img-hero` | auditorium seen from the audience, speaker at the left, cool grade — the congress hall as a place (Pexels 20733081) | 01 |
 | `img-journal` | open book, small body-text texture, no masthead | 01 |
 | `img-angio` | catheterisation / angio suite: ECG-trace monitor, angio screen, masked team | 05 |
 | `img-cath` | catheterisation laboratory | 06 |
@@ -286,15 +301,22 @@ patient's chest", not "healthcare".
 | `img-issue` | open book, small body-text texture (same source as `img-journal`) | 14 |
 | `img-lab` | 12-lead ECG paper with limb/precordial electrodes, closeup | 12 |
 
+Images still carrying the pre-rule subject (replacement is a separate round, listed so the
+rule and the file do not disagree): `img-desk` (stethoscope as an object), `img-round` (ward
+round at a patient), `img-team` (physician and patient at a screen), `img-auth` (patient
+beside a monitor), `img-angio` (cath team, masked). `img-hero`, `img-journal` and `img-lab`
+already follow the amended rule.
+
 Provenance (Pexels URL + photographer) is recorded in `media/provenance.json`; the pinned
 URL in `tools/media.py` is the single source, so a rebuild reimports the accepted frame.
 
-**Surface rule (2026-11-02).** Two neutral layers per screen: `paper` is the ground,
-`white` is a card or content surface. `surface.alt` is an inset/secondary panel only
-(05 künye, 12 progress, 10 plan). Same logical kind = same surface: 07's schedule cards are
-`white`, a right-docked info panel is `surface.alt`. Counted on 2026-11-02: 05 künye
-(alt), 12 progress (alt), 07 calendar cards (white) are consistent; 13 `pocket` cards and
-20 `ecg card` still use `surface.alt` for cards — open, listed in the report.
+**Surface rule.** Two neutral layers per screen: `paper` is the ground, `white` is a card
+or content surface; `surface.alt` is an inset/secondary panel only (05 künye, 12 progress,
+10 plan, 07 skeleton blocks, disabled states). Same logical kind = same surface: 07's
+schedule cards are `white`, a right-docked info panel is `surface.alt`. 13 `pocket` cards
+and 20 `ecg card` were moved to `white` + hairline in the 2026-11-02 triage. The two hex
+values are also declared in `craft-rules.json` (`surface_white`, `surface_alt`) for the
+tool-side surface audit.
 
 ## 7. Definition of done
 
@@ -305,218 +327,23 @@ URL in `tools/media.py` is the single source, so a rebuild reimports the accepte
 5. Prototype: flows exist, per-board interaction count non-zero.
 6. Independent reviewer has seen the render and crops.
 
-## M6 · 01 hero — critique, three candidates, decision (2026-11-02, 1:1)
+## Hero history (M6–M7, superseded by M8)
 
-### Critique of the delivered hero (before this milestone)
+The home hero was rebuilt three times before the poster was chosen. What survives from
+those rounds is the rule, not the narrative:
 
-Read from `shots/before/01-ana-sayfa.png` (1440×3952) plus 1:1 crops
-`c1-hero-left`, `c2-hero-photo`, `c3-proof`, `c4-band`, `c5-head`, `c7-groups`,
-`c8-pub` in the same folder.
-
-1. **The hero's left column had 255px of nothing under its CTA.** kicker 156,
-   title 188, lede 368, CTA 470–522, photo ends 716, strip starts 780. The title was
-   an accidental 2-line wrap in a 560px box; nothing was centred against the photo, so
-   the hero read as two half-pages.
-2. **The proof strip broke the system.** 6.847 / 41 / 12 / 10 sat on `ink.900` at
-   `dataLg` 16px with 13px labels — a near-black surface principles §6 forbids, and the
-   opposite of "loud data".
-3. **The band's CTA group had no row.** "Programı gör" sat at y+218, "Kayıt ol" at
-   y+268 and 24px to its right: no shared centre, no fixed gap; 75px of dead band below.
-4. **Three actions competed.** hero `Üye ol` (red fill), nav `Üye ol` (outline), band
-   `Kayıt ol` (bone). The page's single primary was membership while its only
-   time-limited action is congress registration.
-5. **Ghost numerals fought their titles.** 01–04 at `h2` 44px, 148px left of the kicker,
-   the same size as the 44px titles they labelled.
-6. **Rows touched and drifted.** group title→meta was a 6px box gap (13px ink); the TOC
-   rules sat 55px under one title and 17px above the next; the publication column left
-   111px under the guideline title and the book photo's bottom aligned with nothing.
-
-### Candidates (scratch boards, real photo, identical copy)
-
-Renders: `shots/hero-candidates/cand-a-split.png`, `cand-b-kongre.png`,
-`cand-c-veri.png` (1440×900, read at 1:1).
-
-| axis | A "Tek hasta, iki uzman" | B "Kongre lead" | C "Klinik veri" |
-|---|---|---|---|
-| mechanism | message column centred against a 560×560 cardiology frame; proof strip docked to the photo's bottom edge | date/venue at 80px display, countdown, registration as the only action; no photo | typographic hero + 360px ECG strip + 44px figures; no photo |
-| refuses | putting the congress in the hero (the primary is registration, the headline stays the society's) | naming the society in the first sentence | carrying feeling with photography |
-| visual role | PROVES — the stethoscope on the chest shows "the patient's physician", no face, cool room | — | — (the ECG is the signature graphic) |
-| hierarchy | 5 | 5 | 3 |
-| story | 5 | 2 | 3 |
-| first-5-seconds | 5 | 4 | 3 |
-| fit | 5 | 4 | 4 |
-| consistency | 5 | 3 | 4 |
-| accessibility | 5 | 4 | 4 |
-| **total** | **30** | 22 | 21 |
-
-**A** wins: hook + proof + action in one viewport, the society speaks before the
-congress, and the photo's role is stated. **B** rejected: no society identity; the
-countdown's number and meta were hand-aligned at different sizes (visible 6px baseline
-drift) and the lower 200px were empty. **C** rejected: an ECG alone does not say what
-the product is; the job is unclear in the first five seconds and the lede arrived after
-the figures.
-
-### Decision (written, built)
-
-1. **Hero = A.** Left column 560px, its block centred inside the 560×560 photo frame
-   (x760); the title is a deliberate 2-line lockup (`Hastanın` / `hekimi.`); the CTA
-   group is one row.
-2. **The proof strip is neutral.** The black band is gone: a full-width `white` strip
-   under a 1px `line.soft` rule, 44px `stat` figures in `ink.900`, 13px labels in
-   `ink.600` (AA 6.43), dividers on the 3-column cell boundaries, own rhythm
-   (28/48/10/20/28 = 134). Reason: principles §6 — a near-black surface is outside the
-   system, and "quiet interface, loud data" was the point of the strip all along.
-3. **One primary: congress registration.** hero `Kongreye kayıt ol` (red.600) + ghost
-   `Derneği tanı`; nav keeps the outline `Üye ol` (a ghost, not a fill); the band's
-   button is bone (`onred`); the page closes on a `Başvuruyu başlat →` link. Saturated
-   fills on the board: 1.
-4. **The band's CTA group is one row.** `ctaRow()` draws the button and its ghost link
-   at one vertical centre with a fixed 32px gap; the band's height derives from its
-   content (316).
-5. **Ghost numerals were reduced, not removed.** 01–04 are now `figure` 30px mono in
-   `ink.400`, on the kicker's line (baseline-aligned) with the section title starting on
-   the page's left edge. Reason: at 44px sans they competed with 44px titles; deleting
-   them would delete the product's spine (principles §5). New helper `headIndex()` is
-   the home page's section grammar; inner pages keep `head()` (the shared helper was not
-   touched).
-6. **Row joints fixed from the block's own edge.** group title→meta 12px (≈20px ink),
-   row height from content (112); TOC rows through `rows()` so each rule lands on a
-   block's bottom edge; the two publication links share one line (y+282) and the book
-   photo's bottom edge sits on it.
-7. **Story spread.** hook (the cover) → proof (the ECG figure + the imprint) → path
-   (`Bu sayıda`) → action (the cover's one primary).
-
-## M7 · 01 hero — concept-first reset (2026-11-02, 1:1)
-
-**M6 note (later the same day).** The photo-led hero was withdrawn. A patient/exam
-image is not the society's visual language even when it is well cropped; the hero's
-visual must be an artifact a physician recognizes (ECG strip, guideline figure,
-anatomy plate, algorithm, cover) or the community gathered. The rule is written in
-`principles.md` §10. This milestone also fixes the process: the previous round
-produced three layouts of one hero, not three ideas. A candidate is now an object
-(`ux-design-process` §3, "Concept before composition").
-
-### Why the delivered hero was rejected (read at 1:1 from `shots/01-ana-sayfa.png`)
-
-1. **The proof strip is a glued shelf.** `img-hero`'s bottom edge is the strip's top
-   rule: a 560px photo ends on a full-bleed `white` surface with no gap and no shared
-   line (`img-hero touches hero proof surface`, 0px). At 1:1 the photo looks cut by a
-   shelf, not ended.
-2. **Four planes in the first screen.** paper (156–716) → white strip (716–850) →
-   107px paper → red band (962–1278). The strip is a section between the hero and the
-   page, not the hero's evidence; that is the "dikiş" the user read.
-3. **The strip outranks the message.** Four 44px figures on a 134px white band are
-   the second-loudest element in the viewport; proof becomes a destination instead of
-   evidence under the promise.
-4. **The left block is four pieces, not a column.** Kicker ink→title 22px, title→lede
-   49px, lede→CTA 37px; the CTA ends at 644 while the photo ends at 716 (72px), and
-   the title's second line leaves 128px of its 560 box empty.
-5. **The photo carries no place or scale.** A stethoscope bell on skin is the heart
-   being heard, but the frame says nothing about Ankara, 6.847 colleagues, a congress
-   or a guideline; at 560px it is a skin-coloured texture, and the system's
-   paper/white/red never enters the image.
-6. **The hero and the congress are two worlds.** The primary is registration, but the
-   date/venue arrive 318px later in a separate red field after 112px of empty paper.
-7. **No authored object.** Text-left / image-right is the same scaffold as 04, 06 and
-   10; the hero has no full-bleed moment and no object of its own (principles §3.3).
-8. **The visual language is wrong, not just the crop.** A patient/exam image cannot
-   carry a scientific society's opening; see principles §10.
-
-### Visual language (new, principles §10)
-
-No patient, exam, chest, hand or stethoscope. The visual is a domain artifact: a
-12-lead strip, a guideline figure (forest plot / evidence table), an anatomy plate, a
-clinical algorithm, a journal cover or a congress programme. Draw it ourselves as
-vector; a photo only as a place (hall, venue) or a publication object, never a stock
-smile. Figures are measured: grid, lead labels, units, evidence grades, page counts.
-
-### Concept candidates (objects, not layouts)
-
-Renders: `shots/hero-candidates-3/` (`cand-sayi`, `cand-afis`, `cand-algoritma`,
-`cand-levha`), each 1440 wide, read at 1:1 and shrunk to 200px side by side with the
-shipped hero. No candidate shares a photo, a proof block, a band or a left
-headline+lede+CTA arrangement.
-
-| object | "this page is a …" | mechanism | refuses | visual role | H | S | 5s | F | C | A | D | total |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| **SAYI** | the society's own issue | 1200×740 cover: masthead, issue, coverlines, a self-drawn 3-lead plate, `Bu sayıda` contents, imprint | making the congress the hero; a photo | PROVES the work through the instrument + publication | 4 | 5 | 4 | 4 | 5 | 5 | 5 | **32** |
-| AFİŞ | a congress poster | full-bleed red, 520px `12`, a white trace across, date + one bone CTA | naming the society first | SETS the date; the trace is the science | 5 | 3 | 5 | 4 | 4 | 4 | 5 | **30** |
-| ALGORİTMA | a clinical decision chart | start `Dispne · EF %35` → `EF ≤ %40?` → group / guideline / course → `Kılavuzu aç` | the hero as a picture | SHOWS the society as the path after the decision | 4 | 3 | 3 | 4 | 4 | 4 | 5 | **27** |
-| LEVHA | an anatomy plate | schematic 4-chamber heart, 12 numbered leaders = 12 groups, legend `Levha I` | the web-hero grammar | SHOWS the field | 3 | 4 | 4 | 3 | 4 | 4 | 5 | **27** |
-
-H hierarchy · S story · 5s first-5-seconds · F fit · C consistency · A accessibility ·
-D distinguishability. Scores are the maker's; the independent review is a separate gate.
-
-**Thumbnail test (200px, side by side with A).** All four are unmistakable: a white
-cover with a masthead, a red poster with a `12`, a light flowchart, a plate with a
-heart. None repeats A's photo+strip or another candidate's object. No elimination.
-
-### Decision
-
-**Superseded by M8** (2026-11-03): the user chose the afiş; the cover is parked (§ Parked concepts).
-
-**SAYI.** The site becomes the society's own publication: the issue (`Cilt 12 ·
-Sayı 1 · Mart 2027`), the cover figure (the instrument), the contents (the site's six
-paths with page numbers) and the imprint (the four figures). It keeps the M6 story
-order — the society speaks before the congress — while the congress is a coverline
-and the one primary, not a band. It is the most distinguishable cover at 200px, and
-it needs no photo: the plate is vector, so a rebuild has nothing to re-import.
-
-Rejected:
-
-- **AFİŞ** is the most immediate at a glance, but it makes the congress the hero and
-  the society a 13px line — the inversion M6 rejected. Its 520px numeral sits outside
-  the fs scale (a declaration every future edit would carry). Keep it as a campaign
-  layout for 06, not the home hero.
-- **ALGORİTMA** is the most insider idea, but its terminal action is `Kılavuzu aç`,
-  which changes the page's task; the `Hayır` branch ending at `Kongre 2027` is not a
-  clinical path, and the chart leaves the lower half of the viewport empty.
-- **LEVHA** is the strongest metaphor for "12 groups on one heart", but the drawn
-  heart reads as a schematic valentine, not a Nether/Gray plate; the numbers scatter
-  and the legend carries the page. It needs an illustration pass before it can claim
-  `Levha I`.
-
-### As-built
-
-The cover sheet is 120..1320 × 740 (120/120 margins); the page resumes at 992 after
-the 112 rhythm; board height 4064. There is no `kongre band` and no `hero proof`
-strip: the date, venue, countdown, registration and the four figures live in the
-cover. The masthead is the mono wordmark at 80, so the cover carries the same mark
-as the navigation; the candidate's plate label `12 DERİVASYON`/V1 was corrected in
-the build to a limb-lead record (I/II/III, `KAPAK · EKG KAYDI`). The page's only red is the primary + the ECG trace (data). Lint 0 high;
-`design_qa` and `copy_lint` clean; `ux_gate` passes the 01 items and reports only the
-mobile/state boards owned by a later milestone. Tiles + regions attested.
-
-### Image inventory (other screens — changes deferred)
-
-| screen | image | what it shows | fits the new rule? | recommended replacement |
-|---|---|---|---|---|
-| 01 | `img-hero` (39192342) | stethoscope bell on a bare chest, hand | **no** — patient/exam | removed; the cover plate is vector |
-| 05 | `img-angio` (39459346) | cath lab team at a monitor, masked | **no** — procedure/clinical scene | a self-drawn coronary map or an equipment detail with no people |
-| 06 | `img-cath` (28583897) | two clinicians at a cath monitor | **no** — clinical scene | a congress hall/poster session, or a cath-lab equipment plate |
-| 12 | `img-lab` (28585011) | 12-lead ECG paper + electrodes | **yes** — scientific object, no patient | keep; may be redrawn as the 12-lead plate |
-| 13 | `img-desk` (35044388) | stethoscope + ECG electrodes on a card | **borderline** — stethoscope as an object | an ECG-only detail or a guideline figure |
-| 15 | `img-round` (6129043) | ward round, doctors at a patient | **no** — patient/exam | a poster session or a newsroom/committee scene |
-| 16 | `img-team` (20370745) | doctor reviewing an image with a patient | **no** — patient | a journal spread or a speakers' panel |
-| 19 | `img-auth` (8460227) | masked patient with a monitor | **no** — patient | a monitor/ECG detail with no patient, or the member card |
-
-Changes are a separate round; this milestone only records the inventory.
-
-### Hero visual contract (mobile twin)
-
-**Visual type:** our own vector three-lead ECG strip (I/II/III, grid 8px minor / 40px
-major, `25 mm/s · 10 mm/mV`); **aspect:** 640×220 (2.91:1); **source:** the build
-(`screen-01.js` local `coverGrid`/`coverTrace`), no photo, no Pexels. Mobile twin:
-390×150, the same drawing under the coverline, one primary.
-
-### Open items
-
-- `tools/media.py` still pins `img-hero` (39192342) in its table; `build.py --restore`
-  uses provenance, so the rebuild is correct, but a future `media.py --all` would try
-  to place a photo that no longer has a slot. The media owner should drop that entry.
-- The `Bu sayıda` rows are content, not wired interactions; the masthead is the
-  navigation. A later prototype pass may link the contents paths.
-- The mobile twin and the empty/loading state boards are the later milestone's work.
+1. **A candidate is an object, not a layout.** A hero is named "this page is a ___" (a
+   poster, a journal cover, a plate, a chart, a map) and drawn as that object; three
+   compositions of one idea are one candidate (`ux-design-process` §3).
+2. **No patient, exam or stethoscope.** The hero's visual is an artifact a physician
+   recognises (12-lead strip, guideline figure, anatomy plate, algorithm, cover) or the
+   community gathered. A patient/exam image is not this society's visual language, however
+   well cropped (principles §3.8). `img-echo` and the stethoscope hero are gone with their
+   slots; the surviving images were re-inventoried in §6.
+3. **Hero images from the withdrawn rounds** (kept only as the record of why): stethoscope
+   bell on skin (rejected: patient/exam), a 3-lead plate cover (M7's choice, superseded),
+   red postcard with a white trace (rejected: a second red field). Their renders are in
+   `shots/hero-candidates-2/` and `shots/hero-candidates-3/`; nothing is rebuilt from them.
 
 ## M8 · 01 hero — five objects, the user chose the poster (2026-11-03)
 
@@ -610,8 +437,16 @@ the nav CTA as "primary-action", so the hero primary is covered by an explicit
 
 ## Parked concepts
 
-Two of the five M8 candidates are kept as reproducible objects. Their boards stay on
-`_scratch` and each has an idempotent build script; neither is the live hero.
+Two of the five M8 candidates are kept as parked objects. Their boards stay on `_scratch`
+and each has a build script; neither is the live hero.
+
+**What is proven, and what is not.** The two scripts are *reconstructions*: each was
+generated from a read-only structure dump of its live board (names, geometry, type, fills)
+and has been validated statically only — `node --check`, plus one run of its data walk
+against a stub plugin API (41 and 39 children, the right photo slots). They have **not**
+been executed against Penpot, so idempotency (reuse board → clear children → redraw) is a
+property of the code, not a runtime observation. The PNGs in `shots/hero-candidates-4/` were
+produced by the original candidate round, **not** by these scripts.
 
 | concept | "this page is a …" | when to use it | build script | render |
 |---|---|---|---|---|
@@ -634,3 +469,31 @@ field inside the outline, not exact province positions).
 `_scratch` aday board'ları ve `shots/hero-candidates-4/` render'ları kullanıcı isteğiyle
 tutulur; kullanıcı aksini söyleyene kadar silinmez.
 
+## M9 · Completion round — states, library, two design defects (2026-11-03)
+
+- **Components (30).** `screen-components.js` builds the `component sheet` (9 families ×
+  state variants). Naming is `aile-durum` (`button-primary-focus`), not `aile/durum`: Penpot
+  treats `/` in a shape or component name as a path separator and rewrote `button/primary`
+  to `button / primary`, so the first run created 15 of 30 components and the mismatch was
+  silent. The script now drops its own normalised leftovers, names families with a dash, and
+  clears non-board children so a second run doubles nothing.
+- **States.** `01-bos`, `07-program-loading`, `09-kayit-hata` are built and referenced by
+  the spec; `ux_gate` over the whole spec exits 0. `09-kayit` entered the spec with the error
+  state, and its masthead CTA became a ghost so the form's `Kaydı tamamla` is the board's one
+  saturated primary (the gate counts saturated CTAs; there were two).
+- **07-program cards.** `lib.fitCards` now re-settles a card's meta on the title's measured
+  ink before sizing the card — the estimate model cannot tell where a title wraps. `sess
+  card 2` and `8`: 128px / 40px joint → 104px / 16px, matching the row's cards; the accent
+  bar keeps its padding.
+- **08-bildiri FAQ.** The four answers are 16px `body` (were 13px `meta`), row pitch 60 → 72,
+  board 2568 → 2632; the footer docks to the last rule.
+- **19/20 contrast.** Four 13px labels carried a shape opacity that failed AA on `red.600`
+  (`al sub` and `al foot` .72 → 3.66:1, `al caption` .80 → 4.25:1, `mc label` .72). They are
+  opaque `on.red` now (6.04:1, pixel-verified). The intentional .88/.85 secondary lines stay:
+  measured 4.88 / 4.64:1 on the render.
+- **Surface tokens.** `craft-rules.json` gains `surface_white` / `surface_alt` (values read
+  from `tokens.json`) for the tool-side surface audit.
+- **Verification limits.** Crop tiles come from `crop_board`, whose region heuristic still
+  picks the nav CTA and whose off-origin bug mis-framed three state crops; those manifest
+  notes say so and the coordinator re-cuts after the tool fix. Contrast on photographs is
+  measured against the pixels behind each ink box, never against token pairs alone.

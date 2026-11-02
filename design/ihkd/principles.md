@@ -1,21 +1,22 @@
 # İHKD — stance, voice, composition
 
-The rules a token cannot express. Written before the screens.
+What a token cannot express. Mechanics live in the skills (`penpot-design-system`,
+`references/craft.md`, `design-verification`); this file states the project's stance and the
+decisions that are its own.
 
 ## 1. Stance
 
-**One patient, two specialties.** Every page should make the same point in a different
-form: the internist and the cardiologist are looking at the same person. A congress session
-with two chairs, a guideline co-signed by both groups, a member card that lists one working
-group but never one discipline.
+**One patient, two specialties.** Every page makes the same point differently: the internist
+and the cardiologist look at the same person. A session with two chairs, a guideline
+co-signed by both groups, a member card that names one working group and never one
+discipline.
 
-**A clinical product, not a brochure.** The member desk is the centre of gravity. Public
-pages earn the right to that desk; they never imitate it. Anything that would look at home
-on a hospital's "about us" page is rewritten or removed.
+**A clinical product, not a brochure.** The member desk is the centre of gravity; public
+pages earn the right to it and never imitate it. Anything that would sit on a hospital's
+"about us" page is rewritten or removed.
 
-**Quiet interface, loud data.** Chrome is grey and white; the numbers, dates and evidence
-grades are the only things allowed to be bold. If the interface is competing with the data,
-the interface is wrong.
+**Quiet interface, loud data.** Chrome is grey and white; numbers, dates and evidence grades
+are the only loud things. If the interface competes with the data, the interface is wrong.
 
 ## 2. Voice
 
@@ -27,203 +28,82 @@ the interface is wrong.
   `sağlığınız için`, `acele edin`, exclamation marks.
 - Clinical abbreviations stay: `STE`, `EF`, `KKY`, `BKA`, `TAVİ`, `GİS`.
 
-## 3. Composition rules
+## 3. Composition
 
-1. **One container: the card.** Content that can be acted on or read as a unit sits in a
-   white card with a 1px border and 8px radius. Text that is merely a paragraph is not
-   carded. Two card styles only: `card` (24px padding) and `feature` (32px padding).
+1. **One container: the card.** What can be acted on or read as a unit sits in a white card
+   with a 1px hairline; a paragraph is not carded. Two paddings only: 24px (`card`) and 32px
+   (`feature`).
 2. **Two rhythms.** Public: 112px between sections, 24px between cards. Desk: 24px gaps,
    44px rows, no section rhythm — a desk is scanned, not strolled.
-3. **One full-bleed moment per page.** A photograph may run edge to edge once; the rest are
-   contained image cards. Two full-bleed images on one page is a magazine, not a product.
-4. **The accent is an action.** Arterial red appears on: primary button, active nav
-   item, link, selected chip, progress fill, focus ring, the live ECG trace, and the
-   congress band. Kickers and category labels are graphite, never red. If a
-   screen has five red elements, three are wrong.
-5. **Signal is desaturated on purpose.** `signal.600` is a muted brick so that it reads as
-   "attention" without becoming a second brand colour. It appears only for a passed
-   deadline, an invalid field, or a cancelled session.
-6. **Type does the hierarchy, not colour.** Size and weight separate levels; colour only
-   separates primary text from meta (`ink.900` vs `ink.500`). No coloured headings.
-7. **Photography is graded and captioned.** Cool, slightly desaturated, captioned in 13px
-   sentence case. No photo behind text, no gradient scrim, no stock smile at the camera.
+3. **One full-bleed moment per page.** A photograph may run edge to edge once (the 01 poster
+   is that moment); everything else is contained.
+4. **The accent is an action.** Arterial red appears on: primary button, active nav item,
+   link, selected chip, progress fill, focus ring, the live ECG trace. Kickers and category
+   labels are graphite, never red. A screen with five red elements has three wrong ones.
+5. **Signal is not a second brand colour.** `red.100` surface + `red.700` text for a passed
+   deadline, an invalid field, a cancelled session. No green "success", no blue "info".
+6. **Type does the hierarchy, not colour.** Six sizes (13 / 16 / 22 / 30 / 44 / 80); size and
+   weight separate levels, colour only separates primary text (`ink.900`) from meta
+   (`ink.500/600`). No coloured headings.
+7. **Ghost numerals.** Section order is carried by a 44px `ink.400` numeral in the kicker's
+   line — felt, not read; the title owns the left edge.
+8. **Photography is a place or a publication object**, graded cool and captioned in 13px
+   sentence case. No patient, no examination, no stock smile (brief §6).
 
-## 4. What would make this fail
+## 4. Visual language — the congress poster (01, M8)
 
-- A hero with a photo behind a headline and a dark gradient.
-- Three icon cards reading `Kalite · Güven · Yenilik`.
-- A member area that is the public nav with a name in the corner.
-- A congress programme without a time gutter and hall columns.
-- Guidelines as image cards with no year, evidence grade or page count.
-- Shadows, glows, or a second accent.
-- A serif headline (that is the other project's register, not this one).
+The home page opens as a **poster over the hall**, chosen by the user:
 
-## 5. Retrospective — why the first two attempts looked like the other project
+- **Full bleed, real place.** A 1440×668 photograph of the auditorium; the type sits on the
+  `hero scene` board whose `ink.900` fill is the surface behind the text. **No gradient
+  scrim, no overlay rectangle.**
+- **The date is the message, the society is the signature.** `22–25 Nisan 2027` at 80px;
+  `Hastanın hekimi.` at 30px above the white ECG trace and the association's name as a 13px
+  imprint below it, on the poster's darkest band.
+- **One numeral, vector.** The edition `12` is a path (Inter Tight 700 outlines), not a text
+  node: at poster size a text node would be a seventh type size. It is a layer of the poster,
+  not copy.
+- **One trace.** A white 1440×30 ECG line across the audience — the instrument, not a
+  divider.
+- **One primary.** `Kongreye kayıt ol` (saturated) + ghost `Programı gör`. The page's other
+  actions are links.
+- **Proof on paper.** The society's four figures are a 44px stat strip on `paper` under the
+  poster's edge, not small text on the photo.
 
-Written after the third direction, because the first two failed the same way.
-
-**What happened.** v1 (cream, green, Source Serif, § strips) and v2 (white, cobalt, cards)
-were both rejected as "the same as the brain congress". They were. Only the hue changed:
-
-| axis | brain congress | v1 | v2 | verdict |
-|---|---|---|---|---|
-| surface | warm paper | warm paper | cool white | light page in all three |
-| density | 96px sections, hairlines | 96px, hairlines | 112px, card borders | same rhythm |
-| type | Plex Sans + Mono | Serif + Mono | Serif + Mono | same three-role split |
-| section grammar | numbered strip | numbered strip | accent bar + title | a label above a rule |
-| composition | hero, stats, cards, banner, list | same | same | a landing page |
-
-**Why.** Three causes, in order of damage:
-
-1. **The primitive library was inherited.** v2's `lib.js` was a rewrite of the brain
-   project's `screen-kit`: the same `rect / board / text / rule` atoms and the same
-   `strip / plate / footer` blocks. Reusing the atoms reuses the grammar — a new palette on
-   old primitives always produces the old page.
-2. **Colour was treated as the system.** Hue is the last axis, not the first. Changing
-   vermilion to green to cobalt to crimson never touched surface, density, type roles or
-   composition, so the thumbnail stayed identical.
-3. **The brief described print.** "Data strip, plate captions, folio, hairlines" is poster
-   vocabulary. The build was faithful to a brief that had already chosen the answer.
-
-**Rules that follow.**
-
-1. Before any colour, fix four structural axes: **surface** (light / dark / tinted),
-   **density** (the rhythm in px), **navigation model**, and **one element that exists only
-   in this product**. A direction that does not name all four is not a direction.
-2. **Never reuse the previous project's primitive library.** Write a new `lib.js` from the
-   four axes; only then pick type and colour.
-3. **Thumbnail test.** Shrink the home page to 200px wide next to the previous project. If
-   they could be siblings, the direction failed — go back to the axes, not to the palette.
-4. **Write "this is not" from the rejected artefact**, naming its concrete features
-   (cream page, hairline rows, serif headline, numbered sections), not from generic clichés
-   ("no navy hero").
-5. Record the rejected screenshots, not just the words. A rejection that is not visible gets
-   rebuilt.
-
-**The third direction, stated on the axes.** Surface: near-black `#0B0E11`, one warm-white
-text colour, one arterial red — a viewer, not a page. Density: 96px section rhythm but 44px
-data rows; the desk runs at 24px. Navigation: a 4px red bar and a one-line masthead that
-never grows. Signature element: an **80px graphite section numeral** that carries the page
-order, plus full-bleed photography with no frame. No serif anywhere in the interface; the
-serif is reserved for document text only.
-
-## 6. Colour, argued from the work
-
-The palette is not a mood board. It follows what these two specialties actually look at —
-with the lights on. An earlier direction made the viewer near-black; it read as gloom, not
-as clinical focus, and it was rejected. The reading room has daylight: the canvas is a
-cool clinical grey, text is near-black ink, and the only saturated colour is arterial red.
-
-- **Daylight canvas, not paper, not black.** `paper` `#F2F4F5` is the lit examination
-  room: neutral, cool, shadowless. Panels are pure `white`, so a card reads as the
-  printed sheet on the desk. `#000`-adjacent surfaces appear nowhere except 1px
-  instrument details; a board that renders near-black has broken the system.
-- **Bone is the printed sheet.** `bone` `#FFFFFF` is the guideline you print, the journal
-  you fold, the letter from the board. On the grey canvas a white sheet needs no border
-  to read as an object; inside it, text is `doc.text`, never `ink.*`.
-- **Arterial red, nothing else.** `#C4122F` is the colour of the thing the society is named
-  after. It marks action (buttons), time (deadlines, congress) and the live trace. There is
-  no second accent, no green for "success", no blue for "info": those are states, written in
-  words and rules, not in colour.
-- **Ghost numerals, not ink numerals.** Section numerals are `ink.400`: oversized order
-  marks that stay recessive. A numeral in full ink would compete with the title; the
-  spine is felt, not read.
-
-Where each colour is allowed:
+## 5. Colour
 
 | surface | fill | text | used by |
 |---|---|---|---|
-| viewer | `paper` | `ink.900` | every public page, the desk |
-| panel | `white` | `ink.900` | forms, side panels, footer |
-| sheet | `bone` `#FFFFFF` | `doc.text` | guideline, journal TOC, article body |
-| band | `red.600` | `on.red` | one per page at most (congress, login) |
-| signal | `red.100` | `red.700` | deadline callout, invalid field |
+| ground | `paper` `#F2F4F5` | `ink.900` | every page, the desk |
+| panel | `white` `#FFFFFF` | `ink.900` | cards, forms, footer |
+| sheet | `bone` `#FFFFFF` | `doc.text` | guideline, journal TOC, article |
+| narrow band | `red.600` `#C4122F` | `on.red` | at most one per page |
+| signal | `red.100` `#FBE3E7` | `red.700` | deadline, invalid field |
+| poster | photo + `ink.900` | `on.ink` | 01 hero only |
 
-A screen with two red bands, or a bone sheet used as a card, has broken the system.
+`#000`-adjacent surfaces appear nowhere except 1px instrument details. A second accent, a
+bone sheet used as a card, or two red bands on one page all break the system.
 
-## 7. Incident — the photo stuck to the edge (Oct 2026)
+## 6. Accepted deviations (lint mediums/lows that are by design)
 
-The home hero photo was placed at x=800, w=640: right edge 1440, the board edge, 120px
-past the 1320 grid. Every gate passed — lint checks overflow past the board, not past the
-grid; the render at page scale looked nearly right. Cause, in order: (1) coordinates were
-hand-written in board space instead of derived from X/CW; (2) no declared-bleed list, so
-an edge-touching shape was ambiguous rather than wrong; (3) verification was by eye at
-page scale, which hides exactly this class. Durable fix, now in the skill and in the
-workspace definition of done: derive x/w from the grid constants, declare bleeds per
-screen, assert edges from the lint JSON geometry, and check margin symmetry at 1:1.
+- **13px microcopy.** Kickers, helper text, captions, time gutter, IDs, prices and legal share
+  one micro size, so the scale stays at six. The 13→16 step (1.23) is the one recorded
+  deviation (`craft-rules.json`, `min_step_ratio` 1.2); long 13px tabular lines still trip
+  `type.small_body` LOW and stay visible.
+- **Ghost numerals** (`head num`, `ink.400`) are 2.07:1 on paper: decorative order marks
+  redundant with the title beside them. Real copy never uses `ink.400`.
+- **Uppercase wayfinding** sits at ~31% of texts on the fee screen; the lint ceiling is the
+  DEFAULT 0.35 and passes without a project rule.
+- **Row heights are declared per surface**: programme 92px, fee/guideline/news rows 64–68px,
+  bilim-kurulu index 44px. Density follows the reading task.
+- **Other mediums stay visible** (dead space, intra-card gaps, inline mixed-size pairs):
+  measured per screen, fixed when they are defects, never thresholded away.
 
-## 8. Standing explanations (lint mediums/lows that are by design)
+## 7. Verification stance
 
-- Uppercase ratio: labels, kickers, table headers and section markers are
-  uppercase-tracked 11–12px by the type system. This is wayfinding, not shouting.
-  The label-heavy ceiling is now the lint DEFAULT (0.35); the fee matrix on 09
-  reaches 27/87 = 31%, so it no longer needs a project deviation.
-- 13px microcopy everywhere: kickers, helper text, captions, time gutter, IDs,
-  prices and legal share one micro size, so the scale stays at six sizes. The 13→16
-  step (1.23) is the craft checklist's body/meta-pair exception class (the checklist
-  names 16/14; ours is the same pair, one step tighter). That is the one recorded
-  deviation in `craft-rules.json` (`min_step_ratio: 1.2`); every other threshold
-  runs on DEFAULTS. Long 13px table-meta lines still trip the `min_body_size` low —
-  they are short tabular lines by design, and the low stays visible rather than
-  exempted.
-- Row heights are declared per surface, not tightened to one law: programme table
-  92px, fee/guideline/news rows 64–68px, bilim-kurulu index 44px. Scan tables breathe;
-  the dense index runs tight. Density follows the reading task.
-- Ghost numerals (`head num`, ink.400, 2.07:1) are exempt from the contrast gate:
-  44px order marks redundant with the section title beside them — felt, not read.
-  Real copy never uses ink.400; run contrast gates with `--ignore "head num"`.
-  They are not exempt from lint; they simply sit beside the largest type.
-- Other lint mediums stay visible rather than being thresholded away: inline
-  mixed-size baselines, dead space, and intra-card gaps are measured per screen.
-  A medium is fixed on the board when it is a defect; a number in a rules file is
-  not an exemption.
-
-## 9. Decisions — home tightening + programme rebuild (Nov 2026)
-
-Made from verified renders (01-ana-sayfa, 07-program), not from the old brief text.
-
-1. **One red band per page, enforced.** The home hero's red ECG strip (a second red
-   field beside the congress band) became a white card: red ECG trace (the trace is
-   data, allowed red), graphite kicker, ink date, red action link. The congress band
-   is the page's only red field. Kickers and category labels moved from red to
-   `ink.500` helpers-wide; red is spent only on action (buttons, links, selection)
-   plus congress and the live trace.
-2. **Ghost numerals stepped down, not removed.** They are the product's spine (§5),
-   so they stay — but 80px fought the section titles. Now 44px (`h2` size, still
-   `ink.400`, still exempt): recessive order marks beside 44px ink titles and 44px
-   mono stat figures. The parallel `NN / 06` counters on 01 were deleted instead:
-   they double-numbered the same order with the wrong denominator.
-3. **Data got louder, chrome got quieter.** Stat figures 30→44px via a new `stat`
-   role (the article's small `figure` 30px is untouched); stat labels 13px `ink.600`;
-   helper text `meta` 12→13px with a new `fs.13` token, synced. Tabular microcopy
-   (`data` 12px: time gutter, IDs, prices, legal) stays small by role.
-4. **Hero photograph, chosen from nine candidates.** Placed: RDNE Stock project
-   6129683 — wall-mounted 12-lead ECG monitor (V1–V6 visible), nurse from behind, no
-   face at the camera: the internist and the cardiologist looking at the same trace.
-   Rejected: fetal ultrasound 7089623 (wrong specialty), powered-off echo unit 7108402
-   (dead screens), monitor close-up 9408868 (good backup, no human), waiting-room
-   6129035 (faces, smiles), red stethoscope 5149754 (product cliché). Journal texture
-   replaced too: Brett Jordan 6770532 cropped to a `MEDICINE` masthead, so both 01
-   and 14 now use Robert Munteanu 3860983 (open pages, small body text, no headline).
-   Rejected: newspaper stacks, blank notebooks, archive shelving, German-spine shelf,
-   staged "Medical Research" flatlay, hand-writing-notebook. Full candidate table in
-   the milestone return; provenance in `media/provenance.json`.
-5. **Programme rebuilt for density.** 07 showed 9 sessions in 36 cells with no end
-   times and nine repeated `Programa ekle +` links. Now 22 April runs 18 thirty-minute
-   slots (09:00–18:00) × 4 halls with 19 sessions, every meta opening with
-   `HH:MM–HH:MM`; per-row links replaced by one `Seçili oturumları programa ekle`
-   above the table. Konsey sessions (six) carry two chairs and the red bar; the rest
-   keep the graphite bar. The meta line scopes the count: `22 Nisan 19 oturum ·
-   toplam 96 oturum` (96 is the four-day total).
-6. **Masthead estimator 8.9→8.2** so inter-link gaps match the underline estimator
-   used elsewhere; verified at 1:1 on the new export.
-
-## 10. Görsel dil (2026-11-02)
-
-- **Hasta, muayene, steteskop yok.** Hastanın bedeni, göğüs, ele alınan bir beden ya da rutin muayene karesi, ne kadar klinik görünürse görünsün kullanılmaz.
-- **Görsel, hekimin her gün tanıdığı bir artefaktır.** 12 derivasyon şeridi, kılavuz figürü (forest plot, kanıt tablosu), anatomi levhası, klinik algoritma, dergi kapağı, kongre programı. Vektörü kendimiz çizeriz; görsel markanın kendisidir.
-- **Önce bilim, sonra topluluk.** Kanıtı veri figürleri taşır; kongre salonu ya da poster oturumu topluluğu gösterebilir, kameraya gülümseyen stok asla.
-- **Fotoğraf ruh hâli değildir.** Yer (salon, mekân) ya da yayın nesnesi olarak girer; derneğin işinin yerine geçmez.
-- **Figür ölçülüdür.** Izgara, eksen, derivasyon etiketi, birim (`25 mm/s · 10 mm/mV`), kanıt düzeyi ve sayfa sayısı gerçektir; dekoratif bir kıvrım EKG değildir.
-- **Hero'da tek yazarlı nesne.** Kapak, levha, algoritma ya da afiş; fotoğraflı kart yığını değil.
-- **Kırmızı eylem ve veriye harcanır.** EKG izi, forest plot özet baklavası ve tek primary kırmızı olabilir; kırmızı bant varsayılan değildir.
+A written shape is not paint: prove with a render. Contrast on a photograph is measured
+against the **pixels behind the ink**, never against token pairs alone; type over a photo
+counts only once its darkest and brightest backing pixels both pass. A tile is read at 1:1
+before a screen is called finished, and a tool's own heuristic (a CTA picker, an off-origin
+crop frame) is never the evidence — the note in the manifest says which crop was inspected
+and what it shows.
