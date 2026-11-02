@@ -144,6 +144,24 @@ right. A 120px asymmetry survived every gate because the grid lived only in pros
 - 1:1 the margins. The four verification crops gain a fifth: left/right margin symmetry
   at the hero and at one dense section. Asymmetry hides at page scale and nowhere else.
 
+## Slots derive from content
+
+A slot's height comes from its measured content, never from a fixed grid
+constant. A time grid that maps minutes to px while copy height varies paints
+text over the next row — the lint `fit` family reports that after the fact;
+build it right the first time instead.
+
+- `assets/fit-slot.js` (loaded like `helpers.js`, exposes `storage.FIT`):
+  `fitSlotLive(container, children, opts)` grows the container to its ink
+  union plus padding; `fitRows(totalH, rows)` splits a fixed grid across
+  minima plus weights; `rideDown(shapes, fromY, dy)` moves followers.
+- A fixed slot that cannot hold its content is a **build error**
+  (`fitSlotLive` with `fixed`, or `fitRows` minima over total) — it throws,
+  the screen fails, the copy shortens or the slot grows. A warning scrolls
+  by; an error stops the screen.
+- After any copy swap, re-run the slot fit on the touched board before
+  exporting: `lint` proves the last build, `FIT` prevents the next defect.
+
 ## Media and rhythm (generic)
 
 - **Rebuilds wipe photos; reimport every slot on the board, not just the touched

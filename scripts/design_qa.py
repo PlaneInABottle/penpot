@@ -5,9 +5,12 @@
     design_qa.py --page Showcase        # audit a named page (never switches the view)
     design_qa.py --strict               # exit 1 on hard-coded fills too
     design_qa.py --json report.json     # write the raw audit payload
+    design_qa.py --lint-json lint.json  # also fail on high findings from
+                                        # `design_lint.py --json lint.json`
 
 Exit codes: 0 clean, 1 findings that --strict escalates or that are always fatal
-(orphan components, duplicate token set names), 2 environment problem.
+(orphan components, duplicate token set names, high lint findings via --lint-json),
+2 environment problem.
 
 Read-only against the file, and leaves the user's current page alone: a named page
 is audited in place, so `penpot.currentPage` never changes. The browser tab with the
@@ -62,11 +65,19 @@ def duplicate_set_names(sets: list[dict]) -> list[str]:
     return sorted(name for name, count in seen.items() if count > 1)
 
 
+def lint_high_findings(doc: object) -> list[dict]:
+    """High findings from a `design_lint.py --json` payload (findings file or node list)."""
+    nodes = doc if isinstance(doc, list) else (doc.get("findings", []) if isinstance(doc, dict) else [])
+    return [f for f in nodes if isinstance(f, dict) and f.get("severity") == "high"]
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--page")
     ap.add_argument("--strict", action="store_true")
     ap.add_argument("--json", type=pathlib.Path)
+    ap.add_argument("--lint-json", type=pathlib.Path,
+                    help="lint --json findings file; high findings there are fatal here")
     args = ap.parse_args(argv)
 
     try:
@@ -110,6 +121,21 @@ def main(argv: list[str] | None = None) -> int:
     if not report["flows"]:
         findings.append("no prototype flow on this page")
 
+    lint_high: list[dict] = []
+    if args.lint_json:
+        try:
+            lint_doc = json.loads(args.lint_json.read_text())
+        except (OSError, json.JSONDecodeError) as exc:
+            findings.append(f"cannot read lint findings {args.lint_json}: {exc}")
+        else:
+            lint_high = lint_high_findings(lint_doc)
+            if lint_high:
+                boards = sorted({f.get("board", "?") for f in lint_high})
+                findings.append(
+                    f"{len(lint_high)} high lint finding(s) on {', '.join(boards)}: "
+                    + "; ".join(f.get("finding", "?") for f in lint_high[:5])
+                )
+
     print(f"page: {report['page']}  boards: {report['boards']}  shapes: {report['shapes']}")
     print(
         f"token coverage: fills {coverage['fills']} ({coverage_percent(coverage['fills'])}%), "
@@ -127,7 +153,7 @@ def main(argv: list[str] | None = None) -> int:
         args.json.write_text(json.dumps(report, indent=2) + "\n")
         print(f"wrote {args.json}")
 
-    fatal = bool(orphans or duplicated or coverage.get("renderMismatches"))
+    fatal = bool(orphans or duplicated or coverage.get("renderMismatches") or lint_high)
     return 1 if fatal or (args.strict and filled != total) else 0
 
 

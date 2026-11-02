@@ -34,12 +34,18 @@ DEFAULTS = {
     "max_measure_chars": 80,
     "allowed_radii": [0, 2, 4, 8, 12, 999],
     "board_widths": [1440, 390],
-    "max_uppercase_ratio": 0.15,
+    "max_uppercase_ratio": 0.25,
+    # Label-heavy UIs (nav, kickers, table headers) track 20-25% of their text
+    # nodes in uppercase without shouting; body-copy UIs stay far below it.
+    # A ratio above this reads as tracking-as-decoration, not hierarchy.
     "min_card_padding": 16,
     "min_panel_w": 200,
     "min_panel_h": 60,
     "dominant_ignore_prefix": [],
     "banned_text": ["lorem", "ipsum", "todo", "xxx", "placeholder", "başlık buraya"],
+    "fit_tol": 1.0,        # px tolerance for ink-vs-container containment
+    "fit_bar_delta": 4.0,  # MEDIUM when an accent bar differs from its text span by more
+    "fit_rule_min": 60.0,  # hairline rules shorter than this are ticks, not boundaries
 }
 
 BANNED_EXACT = {"Text", "Rectangle", "Board", "Group"}
@@ -338,6 +344,139 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
                 oy = min(ab, bt + (b.get("inkH") or 0)) - max(at, bt)
                 if ox > 8 and oy > 4:
                     add("medium", f"text {a['name']} collides with text {b['name']} ({ox:.0f}x{oy:.0f}px ink overlap)")
+
+        # ---- fit family: content must sit inside the slot it was given ----
+        # A text box can sit neatly inside its card while its measured ink
+        # spills past the card edge, a row boundary or a hairline rule — the
+        # box-vs-board overflow check above cannot see any of that, so a tall
+        # card grid reads clean while glyphs paint over the next row (the
+        # 07-program schedule: 5 meta texts crossed row rules at 0 high).
+        # All three checks read measured ink (textBounds), never the box.
+        tol = rules["fit_tol"]
+        inked = [n for n in inside if n["type"] == "text" and n.get("inkW") and n.get("inkH")]
+
+        def ink_box(n):
+            x = n["inkX"] if n.get("inkX") is not None else n["x"]
+            y = n["inkY"] if n.get("inkY") is not None else n["y"]
+            return (x, y, x + n["inkW"], y + n["inkH"])
+
+        def contains(outer, lx, ty, rx, by):
+            return (outer["x"] - tol <= lx and outer["y"] - tol <= ty
+                    and rx <= outer["x"] + outer["w"] + tol and by <= outer["y"] + outer["h"] + tol)
+
+        # 1. container overflow: the smallest rect/board on the same surface
+        # that wraps the text BOX wins (parent chain or a same-parent slot);
+        # when the measured INK leaves that container, the content outgrew
+        # its slot. The top board itself is excluded — box-vs-board overflow
+        # above already owns that edge.
+        slots = [n for n in inside
+                 if n["type"] in ("rectangle", "board") and n["id"] != board["id"]
+                 and (n["w"] or 0) > 4 and (n["h"] or 0) > 4]
+        for t in inked:
+            lx, ty, rx, by = t["x"], t["y"], t["x"] + (t["w"] or 0), t["y"] + (t["h"] or 0)
+            cands = [s for s in slots
+                     if (s["id"] == t.get("parentId") or is_ancestor(s["id"], t["id"])
+                         or s.get("parentId") == t.get("parentId"))
+                     and contains(s, lx, ty, rx, by)]
+            if not cands:
+                continue
+            slot = min(cands, key=lambda s: (s["w"] or 0) * (s["h"] or 0))
+            ix, iy, ir, ib = ink_box(t)
+            over = []
+            if ix < slot["x"] - tol:
+                over.append(f"left +{slot['x'] - ix:.0f}px")
+            if ir > slot["x"] + slot["w"] + tol:
+                over.append(f"right +{ir - slot['x'] - slot['w']:.0f}px")
+            if iy < slot["y"] - tol:
+                over.append(f"top +{slot['y'] - iy:.0f}px")
+            if ib > slot["y"] + slot["h"] + tol:
+                over.append(f"bottom +{ib - slot['y'] - slot['h']:.0f}px")
+            if over:
+                add("high", f"text {t['name']} overflows its container {slot['name']} ({', '.join(over)} ink outside)")
+
+        # 2. boundary entry: ink that overlaps a sibling container without
+        # being contained by it has entered the next slot — including the
+        # zebra/row bands a schedule paints behind alternating rows. Full
+        # containment is sitting ON a background and stays clean; only an
+        # edge crossing flags. Hairline rules are too thin for an area
+        # check, so they get their own strict crossing test below.
+        entered: set[str] = set()
+        for t in inked:
+            ix, iy, ir, ib = ink_box(t)
+            for s in slots:
+                if s.get("parentId") != t.get("parentId") or s["id"] == t["id"]:
+                    continue
+                if (s["w"] or 0) <= 4 or (s["h"] or 0) <= 4:
+                    continue
+                if s["id"] == t.get("parentId") or is_ancestor(s["id"], t["id"]):
+                    continue
+                ox = min(ir, s["x"] + s["w"]) - max(ix, s["x"])
+                oy = min(ib, s["y"] + s["h"]) - max(iy, s["y"])
+                if ox <= tol or oy <= tol:
+                    continue
+                if contains(s, ix, iy, ir, ib):
+                    continue
+                add("high", f"text {t['name']} enters sibling container {s['name']} ({ox:.0f}x{oy:.0f}px ink inside)")
+                entered.add(t["id"])
+                break
+
+        # 3. rule crossing: a hairline (<=2px) rule is a row/column
+        # boundary, and ink crossing its line paints two slots at once. The
+        # area-based checks above divide by ~zero here, so crossing is
+        # strict: ink must start on one side and end on the other with a
+        # real run (>8px) along the rule. Texts already caught entering a
+        # container are not reported twice.
+        long_rules = [n for n in inside
+                      if n["type"] == "rectangle"
+                      and (((n["h"] or 0) <= 2 + tol and (n["w"] or 0) >= rules["fit_rule_min"])
+                           or ((n["w"] or 0) <= 2 + tol and (n["h"] or 0) >= rules["fit_rule_min"]))]
+        for t in inked:
+            if t["id"] in entered:
+                continue
+            ix, iy, ir, ib = ink_box(t)
+            for r in long_rules:
+                if r.get("parentId") != t.get("parentId"):
+                    continue
+                horizontal = (r["h"] or 0) <= 2 + tol
+                if horizontal:
+                    ry = r["y"] + (r["h"] or 0) / 2
+                    run = min(ir, r["x"] + r["w"]) - max(ix, r["x"])
+                    if iy < ry - tol and ib > ry + tol and run > 8:
+                        add("high", f"text {t['name']} crosses rule {r['name']} (ink {iy:.0f}-{ib:.0f}px over line y={ry:.0f})")
+                        break
+                else:
+                    rx = r["x"] + (r["w"] or 0) / 2
+                    run = min(ib, r["y"] + r["h"]) - max(iy, r["y"])
+                    if ix < rx - tol and ir > rx + tol and run > 8:
+                        add("high", f"text {t['name']} crosses rule {r['name']} (ink {ix:.0f}-{ir:.0f}px over line x={rx:.0f})")
+                        break
+
+        # 4. bar vs content: a thin saturated vertical bar is an accent that
+        # belongs to the text column beside it, so its height must match the
+        # column's ink span within fit_bar_delta. Same-parent pairing only —
+        # a page-long divider next to an unrelated column is not its bar —
+        # and unsaturated dividers are exempt by design.
+        thin_bars = [n for n in inside
+                     if n["type"] == "rectangle" and n["id"] != board["id"]
+                     and (n["w"] or 0) <= 3 and (n["h"] or 0) >= 40]
+        for bar in thin_bars:
+            try:
+                if not bar.get("fill") or saturation(bar["fill"]) <= 0.5:
+                    continue
+            except (ValueError, TypeError):
+                continue
+            mates = [n for n in inked
+                     if n.get("parentId") == bar.get("parentId")
+                     and (n["inkX"] if n.get("inkX") is not None else n["x"]) >= bar["x"] - tol
+                     and (n["inkX"] if n.get("inkX") is not None else n["x"]) <= bar["x"] + 160
+                     and min(ink_box(n)[3], bar["y"] + bar["h"]) - max(ink_box(n)[1], bar["y"]) > 10]
+            if not mates:
+                continue
+            top = min(ink_box(n)[1] for n in mates)
+            bot = max(ink_box(n)[3] for n in mates)
+            if abs(bar["h"] - (bot - top)) > rules["fit_bar_delta"]:
+                add("medium", f"bar {bar['name']} h={bar['h']:.0f}px vs content span {bot - top:.0f}px "
+                              f"(Δ{abs(bar['h'] - (bot - top)):.0f}px over {rules['fit_bar_delta']:.0f}px)")
 
     return findings
 

@@ -1,0 +1,49 @@
+{
+  "project": "ihkd",
+  "defaults": {"accentMaxRatio": 0.3, "viewportH": 900},
+  "screens": [
+    {
+      "board": "01-ana-sayfa",
+      "page": "Kurumsal",
+      "task": "Ziyaretçi derneğin ne yaptığını bir bakışta anlar ve üyeliğe yönelir.",
+      "primaryCta": "hero cta",
+      "story": {
+        "hook": "hero label + hero title: klinik hekim topluluğu",
+        "proof": "hero band + istatistik satırı: sayı ve sonuç ilk viewportta",
+        "path": "kurs satırları (course cta 0-2): üç net devam yolu",
+        "action": "hero cta: tek baskın kayıt eylemi"
+      },
+      "states": [
+        {"state": "default", "board": "01-ana-sayfa"},
+        {"state": "empty", "board": "01-bos"}
+      ],
+      "mobile": {"board": "01-ana-sayfa-m", "page": "Mobil"},
+      "firstViewport": ["hero label", "hero title", "hero lede", "hero cta", "masthead cta"],
+      "claims": [
+        {"pattern": "course cta [0-9]", "count": 3, "label": "öne çıkan kurs yolu"}
+      ]
+    },
+    {
+      "board": "07-program",
+      "page": "Kongre",
+      "task": "Katılımcı üç günlük programda hangi oturumun nerede olduğunu bulur.",
+      "primaryCta": "masthead cta",
+      "story": {
+        "hook": "p label + p title: 12. Kongre programı",
+        "proof": "gün sekmeleri (day 0-4): üç günün tamamı görünür",
+        "path": "salon başlıkları (th hall 0-3): dört paralel salon",
+        "action": "prog add: kişisel programa ekle"
+      },
+      "states": [
+        {"state": "default", "board": "07-program"},
+        {"state": "loading", "board": "07-program-loading"}
+      ],
+      "mobile": "n/a",
+      "firstViewport": ["p label", "p title", "p note", "sess title 0"],
+      "accentMaxRatio": 0.004,
+      "claims": [
+        {"pattern": "sess title", "count": 96, "label": "programda listelenen oturum"}
+      ]
+    }
+  ]
+}
