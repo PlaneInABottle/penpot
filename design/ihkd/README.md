@@ -77,16 +77,16 @@ Lifecycle: `start(page, board, height)` (find-or-create, wipe children, paint
 | 04 | Kurumsal | 04-calisma-gruplari | 20e5225e-73fe-80f2-8008-ddaf3f95791b | 2088 |
 | 05 | Kurumsal | 05-grup-detay | 20e5225e-73fe-80f2-8008-dddfa2dba62d | 2684 |
 | 06 | Kongre | 06-kongre | 48eb7286-684f-8018-8008-e18d9ac60385 | 3840 |
-| 07 | Kongre | 07-program | 48eb7286-684f-8018-8008-e18de1b20b79 | 2716 |
+| 07 | Kongre | 07-program | 48eb7286-684f-8018-8008-e18de1b20b79 | 2856 |
 | 08 | Kongre | 08-bildiri | 48eb7286-684f-8018-8008-e18df3c083f2 | 2568 |
-| 09 | Kongre | 09-kayit | 48eb7286-684f-8018-8008-e18e04bbb783 | 2000 |
+| 09 | Kongre | 09-kayit | 48eb7286-684f-8018-8008-e18e04bbb783 | 1968 |
 | 10 | Kongre | 10-konaklama | 48eb7286-684f-8018-8008-e18e155d92c1 | 2400 |
 | 11 | Akademi | 11-akademi | 48eb7286-684f-8018-8008-e195e681d762 | 2488 |
 | 12 | Akademi | 12-kurs-detay | 48eb7286-684f-8018-8008-e195f464c9c3 | 1740 |
 | 13 | Akademi | 13-kilavuzlar | 48eb7286-684f-8018-8008-e196021511f5 | 2400 |
 | 14 | Akademi | 14-dergi | 48eb7286-684f-8018-8008-e19611df36e9 | 2000 |
 | 15 | İçerik | 15-haberler | 48eb7286-684f-8018-8008-e1961e99e8fd | 2080 |
-| 16 | İçerik | 16-makale | 48eb7286-684f-8018-8008-e1978c73ee8e | 2540 |
+| 16 | İçerik | 16-makale | 48eb7286-684f-8018-8008-e1978c73ee8e | 2416 |
 | 17 | İçerik | 17-takvim | 48eb7286-684f-8018-8008-e19796e7ecb7 | 2096 |
 | 18 | Üyelik | 18-uyelik | 48eb7286-684f-8018-8008-e197aa759d2e | 2292 |
 | 19 | Üyelik | 19-giris | 48eb7286-684f-8018-8008-e197b848b03b | 1024 |
@@ -107,20 +107,20 @@ above are superseded.
 | 04-calisma-gruplari | 238005 |
 | 05-grup-detay | 583029 |
 | 06-kongre | 991272 |
-| 07-program | 292390 |
+| 07-program | 298645 |
 | 08-bildiri | 272425 |
-| 09-kayit | 171843 |
+| 09-kayit | 172046 |
 | 10-konaklama | 716034 |
 | 11-akademi | 211899 |
 | 12-kurs-detay | 255395 |
-| 13-kilavuzlar | 384960 |
-| 14-dergi | 331920 |
+| 13-kilavuzlar | 406276 |
+| 14-dergi | 391425 |
 | 15-haberler | 177450 |
-| 16-makale | 578358 |
+| 16-makale | 630739 |
 | 17-takvim | 143214 |
 | 18-uyelik | 203774 |
 | 19-giris | 69866 |
-| 20-panel | 142864 |
+| 20-panel | 142738 |
 
 ## Photo provenance (`design/ihkd/media/provenance.json` — every placed photo covered)
 
@@ -166,6 +166,37 @@ Note: two flows share the name `kayıt` on different pages (Kurumsal start 01,
 Kongre start 09) — inherited from `flows.js`, harmless but confusing; renaming is
 owned by the flows milestone, not this one.
 
+## 2026-11-02 — the audit lint's findings, triaged
+
+`design_lint.py`'s audit rules (commit `1a081b2`) reported 6 high and ~30 medium
+findings across Kongre, Akademi, İçerik and Üyelik. Each was checked against a fresh
+export at 1:1 before it was believed; the triage:
+
+| finding | verdict | action |
+|---|---|---|
+| 06 `cf` ×4 high, 16 `dl` ×3, 20 `ai year` — "title and meta touch", 4-5px | false positive | `textBounds` reserves the font's descent under a figure that ends at its baseline; the render shows 17-24px of air. Rule now adds `min_gap_descender_ratio` (0.3 × size) when the top line has no descender glyph. Fixture: 3 new tests |
+| 11 + 13 `ph lede` ×2 high — "runs 305px past its 400px column band" | false positive | the 760px lede was measured against the *search field's* 400px underline 128px below. A text whose declared box is wider than its ink is contained by that box; the band rule now skips it. Fixture: `ColumnBandTest` |
+| 07 `track dot 0` high — marker 1.8px high | real | dot placed on the label's line centre (392 → 394, raw, off the 4px grid like every bullet dot) |
+| 13 pocket cards ×3 `surface.alt` beside white | real | white + `line.soft` hairline: they are content cards in a grid, not insets |
+| 20 `ecg card` 1020×200 `surface.alt` beside white cards | real | white + `line.strong`, same border as the aidat card beside it |
+| 07 `sess card` 12px inset ×12 | real | `HX` moved onto the 4px grid (510/1050 → 512/1056) and `CARD_PAD` 14 → 16; every hall now draws the same 16px inset |
+| 16 `dl v / dl l` ×3, 20 `ai year / ai amt` | false positive | same descender class as the first row |
+| 20 `ai-gap` (aidat rows 36px apart) | false positive | the rows are separated by a 1px rule; the divider test only accepted solids >8px tall. Hairlines and composites (ECG strip, quote bar) now count as dividers |
+| 16 `p1/p2` 80px, `p4/p5` 39px | real | one paragraph rhythm: `PARA_GAP` 30 (36.5px of ink air) with per-paragraph line counts |
+| 14 `editor` 70px between quote and attribution | real | attribution 46px under the quote; the card ended 26px under it (204px tall, was 232) |
+| 13 `feat` 126px, 16 `p2/q` 108px, `q/p3` 53px, `p3/dl label` 59px | false positive | a composite sits in the gap, or the lower text is an all-caps kicker that starts a block — both now suppress the "drifting copy" reading |
+| 10 `plan` 68px dead space | false positive | the card ends in four hall tiles; only text was measured. Trailing void is now measured against substantial objects too |
+| 07 day tabs 2px low, 09 `ÜYE` badge 2px high | real | baseline nudged after placement (the 4px grid cannot express 2px) |
+| 09 32px of paper under the white footer | real | board resized to 1968 (footer end), as 07/14/16 already do |
+| 16 `author` 50px dead space | real | card 120 → 100px, 24px top and bottom |
+| 07 cards 2 + 8 title-to-meta 40px | accepted | see gap 7 |
+| "type steps too close" (13→16) and 09's uppercase ratio | accepted | recorded deviations, see gap 4 |
+
+14, 13, 16, 09, 20 were rebuilt; each rebuild drops its photos, so `img-issue`,
+`img-desk` and `img-team` were re-attached with `import_media.py` from
+`media/provenance.json`. 07 and 20 had their flow links re-created (`k cta` →
+10-konaklama, `p cta` → 18-uyelik): a rebuild destroys interactions on its board.
+
 ## Gaps / limitations (honest list)
 
 1. Cross-page journeys stay unwired by design: `navigate-to` to another page stores
@@ -186,3 +217,25 @@ owned by the flows milestone, not this one.
 6. `build.py` `SCREENS` lists a `components` entry with no `components.js` file, so
    `build.py all` exits 1 after building all 20 screens. Pre-existing script-side
    condition; not touched (scripts/ owned elsewhere).
+7. 07's session cards 2 and 8 carry 24px of extra air between title and meta: the
+   line count is an estimate, and no character-count model separates two
+   26-character titles of different width ("Genç sporcuda EKG taraması" wraps,
+   "Biyobelirteçler: ne zaman?" does not). The estimate is deliberately the
+   conservative side — the alternative is a 5px ink collision. Measured, not fixed.
+8. `lib.link()` sizes its underline at `8.2px × label.length`, so a short label with
+   an arrow ("PDF indir →", "Makbuzları gör") draws an underline 10-20px past its
+   text. Real on every page, lib-side; `lib.js` is owned by the Kurumsal pass, so it
+   is recorded rather than patched here. Verified at 1:1 on 13 and 20.
+9. `design/ihkd/craft-rules.json` is referenced by `principles.md` §8 and by
+   `gate.py`, but does not exist in the tree: lint currently runs on DEFAULTS, which
+   is why the uppercase ceiling (0.35) and the 13→16 step (1.23) appear as mediums.
+   Gap 4 describes the file as if it were there; creating it changes thresholds for
+   every page (including the Kurumsal pass in flight), so it stays a recorded
+   decision for whoever owns the gate.
+10. `ux_gate` exits 1 on spec/file drift, none of it introduced here: 01-ana-sayfa
+   claims mobile board `01-ana-sayfa-m` and empty state `01-bos` (Kurumsal pass),
+   07-program claims a loading board and carries `"mobile": "n/a"` without the
+   reason the gate requires. Left to the screen owners.
+11. A rebuild destroys a board's photos and interactions: `start()` wipes children,
+   so `import_media.py` (from `provenance.json`) and the flow link have to be
+   re-applied after every screen build. The build script does not do this.

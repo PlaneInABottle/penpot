@@ -26,7 +26,9 @@ fees.forEach((f, i) => {
   const fy = 468 + i * 64;
   if (f[4]) S.rect(pb, "fee tint " + i, 120, fy - 12, 1200, 60, "red.050");
   S.text(pb, "fee name " + i, f[0], "body", "ink.900", { x: 120, y: fy, w: 180 });
-  if (f[4]) S.text(pb, "fee badge " + i, "ÜYE", "label", "red.700", { x: 168, y: fy + 4 });
+  /* +2 after placement: the 13px badge shares the 16px name's baseline at 486
+     (measured on the render; fy + 4 put it 2px high, and 2px is off the grid) */
+  if (f[4]) { const badge = S.text(pb, "fee badge " + i, "ÜYE", "label", "red.700", { x: 168, y: fy + 4 }); badge.y += 2; }
   S.text(pb, "fee a " + i, f[1], "data", "ink.900", { x: 720, y: fy, w: 200, align: "right" });
   S.text(pb, "fee b " + i, f[2], "data", "ink.700", { x: 940, y: fy, w: 200, align: "right" });
   S.text(pb, "fee c " + i, f[3], "data", "ink.700", { x: 1160, y: fy, w: 160, align: "right" });
@@ -71,5 +73,8 @@ S.btn(pb, "k cta", "Kaydı tamamla", 1044, 1532, 276, 52, "primary");
 S.text(pb, "k cta note", "Ödeme havale veya kredi kartı ile.", "meta", "ink.500", { x: 720, y: 1548, w: 300, align: "right" });
 
 S.footer(pb, 1648);
+/* the board ends with the footer: the declared 2000 left 32px of paper under a
+   white footer, which reads as an unfinished page edge in the export */
+pb.resize(1440, 1968);
 
 return JSON.stringify(S.end("09-kayit"));

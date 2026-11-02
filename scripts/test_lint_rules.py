@@ -278,6 +278,113 @@ class StatSizeTest(unittest.TestCase):
         self.assertEqual(_findings(nodes, "stats row"), [])
 
 
+class DeadSpaceTest(unittest.TestCase):
+    def _card(self, tiles=False):
+        card = _node(id="c", name="plan", type="board", parentId="pg",
+                     parent="pg", x=120, y=100, w=460, h=240, fill="#FFFFFF", stroke=True)
+        nodes = [_board(), card,
+                 _text("t", parent="c", x=140, y=120, w=200, h=39, size=30, line="1.1",
+                       text="A", ink_y=120, ink_h=37)]
+        if tiles:
+            nodes.append(_node(id="tile", name="hall 3", type="rectangle", parentId="c",
+                               parent="c", x=140, y=190, w=200, h=120, fill="#E8EBED"))
+        return nodes
+
+    def test_card_whose_text_ends_high_is_medium(self):
+        findings = _findings(self._card(), "dead space")
+        self.assertEqual(len(findings), 1)
+
+    def test_card_ending_in_a_tile_is_clean(self):
+        # 10-konaklama: the hall tiles reach 26px from the card edge
+        self.assertEqual(_findings(self._card(tiles=True), "dead space"), [])
+
+
+class FigureOverMetaTest(unittest.TestCase):
+    """A 44px figure over its 13px label: textBounds reserves the font's descent
+    under digits that have none, so 06-kongre's stat row measured 4px of air
+    where the render shows 24px. The rule keeps firing on prose."""
+
+    def _stack(self, figure="96", meta_y=160, rule=True):
+        nodes = [_board(),
+                 _text("value", x=120, y=100, w=240, h=61, size=44, line="1.1",
+                       text=figure, ink_y=100, ink_h=58.5),
+                 _text("meta", x=120, y=meta_y, w=240, h=20, size=13, line="1.5",
+                       text="oturum", ink_y=meta_y + 1.5, ink_h=16.5)]
+        if rule:
+            nodes.append(_node(id="rule", name="row rule", type="rectangle", parentId="pg",
+                               parent="pg", x=120, y=meta_y + 38, w=1200, h=1, fill="#DDE1E4"))
+        return nodes
+
+    def test_figure_without_descenders_is_clean(self):
+        # ink gap 3px, but "96" ends at its baseline: 3 + 0.3*44 = 16px of air
+        self.assertEqual(_findings(self._stack(), "ink gap"), [])
+
+    def test_figure_with_a_descender_still_fires(self):
+        # "9g" really does reach into the gap
+        findings = _findings(self._stack(figure="9g"), "ink gap")
+        self.assertEqual(len(findings), 1)
+
+    def test_figure_with_a_word_and_no_descender_is_clean(self):
+        # 16-makale's "14 saat" cell: the word carries no descender either
+        self.assertEqual(_findings(self._stack(figure="14 saat"), "ink gap"), [])
+
+
+class ColumnBandTest(unittest.TestCase):
+    """A hairline is a column band only for a text that has no box of its own.
+    11-akademi's 760px lede was measured against the search field's 400px
+    underline 128px below it and reported 305px of overflow that the box
+    already forbids."""
+
+    def _nodes(self, text_w, ink_w=705):
+        return [_board(),
+                _text("lede", x=120, y=100, w=text_w, h=62, size=22, line="1.5",
+                      text="46 kurs", ink_y=101, ink_h=60, ink_w=ink_w),
+                _node(id="line", name="search line", type="rectangle", parentId="pg",
+                      parent="pg", x=120, y=289, w=400, h=1, fill="#B9C0C6")]
+
+    def test_declared_width_text_is_not_measured_against_a_lower_rule(self):
+        self.assertEqual(_findings(self._nodes(760), "column band"), [])
+
+    def test_autowidth_text_past_a_row_rule_is_high(self):
+        findings = _findings(self._nodes(707), "column band")
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0]["severity"], "high")
+
+
+class IntraCardGapTest(unittest.TestCase):
+    def _card(self, extra=(), meta_text="ikinci satır"):
+        card = _node(id="card", name="card", type="board", parentId="pg",
+                     parent="pg", x=120, y=100, w=400, h=240, fill="#FFFFFF", stroke=True)
+        nodes = [_board(), card,
+                 _text("a", parent="card", x=140, y=120, w=360, h=22, size=16, line="1.5",
+                       text="Birinci satır", ink_y=122, ink_h=19.5),
+                 _text("b", parent="card", x=140, y=220, w=360, h=22, size=16, line="1.5",
+                       text=meta_text, ink_y=222, ink_h=19.5)]
+        return nodes + list(extra)
+
+    def test_two_texts_with_nothing_between_is_medium(self):
+        findings = _findings(self._card(), "intra-card gap")
+        self.assertEqual(len(findings), 1)
+
+    def test_hairline_between_the_lines_is_a_divider(self):
+        # 20-panel aidat: 2026 / 2025, 36px apart, a 1px rule at their centre
+        rule = _node(id="r", name="ai rule 2", type="rectangle", parentId="card",
+                     parent="card", x=140, y=175, w=360, h=1, fill="#DDE1E4")
+        self.assertEqual(_findings(self._card([rule]), "intra-card gap"), [])
+
+    def test_composite_between_the_lines_is_a_divider(self):
+        # 13-kilavuzlar: the ECG strip between the featured body and its meta
+        ecg = _node(id="e", name="feat ecg", type="group", parentId="card",
+                    parent="card", x=140, y=150, w=360, h=60)
+        self.assertEqual(_findings(self._card([ecg]), "intra-card gap"), [])
+
+    def test_all_caps_kicker_starts_a_block(self):
+        # 16-makale: p3 over "SAYILARLA PROGRAM"
+        nodes = self._card(meta_text="SAYILARLA PROGRAM")
+        nodes = [n if n["id"] != "b" else dict(n, fontSize=13) for n in nodes]
+        self.assertEqual(_findings(nodes, "intra-card gap"), [])
+
+
 class CopyLintTest(unittest.TestCase):
     def _find(self, text, terms=("kalp",), allow=()):
         import copy_lint

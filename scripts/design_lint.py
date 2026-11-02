@@ -51,6 +51,9 @@ DEFAULTS = {
     "min_gap_high_ratio": 0.25,  # under this share of the line it is HIGH
     "min_gap_title_size": 22,    # only a heading over a meta (not a label over a title)
     "min_gap_meta_size": 16,
+    "min_gap_descender_ratio": 0.3,  # a figure/caps line ends at its baseline, but
+                                     # textBounds still reserves the font's descent
+                                     # (measured 0.30em on 06's 44px "96")
     "marker_centre_tol": 1.5,    # px a bullet centre may drift from the line's ink centre
     "marker_rule_tol": 2.0,      # px a list separator may drift from the marker's left edge
     "marker_rule_gap": 48.0,     # how close below the item a separator still belongs to it
@@ -120,6 +123,16 @@ def line_height_multiplier(raw: str | None) -> float | None:
     except ValueError:
         return None
     return value / 100 if value > 4 else value
+
+
+# Glyphs whose ink goes below the baseline. A line of digits or capitals ends
+# at its baseline, but `textBounds` still reaches down through the font's
+# descender, so an ink-gap measured from it understates the air the eye sees.
+DESCENDERS = set("gjpqyçş,;()[]{}|/\\")
+
+
+def has_descender(raw: str | None) -> bool:
+    return any(ch in DESCENDERS for ch in str(raw or ""))
 
 
 def is_panel(node: dict, rules: dict) -> bool:
@@ -573,6 +586,13 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
                     continue
                 if not (-tol <= ix - r["x"] <= 60):
                     continue
+                if (t.get("w") or 0) - (ir - ix) > 8:
+                    # the text declares a box wider than its ink, so containment
+                    # is that box's job (rule 3 above); a hairline further down
+                    # belongs to the next block, not to this text's column
+                    # (11-akademi: the 760px lede against the search field's
+                    # 400px underline, 128px below and unrelated)
+                    continue
                 if not (0 < r["y"] - ib <= 140):
                     continue
                 over = ir - (r["x"] + r["w"])
@@ -664,6 +684,16 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
             if not desc:
                 continue
             bottoms = [ink_box(t)[3] for t in desc]
+            # a card whose last object is a tile, a photo or a chart is full:
+            # its own text stops high inside that object, which is the object's
+            # business, not the card's (10-konaklama: four 90px hall tiles, the
+            # letters 68px above the card's edge while the tiles end 26px above
+            # it). Only substantial objects count, so a hairline cannot mask.
+            bottoms += [n["y"] + (n["h"] or 0) for n in inside
+                        if n["id"] != c["id"] and is_ancestor(c["id"], n["id"])
+                        and n["type"] != "text"
+                        and (n.get("fill") or n.get("img"))
+                        and (n["w"] or 0) >= 24 and (n["h"] or 0) >= 24]
             lines = [(t.get("fontSize") or 0) * (line_height_multiplier(t.get("lineHeight")) or 1.5)
                      for t in desc]
             trailing = (c["y"] + c["h"]) - max(bottoms)
@@ -703,13 +733,32 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
                     continue
                 gap = by0 - ay1
                 mid = (ay1 + by0) / 2
-                divs = [n for n in inside
-                        if n["id"] not in (a["id"], b["id"], c["id"])
-                        and n["type"] in ("rectangle", "board") and (n.get("fill") or n.get("img"))
-                        and (n["h"] or 0) > 8 and n["y"] <= mid <= n["y"] + (n["h"] or 0)
-                        and min(ax1, bx1, n["x"] + (n["w"] or 0)) - max(ax0, bx0, n["x"]) > 8]
-                if divs:
+                def divides(n):
+                    """An object in the air between the two lines owns that gap.
+
+                    Solids and composites (an ECG trace, a quote bar) count when
+                    they span the gap's middle; a hairline rule counts when it
+                    sits anywhere inside the gap, because a 1px divider between
+                    two rows is a divider (20-panel aidat: 2026 / 2025, 36px
+                    apart with a rule at their centre) and the old ">8px tall"
+                    test could never see it.
+                    """
+                    if n["id"] in (a["id"], b["id"], c["id"]):
+                        return False
+                    if min(ax1, bx1, n["x"] + (n["w"] or 0)) - max(ax0, bx0, n["x"]) <= 8:
+                        return False
+                    if (n["h"] or 0) <= 2:
+                        return ay1 - 1 <= n["y"] <= by0 + 1
+                    return n["y"] <= mid <= n["y"] + (n["h"] or 0)
+
+                if any(divides(n) for n in inside):
                     continue
+                label = str(b.get("text") or "")
+                if (label and label == label.upper() and any(ch.isalpha() for ch in label)
+                        and len(label) <= 40 and (b.get("fontSize") or 99) <= 13):
+                    continue  # an all-caps kicker starts a block; its air above is
+                              # the block break, not a drifting title/meta pair
+                              # (16-makale: p3 over "SAYILARLA PROGRAM")
                 line = max(a["fontSize"] * (line_height_multiplier(a.get("lineHeight")) or 1.5),
                            b["fontSize"] * (line_height_multiplier(b.get("lineHeight")) or 1.5))
                 trail = (c["y"] + (c["h"] or 0)) - by1
@@ -802,7 +851,9 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
                     (top.get("fontSize") or 0) * (line_height_multiplier(top.get("lineHeight")) or 1.5),
                     (bot.get("fontSize") or 0) * (line_height_multiplier(bot.get("lineHeight")) or 1.5),
                 )
-                if line <= 0 or gap >= rules["min_gap_ratio"] * line:
+                visible = gap + (0 if has_descender(top.get("text")) else
+                                 rules["min_gap_descender_ratio"] * (top.get("fontSize") or 0))
+                if line <= 0 or visible >= rules["min_gap_ratio"] * line:
                     continue
                 if (top.get("fontSize") or 0) < rules["min_gap_title_size"]:
                     continue
@@ -817,7 +868,7 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
                         and min(bx1, r["x"] + r["w"]) - max(bx0, r["x"]) > 0.5 * (bx1 - bx0)]
                 if not seps:
                     continue
-                level = "high" if gap < rules["min_gap_high_ratio"] * line else "medium"
+                level = "high" if visible < rules["min_gap_high_ratio"] * line else "medium"
                 add(level, f"text {top['name']} / {bot['name']} ink gap {gap:.0f}px "
                            f"under {rules['min_gap_ratio']:.2f}x line ({line:.0f}px) — title and meta touch")
 

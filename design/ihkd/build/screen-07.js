@@ -21,7 +21,11 @@ days.forEach((d, i) => {
   const b = S.board(pb, "day " + i, dx, 292, 168, 64, on ? "red.600" : "white");
   if (!on) S.stroke(b, "line.strong", 1);
   S.text(b, "day num " + i, d[0], "dataLg", on ? "on.red" : "ink.900", { x: dx + 16, y: 304 });
-  S.text(b, "day month " + i, d[1], "meta", on ? "on.red" : "ink.500", { x: dx + 56, y: 308 });
+  /* share the 16px number's baseline: at 308 the 13px month's baseline sat 2px
+     low (measured on the render), and 306 is not on the 4px grid, so the nudge
+     is applied after placement — same reason the bullet dots opt out. */
+  const mon = S.text(b, "day month " + i, d[1], "meta", on ? "on.red" : "ink.500", { x: dx + 56, y: 308 });
+  mon.y -= 2;
   if (d[2]) S.text(b, "day tag " + i, d[2], "meta", on ? "on.red" : "ink.500", { x: dx + 56, y: 326 });
   dx += 176;
 });
@@ -37,8 +41,11 @@ let fx = 120;
 });
 let tx = 800;
 ["Konsey oturumu"].forEach((f, i) => {
-  S.rect(pb, "track dot " + i, tx, 392, 8, 8, "red.600");
-  S.text(pb, "track leg " + i, f, "meta", "ink.600", { x: tx + 14, y: 388 });
+  /* the dot's centre on the label's line centre, not on the row top: 392 sat
+     1.8px high against the 13px meta line (lint: list marker) */
+  const legY = 388, legLine = S.ROLE.meta.size * S.ROLE.meta.lh;
+  S.rect(pb, "track dot " + i, tx, legY + legLine / 2 - 4, 8, 8, "red.600", { raw: true });
+  S.text(pb, "track leg " + i, f, "meta", "ink.600", { x: tx + 14, y: legY });
   tx += Math.round(f.length * 6.6) + 40;
 });
 S.btn(pb, "prog add", "Seçili oturumları programa ekle", S.X + S.CW - 300, 376, 300, 40, "secondary");
@@ -71,7 +78,9 @@ const SESS = [
   [15, 2, 3, "Genç sporcuda EKG taraması", "Doç. Dr. Elif Karaca · Kardiyoloji", false],
 ];
 const HALLS = ["SALON A", "SALON B", "SALON C", "SALON D"];
-const HX = [240, 510, 780, 1050];
+const HX = [240, 512, 784, 1056];  /* 272 pitch on the 4px grid: 510/1050 sat off it,
+                                     so the same card inset drew 16px in one hall and
+                                     12px in the next (lint: panel padding under 16) */
 const HW = 240;
 const TOP = 476;
 
@@ -88,10 +97,20 @@ const metaOf = (s) => tstr(s[0]) + "–" + tstr(s[0] + s[1]) + " · " + (s[1] * 
    tallest card of the row sets the pitch, a short one stays short, so no card
    carries 50px of white under its meta and the bottom pad never shrinks to
    6px (2026-11-02: "Böbrek ve kalp", "Eko", "Aritmi"). */
-const CARD_PAD = 14, CARD_JOINT = 10, TLH = 24, MLH = 20;
+const CARD_W = HW - 8;                     /* the card, not the hall */
+const CARD_PAD = 16, CARD_JOINT = 10, TLH = 24, MLH = 20;  /* 16 is the system's
+  card padding floor; 14 was a non-grid value that snapped to 16 or 12 by column */
+const CARD_TW = CARD_W - 2 * CARD_PAD;
 const up4 = (v) => Math.ceil(v / 4) * 4;
-const cardH = (s) => up4(CARD_PAD + S.estLines(s[3], HW - 24, 16, false) * TLH + CARD_JOINT
-  + S.estLines(metaOf(s), HW - 24, 13, false) * MLH + CARD_PAD);
+/* Title lines from lib's estimate, deliberately the conservative side: a
+   character-count model cannot separate two 26-character titles of different
+   width ("Genç sporcuda EKG taraması" wraps, "Biyobelirteçler: ne zaman?"
+   does not), and over-estimating costs air while under-estimating collides the
+   meta with the title. Two titles (cards 2, 8) get 24px of slack; a 5px overlap
+   is the only alternative. */
+const titleLines = (t) => S.estLines(t, CARD_TW, 16, false);
+const cardH = (s) => up4(CARD_PAD + titleLines(s[3]) * TLH + CARD_JOINT
+  + S.estLines(metaOf(s), CARD_TW, 13, false) * MLH + CARD_PAD);
 const bySlot = {};
 SESS.forEach((s, i) => { (bySlot[s[0]] = bySlot[s[0]] || []).push(i); });
 const ROWS = [0, 1, 2, 4, 5, 8, 9, 10, 11, 13, 14, 15];
@@ -120,12 +139,12 @@ const drawRow = (slot, yRow) => {
     const cx = HX[s[2]];
     const ch = cardH(s);
     const top = yRow + 4;
-    const tl = S.estLines(s[3], HW - 24, 16, false);
-    const card = S.board(pb, "sess card " + i, cx, top, HW - 8, ch, "white");
+    const tl = titleLines(s[3]);
+    const card = S.board(pb, "sess card " + i, cx, top, CARD_W, ch, "white");
     S.rect(card, "sess bar " + i, cx, top + CARD_PAD, 2, ch - 2 * CARD_PAD, s[5] ? "red.600" : "line.strong");
-    S.text(card, "sess title " + i, s[3], "bodyMed", "ink.900", { x: cx + 14, y: top + CARD_PAD, w: HW - 24 });
+    S.text(card, "sess title " + i, s[3], "bodyMed", "ink.900", { x: cx + CARD_PAD, y: top + CARD_PAD, w: CARD_TW });
     S.text(card, "sess meta " + i, metaOf(s), "meta", s[5] ? "red.700" : "ink.500",
-      { x: cx + 14, y: top + CARD_PAD + tl * TLH + CARD_JOINT, w: HW - 24 });
+      { x: cx + CARD_PAD, y: top + CARD_PAD + tl * TLH + CARD_JOINT, w: CARD_TW });
   });
 };
 
