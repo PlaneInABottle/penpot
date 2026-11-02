@@ -9,14 +9,17 @@ plugin returns.
 
 from __future__ import annotations
 
+import base64
 import contextlib
 import io
 import json
 import os
 import pathlib
+import shutil
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
@@ -890,6 +893,118 @@ class TopVoidTest(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertNotIn("TOP-VOID", out)
         self.assertIn("top-void ok", out)
+
+
+class ExportRescueTest(unittest.TestCase):
+    """The export must survive the MCP task limit by taking the exporter's render.
+
+    Docker is mocked: `compose` is replaced, so these tests prove the decision
+    logic (which file is accepted, what happens on mismatch or silence), not
+    that this machine's compose file is right.
+    """
+
+    def setUp(self):
+        import export_board
+        self.eb = export_board
+        self.tmp = pathlib.Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.tmp, True)
+        self.info = {"id": "s1", "name": "01-ana-sayfa", "width": 1440.0, "height": 4464.0}
+        self.target = self.tmp / "01-ana-sayfa.png"
+        self.listing: list[str] = []
+        self.src = self.tmp / "render.png"
+        self.calls: list[tuple] = []
+
+    def _fake_compose(self):
+        def run(*args):
+            self.calls.append(args)
+            if args and args[0] == "exec":
+                return "".join(f"{name}\n" for name in self.listing)
+            if args and args[0] == "cp":
+                pathlib.Path(args[2]).write_bytes(self.src.read_bytes())
+                return ""
+            return ""
+        return run
+
+    def _write_png(self, w, h):
+        from PIL import Image as PILImage
+        PILImage.new("RGB", (w, h), "white").save(self.src)
+        return self.src.read_bytes()
+
+    def _timeout_result(self):
+        return {"jsonrpc": "2.0", "id": 2, "result": {"content": [
+            {"type": "text", "text": "Tool execution failed: Error: Task abc timed out after 120 seconds"}]}}
+
+    def test_png_size_reads_the_header(self):
+        self._write_png(1440, 4464)
+        self.assertEqual(self.eb.png_size(self.src), (1440, 4464))
+        not_png = self.tmp / "x.png"
+        not_png.write_bytes(b"nope")
+        with self.assertRaises(self.eb.McpError):
+            self.eb.png_size(not_png)
+
+    def test_bridge_result_is_used_when_it_arrives(self):
+        data = self._write_png(1440, 4464)
+        result = {"result": {"content": [{"type": "image", "data": base64.b64encode(data).decode()}]}}
+        with mock.patch.object(self.eb, "call_tool", lambda *a, **k: result), \
+                mock.patch.object(self.eb, "exporter_renders", lambda: []):
+            note: list[str] = []
+            self.eb.export_png("u", self.info, self.target, wait=1, poll=0.01, provenance=note)
+        self.assertEqual(self.eb.png_size(self.target), (1440, 4464))
+        self.assertTrue(note[0].startswith("bridge "), note)
+
+    def test_task_timeout_is_recovered_from_the_exporter(self):
+        self._write_png(1440, 4464)
+
+        def fire(*_a, **_k):
+            self.listing = ["penpot.resource.png.fresh"]  # lands after the export fires
+            return self._timeout_result()
+
+        with mock.patch.object(self.eb, "call_tool", fire), \
+                mock.patch.object(self.eb, "exporter_renders", lambda: list(self.listing)), \
+                mock.patch.object(self.eb, "compose", self._fake_compose()):
+            note: list[str] = []
+            self.eb.export_png("u", self.info, self.target, wait=2, poll=0.01, provenance=note)
+        self.assertEqual(self.eb.png_size(self.target), (1440, 4464))
+        self.assertIn("cp", [c[0] for c in self.calls])
+        self.assertTrue(note[0].startswith("exporter penpot.resource.png.fresh "), note)
+
+    def test_a_neighbouring_board_render_is_rejected(self):
+        """Every board is 1440 wide, so only the height tells them apart."""
+        self._write_png(1440, 2296)
+
+        def fire(*_a, **_k):
+            self.listing = ["penpot.resource.png.other"]
+            return self._timeout_result()
+
+        with mock.patch.object(self.eb, "call_tool", fire), \
+                mock.patch.object(self.eb, "exporter_renders", lambda: list(self.listing)), \
+                mock.patch.object(self.eb, "compose", self._fake_compose()):
+            with self.assertRaises(self.eb.McpError) as ctx:
+                self.eb.export_png("u", self.info, self.target, wait=0.2, poll=0.01)
+        self.assertIn("1440x4464", str(ctx.exception))
+        self.assertIn("timed out after 120 seconds", str(ctx.exception))
+        self.assertFalse(self.target.exists(), "a wrong-sized render must not be written")
+
+    def test_silence_ends_with_the_measured_wait(self):
+        with mock.patch.object(self.eb, "call_tool",
+                               lambda *a, **k: (_ for _ in ()).throw(self.eb.McpError("bridge down"))), \
+                mock.patch.object(self.eb, "exporter_renders", lambda: []), \
+                mock.patch.object(self.eb, "compose", lambda *a: ""):
+            with self.assertRaises(self.eb.McpError) as ctx:
+                self.eb.export_png("u", self.info, self.target, wait=0.15, poll=0.01)
+        self.assertIn("within 0.15s", str(ctx.exception))
+        self.assertIn("bridge down", str(ctx.exception))
+
+    def test_already_seen_files_are_not_accepted(self):
+        self._write_png(1440, 4464)
+        self.listing = ["penpot.resource.png.old"]
+        with mock.patch.object(self.eb, "call_tool", lambda *a, **k: self._timeout_result()), \
+                mock.patch.object(self.eb, "exporter_renders", lambda: list(self.listing)), \
+                mock.patch.object(self.eb, "compose", self._fake_compose()):
+            with self.assertRaises(self.eb.McpError):
+                self.eb.export_png("u", self.info, self.target, wait=0.15, poll=0.01)
+        # the render existed before the export fired: it belongs to an earlier call
+        self.assertFalse(self.target.exists())
 
 
 if __name__ == "__main__":

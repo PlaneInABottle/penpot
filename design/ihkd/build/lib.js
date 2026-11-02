@@ -203,6 +203,43 @@ const IK = (function () {
   }
 
   /**
+   * One chip row: pills sized from their label's advance, not from a
+   * per-character guess. İHKD 03/04 sized them `length * 7.4 + 32` while the
+   * mono label advances 0.6em plus its 1.1px tracking — 8.9px per character
+   * at 13px — and the pill carried no right padding at all, so every chip
+   * clipped its last word (11 chips, 4-17px short; measured ink 124.6 for 14
+   * characters). A monospace advance is exact, so the pill is ink + symmetric
+   * pad, rounded UP to the 4px grid the layout snaps to. Throws on a non-mono
+   * role: an advance model for proportional text is the same guess in a new
+   * coat. `opts.active` marks the filled pill; returns the y below the row.
+   */
+  function chips(parent, name, items, x, y, opts) {
+    const o = opts || {};
+    const roleName = o.role || "label";
+    const r = ROLE[roleName];
+    if (!r) throw new Error("chips: unknown role " + roleName);
+    if (r.font !== "mono") throw new Error("chips: role " + roleName + " is not mono, advance is not exact");
+    const pad = o.pad === undefined ? 16 : o.pad;
+    const gap = o.gap === undefined ? 8 : o.gap;
+    const h = o.h === undefined ? 36 : o.h;
+    const advance = 0.6 * r.size + (r.track || 0);
+    const box = Math.round(r.size * r.lh);
+    let cx = x;
+    items.forEach((label, i) => {
+      const ink = Math.ceil(String(label).length * advance);
+      const w = Math.ceil((ink + 2 * pad) / 4) * 4;
+      const on = o.active === i;
+      const b = board(parent, name + " " + i, cx, y, w, h,
+        on ? (o.onFill || "red.600") : (o.fill || "surface.alt"));
+      if (!on && o.stroke) stroke(b, o.stroke, o.strokeWidth || 1);
+      text(b, name + " text " + i, label, roleName, on ? (o.onInk || "on.red") : (o.ink || "ink.700"),
+        { x: cx + pad, y: y + Math.round((h - box) / 2) });
+      cx += w + gap;
+    });
+    return y + h + (o.after || 0);
+  }
+
+  /**
    * Section head with the graphite numeral that is this system's spine. The numeral is
    * decorative-structural: it carries the page order, not a section id the copy needs.
    */
@@ -631,6 +668,7 @@ const IK = (function () {
     btn, link, tag, head, pageHead, stat, field, photo, sheet, masthead, footer, sidebar, crumbs,
     progress, ecg, row, rows, bullets, vcenter, snap, nrm, token, estLines,
     statsStrip, ctaRow, headIndex,
+    chips,
   };
 })();
 

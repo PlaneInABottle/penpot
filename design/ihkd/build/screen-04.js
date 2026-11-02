@@ -11,14 +11,8 @@ let y = S.pageHead(pb, "ÇALIŞMA GRUPLARI", "On iki grup, on iki soru.",
 
 /* ----------------------------------------------------------------- filtre */
 const filters = ["Tümü 12", "Görüntüleme 2", "Girişimsel 2", "Ritim 2", "Metabolik 3", "Diğer 3"];
-let fx = 120;
-filters.forEach((f, i) => {
-  const w = Math.round(f.length * 7.4) + 32;
-  const b = S.board(pb, "filter " + i, fx, y, w, 36, i === 0 ? "red.600" : "white");
-  if (i !== 0) S.stroke(b, "line.strong", 1);
-  S.text(b, "filter text " + i, f, "label", i === 0 ? "on.red" : "ink.700", { x: fx + 16, y: y + 10 });
-  fx += w + 8;
-});
+// one pill per group, sized from the label's advance (lib chips)
+S.chips(pb, "filter", filters, 120, y, { active: 0, fill: "white", stroke: "line.strong" });
 
 /* ----------------------------------------------------------------- gruplar */
 y += 76;

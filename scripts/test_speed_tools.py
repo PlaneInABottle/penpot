@@ -225,6 +225,48 @@ class GateTest(unittest.TestCase):
         self.assertIn("timed out", slow["output"])
         self.assertGreater(ok["seconds"], 0)
 
+    def test_export_window_outlives_the_mcp_task_limit(self):
+        self.assertGreater(gate.export_timeout(300), gate.EXPORT_WAIT_S)
+        self.assertEqual(gate.export_timeout(10), gate.EXPORT_WAIT_S + 60)
+
+    def test_crop_reads_the_exported_file_and_is_skipped_without_one(self):
+        """A second live export in the crop step is the double timeout this gate avoids."""
+        with tempfile.TemporaryDirectory() as tmp:
+            project = pathlib.Path(tmp) / "proj"
+            (project / "build").mkdir(parents=True)
+            (project / "build" / "build.py").write_text(
+                'SCREENS = {"screen-01": ("Kurumsal", "01-ana-sayfa")}\n')
+            seen: list[tuple[str, list[str]]] = []
+
+            def fake_step(label, argv, timeout):
+                seen.append((label, list(argv)))
+                if label.startswith("export_board") and not self.export_fails:
+                    shots = project / "shots"
+                    shots.mkdir(parents=True, exist_ok=True)
+                    (shots / "01-ana-sayfa.png").write_bytes(b"png")
+                    return {"step": label, "code": 0, "seconds": 0.0, "output": ""}
+                if label.startswith("export_board"):
+                    return {"step": label, "code": 2, "seconds": 0.0, "output": "no render appeared"}
+                return {"step": label, "code": 0, "seconds": 0.0, "output": ""}
+
+            self.export_fails = False
+            with mock.patch.object(gate, "run_step", fake_step), contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(gate.gate(["Kurumsal"], ["01"], project, 30), 0)
+            crops = [argv for label, argv in seen if label.startswith("crop_board")]
+            self.assertEqual(len(crops), 1)
+            self.assertIn("--png", crops[0])
+            self.assertIn(str(project / "shots" / "01-ana-sayfa.png"), crops[0])
+            self.assertIn("--board", crops[0])
+
+            seen.clear()
+            self.export_fails = True
+            buf = io.StringIO()
+            with mock.patch.object(gate, "run_step", fake_step), contextlib.redirect_stdout(buf):
+                self.assertEqual(gate.gate(["Kurumsal"], ["01"], project, 30), 2)
+            self.assertEqual([l for l, _ in seen if l.startswith("crop_board")], [],
+                             "crop must not run without its render")
+            self.assertIn("skipped (export exit 2)", buf.getvalue())
+
     def test_stage_adds_ignored_design_files_with_force(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = pathlib.Path(tmp)

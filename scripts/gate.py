@@ -36,9 +36,18 @@ ROOT = HERE.parent
 SCRIPTS = HERE
 DEFAULT_PROJECT = ROOT / "design" / "ihkd"
 
+sys.path.insert(0, str(HERE))
+from export_board import WAIT_S as EXPORT_WAIT_S  # noqa: E402
+
 
 def py(script: str) -> list[str]:
     return [sys.executable, str(SCRIPTS / script)]
+
+
+def export_timeout(step_timeout: float) -> float:
+    """The export owns a rescue window longer than the MCP task limit it recovers
+    from; the gate's per-step timeout must not kill it first."""
+    return max(step_timeout, EXPORT_WAIT_S + 60)
 
 
 def load_screens(build_py: pathlib.Path) -> dict[str, tuple[str, str]]:
@@ -163,11 +172,19 @@ def gate(pages: list[str], boards: list[str], project: pathlib.Path, timeout: fl
 
         shots = project / "shots"
         for page, board in targets:
-            steps.append(run_step(f"export_board {board}",
-                                  py("export_board.py") + ["--board", board, "--page", page, "--out", str(shots)],
-                                  timeout))
+            export_step = run_step(f"export_board {board}",
+                                   py("export_board.py") + ["--board", board, "--page", page, "--out", str(shots)],
+                                   export_timeout(timeout))
+            steps.append(export_step)
+            rendered = shots / f"{board}.png"
+            if export_step["code"] != 0 or not rendered.is_file():
+                # Crop from the file it just produced; a second live export would
+                # repeat the same 120 s bridge timeout for a render that already
+                # exists — and without a render there is nothing to crop.
+                print(f"  crop_board {board:<24} skipped (export exit {export_step['code']})")
+                continue
             nodes = tmpdir / f"nodes-{page}.json"
-            crop_argv = py("crop_board.py") + ["--board", board, "--page", page,
+            crop_argv = py("crop_board.py") + ["--png", str(rendered), "--board", board,
                                                "--out", str(shots / board)]
             if nodes.is_file():
                 crop_argv += ["--regions", str(nodes)]
