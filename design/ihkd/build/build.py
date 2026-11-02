@@ -21,6 +21,11 @@ session is a named error, not a silent wrong-page write.
 `--settle SCREEN` runs the recovery alone (toggle + fit, no rebuild), for a
 board that is otherwise built but not quiet.
 
+`--dry-run` is the static pass: `node --check` on each named screen, the SCREENS
+entry and the `lib-m.js` wiring, without contacting the plugin (for a queued live
+run). `lib-m.js` is injected after `lib.js` when it exists; without it the build
+is byte-identical to before.
+
 `--flows` is automatic (default `build/flows.js`); `--no-flows` opts out.
 A flows/link verification failure is a build failure, not a warning.
 
@@ -74,6 +79,16 @@ SCREENS = {
     "screen-18": ("Üyelik", "18-uyelik"),
     "screen-19": ("Üyelik", "19-giris"),
     "screen-20": ("Üyelik", "20-panel"),
+    # Mobil 390 ikizleri ve durum tahtaları (sayfa `Mobil` önce oluşturulmalı).
+    "screen-m01": ("Mobil", "01-ana-sayfa-m"),
+    "screen-m07": ("Mobil", "07-program-m"),
+    "screen-m09": ("Mobil", "09-kayit-m"),
+    "screen-m19": ("Mobil", "19-giris-m"),
+    "screen-state-01": ("Kurumsal", "01-bos"),
+    "screen-state-07": ("Kongre", "07-program-loading"),
+    "screen-state-09": ("Kongre", "09-kayit-hata"),
+    # Bileşen kitaplığı: main instance'lar tek bir tahtada toplanır.
+    "screen-components": ("Components", "component sheet"),
 }
 
 LOCK = HERE / ".build.lock"
@@ -488,7 +503,7 @@ def run(url: str, screen: str, fit_deadline: float) -> dict:
     open_page_retry(url, page)
     opened = time.monotonic() - t0
     require_page(url, page, f"{screen} start")
-    lib = (HERE / "lib.js").read_text()
+    lib = (HERE / "lib.js").read_text() + mobile_lib()
     body = (HERE / f"{screen}.js").read_text()
     result = payload(call_execute_code(url, lib + "\n" + body))
     built = time.monotonic()
@@ -543,12 +558,75 @@ def settle(url: str, screen: str, fit_deadline: float) -> tuple[int, int]:
     return (0 if quiet and nulls == 0 else 1), nulls
 
 
+MOBILE_LIB = HERE / "lib-m.js"
+
+
+def mobile_lib() -> str:
+    """Mobil primitifler lib.js'den sonra enjekte edilir; dosya yoksa davranış aynı."""
+    try:
+        return "\n" + MOBILE_LIB.read_text()
+    except OSError:
+        return ""
+
+
+def lib_exports(text: str) -> set[str]:
+    """IKM'nin döndürdüğü nesnenin anahtarları (dry-run bağımlılık kontrolü)."""
+    match = re.search(r"return\s*\{(.*?)\};", text, re.S)
+    return set(re.findall(r"[A-Za-z_][A-Za-z0-9_]*", match.group(1))) if match else set()
+
+
+def dry_run(names: list[str]) -> int:
+    """Statik geçiş: dosya, `node --check`, SCREENS kaydı ve lib-m bağımlılığı.
+
+    Plugin'e hiç bağlanmaz, hiçbir şey yazmaz: canlı çalıştırma sıraya alınmışken
+    ekran dosyalarının sentaksını ve mobil kütüphane sözleşmesini doğrular.
+    """
+    try:
+        subprocess.run(["node", "--version"], capture_output=True, check=True)
+    except (OSError, subprocess.CalledProcessError) as exc:
+        print(f"build: node is required for --dry-run ({exc})", file=sys.stderr)
+        return 2
+    extra = mobile_lib()
+    exports = lib_exports(extra) if extra else set()
+    code = 0
+    for name in names:
+        page, board = SCREENS[name]
+        path = HERE / f"{name}.js"
+        if not path.is_file():
+            print(f"{name}: ERROR {path.name} is missing", file=sys.stderr)
+            code = 1
+            continue
+        proc = subprocess.run(["node", "--check", str(path)], capture_output=True, text=True)
+        if proc.returncode != 0:
+            print(f"{name}: ERROR node --check {path.name}: {(proc.stderr or '').strip()}", file=sys.stderr)
+            code = 1
+            continue
+        body = path.read_text()
+        uses_m = re.search(r"\bIKM\b", body) is not None
+        if uses_m and not extra:
+            print(f"{name}: ERROR uses IKM but {MOBILE_LIB.name} is missing", file=sys.stderr)
+            code = 1
+            continue
+        missing = sorted(set(re.findall(r"\bIKM\.([A-Za-z_][A-Za-z0-9_]*)", body)) - exports)
+        if missing:
+            print(f"{name}: ERROR {MOBILE_LIB.name} does not export: {', '.join(missing)}", file=sys.stderr)
+            code = 1
+            continue
+        print(f"{name}: {page} / {board} — {path.name} ok" + (" (+lib-m)" if uses_m else ""))
+    print(f"dry-run: {len(names)} screen(s), plugin not contacted"
+          + (f", {MOBILE_LIB.name} present" if extra else f", {MOBILE_LIB.name} absent"))
+    return code
+
+
 def main(argv: list[str] | None = None) -> tuple[int, int]:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("screens", nargs="*", help="screen-NN names, or 'all'")
     ap.add_argument("--flows", type=pathlib.Path, default=FLOWS,
                     help="flows file re-applied after the build (default %(default)s)")
     ap.add_argument("--no-flows", action="store_true", help="skip flows and link verification")
+    ap.add_argument("--dry-run", action="store_true",
+                    help="static pass only: node --check each screen, SCREENS and lib-m wiring; "
+                         "never contacts the plugin")
     ap.add_argument("--settle", metavar="SCREEN",
                     help="recovery only: toggle the page and re-run fit, do not rebuild")
     ap.add_argument("--fit-deadline", type=float, default=FIT_DEADLINE_S,
@@ -570,6 +648,9 @@ def main(argv: list[str] | None = None) -> tuple[int, int]:
     if unknown:
         print(f"build: unknown screen(s): {', '.join(unknown)}", file=sys.stderr)
         return 2, 0
+
+    if args.dry_run:
+        return dry_run(names), 0
 
     writers = other_writers()
     if writers:
