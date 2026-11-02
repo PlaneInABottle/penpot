@@ -95,6 +95,8 @@ Anything not covered is reported as a gap, never as done.
   pixels and preserved evidence, not just coordinates (`CropBoardTest`).
 - **Revision labels are part of review evidence.** Name the checkout and SHA of each
   observation; a worktree's project snapshot does not describe a newer primary checkout.
+- **Validate configuration before interpreting coverage.** Reject wrong field types rather
+  than iterating them; test the actual project configuration as well as fixture defaults.
 - **A lint rule is earned.** Fix the screen first, then encode the defect. It starts from a defect the eye caught and lint missed: a
   failing fixture in `test_lint_rules.py` first, then the rule, then its wrong-positive
   count on the frozen corpus (`--from-nodes`, `--rules-report`) written into `RULES`.

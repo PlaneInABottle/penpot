@@ -158,7 +158,8 @@ def resolve(data: dict, min_ratio: float = 4.5, ignore: tuple[str, ...] = ()) ->
         if not SOLID_HEX.match(str(text["fg"])):
             note(f"unsupported text colour {text['fg']!r}")
             continue
-        fg_opacity = float(text.get("fgOpacity", 1))
+        fg_value = text.get("fgOpacity", 1)
+        fg_opacity = float("nan") if fg_value is None else float(fg_value)
         if not math.isfinite(fg_opacity):
             # an unreadable opacity is unknown, never opaque (see COLLECT num)
             note("unknown text opacity")
@@ -188,7 +189,8 @@ def resolve(data: dict, min_ratio: float = 4.5, ignore: tuple[str, ...] = ()) ->
         if not SOLID_HEX.match(str(top.get("fill") or "")):
             note(f"unsupported background colour {top.get('fill')!r}")
             continue
-        layer_opacity = float(top.get("opacity", 1))
+        layer_value = top.get("opacity", 1)
+        layer_opacity = float("nan") if layer_value is None else float(layer_value)
         if not math.isfinite(layer_opacity):
             note(f"over layer with unknown opacity {top.get('name', '?')}")
             continue

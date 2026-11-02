@@ -2005,5 +2005,28 @@ class ContrastCollectorTest(unittest.TestCase):
         self.assertEqual(report["checked"], 0)
         self.assertIn("unknown text opacity", report["manual"][0]["reason"])
 
+    def test_unreadable_shape_opacity_survives_json_as_manual(self):
+        data = self._collect(self._page(text_opacity="abc"))
+        self.assertIsNone(data["texts"][0]["fgOpacity"])
+        report = contrast_audit.resolve(data)
+        self.assertEqual(report["checked"], 0)
+        self.assertIn("unknown text opacity", report["manual"][0]["reason"])
+
+    def test_unreadable_ancestor_opacity_survives_json_as_manual(self):
+        data = self._collect(self._page(board_opacity="abc"))
+        report = contrast_audit.resolve(data)
+        self.assertEqual(report["checked"], 0)
+        self.assertIn("unknown text opacity", report["manual"][0]["reason"])
+
+    def test_unreadable_sibling_layer_opacity_survives_json_as_manual(self):
+        shapes = self._page()
+        shapes[0]["children"].insert(0, self._shape(
+            "unknown layer", kind="rectangle", opacity="abc",
+            fills=[self._fill("#FFFFFF")]))
+        data = self._collect(shapes)
+        report = contrast_audit.resolve(data)
+        self.assertEqual(report["checked"], 0)
+        self.assertIn("over layer with unknown opacity", report["manual"][0]["reason"])
+
 if __name__ == "__main__":
     unittest.main()
