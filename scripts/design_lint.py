@@ -34,10 +34,11 @@ DEFAULTS = {
     "max_measure_chars": 80,
     "allowed_radii": [0, 2, 4, 8, 12, 999],
     "board_widths": [1440, 390],
-    "max_uppercase_ratio": 0.25,
+    "max_uppercase_ratio": 0.35,
     # Label-heavy UIs (nav, kickers, table headers) track 20-25% of their text
-    # nodes in uppercase without shouting; body-copy UIs stay far below it.
-    # A ratio above this reads as tracking-as-decoration, not hierarchy.
+    # nodes in uppercase without shouting; a table/label surface with a fee
+    # matrix reaches ~31% (İHKD 09, 27/87). Above 35% it reads as
+    # tracking-as-decoration, not hierarchy.
     "min_card_padding": 16,
     "min_panel_w": 200,
     "min_panel_h": 60,

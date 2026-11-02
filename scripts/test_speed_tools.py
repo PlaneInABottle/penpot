@@ -304,7 +304,7 @@ class BuildTest(unittest.TestCase):
         code = self.build.status_js("Üyelik", "19-giris")
         self.assertNotIn("const IK = (function", code)
         self.assertIn("storage.IK", code)
-        self.assertIn("IK.fit(P, B)", code)
+        self.assertIn("K.fit(P, B)", code)
         self.assertIn("__LIB_VERSION__", code)
 
     def test_lock_blocks_a_second_build_and_stale_lock_is_taken(self):
@@ -316,25 +316,32 @@ class BuildTest(unittest.TestCase):
         self.build.acquire_lock("screen-01")
         self.assertIn("pid=", self.build.LOCK.read_text())
 
-    def test_poll_fit_returns_quiet_and_gives_up_at_the_deadline(self):
-        answers = [{"nulls": 3, "fitted": 2, "bars": 0},
-                   {"nulls": 1, "fitted": 1, "bars": 0},
-                   {"nulls": 0, "fitted": 0, "bars": 0}]
+    def test_fit_board_is_quiet_and_gives_up_when_nothing_moves(self):
+        answers = [{"nulls": 3, "fitted": 2, "bars": 0, "cards": 0},
+                   {"nulls": 1, "fitted": 1, "bars": 0, "cards": 0},
+                   {"nulls": 0, "fitted": 0, "bars": 0, "cards": 0},
+                   {"nulls": 0, "fitted": 0, "bars": 0, "cards": 0}]
         with mock.patch.object(self.build, "call_execute_code", lambda url, code: answers.pop(0)), \
                 mock.patch.object(self.build, "payload", lambda value: value), \
-                mock.patch.object(self.build, "POLL_S", 0.01):
-            quiet, seconds, passes = self.build.poll_fit("u", "Üyelik", "19-giris", 'const VERSION = "1.0.0";', 5)
+                mock.patch.object(self.build, "POLL_S", 0.001):
+            quiet, nulls, names, seconds, passes = self.build.fit_board(
+                "u", "Üyelik", "19-giris", 'const VERSION = "1.0.0";', 5)
         self.assertTrue(quiet)
-        self.assertEqual(passes, 3)
+        self.assertEqual(nulls, 0)
+        self.assertEqual(passes, 4)
         self.assertGreater(seconds, 0)
 
         with mock.patch.object(self.build, "call_execute_code",
-                               lambda url, code: {"nulls": 1, "fitted": 0, "bars": 0}), \
+                               lambda url, code: {"nulls": 1, "fitted": 0, "bars": 0,
+                                                  "cards": 0, "nullNames": ["late"]}), \
                 mock.patch.object(self.build, "payload", lambda value: value), \
-                mock.patch.object(self.build, "POLL_S", 0.01):
-            quiet, seconds, _ = self.build.poll_fit("u", "Üyelik", "19-giris", 'const VERSION = "1.0.0";', 0.1)
+                mock.patch.object(self.build, "POLL_S", 0.001):
+            quiet, nulls, names, _, passes = self.build.fit_board(
+                "u", "Üyelik", "19-giris", 'const VERSION = "1.0.0";', 5)
         self.assertFalse(quiet)
-        self.assertGreaterEqual(seconds, 0.1)
+        self.assertEqual(nulls, 1)
+        self.assertEqual(names, ["late"])
+        self.assertLessEqual(passes, self.build.FIT_ATTEMPTS)
 
     def test_timeout_reports_live_state_and_never_reruns_the_screen(self):
         calls = []
@@ -348,8 +355,9 @@ class BuildTest(unittest.TestCase):
                 mock.patch.object(self.build, "run", boom), \
                 mock.patch.object(self.build, "live_state", lambda url, page, board: '{"nodes": 31}'), \
                 contextlib.redirect_stderr(io.StringIO()) as err:
-            code = self.build.main(["screen-19"])
+            code, remaining = self.build.main(["screen-19"])
         self.assertEqual(code, 2)
+        self.assertEqual(remaining, 0)
         self.assertEqual(calls, ["screen-19"], "a timed-out build must not be re-run")
         self.assertIn("not retrying", err.getvalue())
         self.assertFalse(self.build.LOCK.exists())
@@ -367,11 +375,12 @@ class BuildTest(unittest.TestCase):
         with mock.patch.object(self.build, "call_execute_code", call), \
                 mock.patch.object(self.build, "payload", lambda value: value), \
                 mock.patch.object(self.build, "POLL_S", 0.01):
-            quiet, _, _ = self.build.poll_fit("u", "Üyelik", "19-giris", lib, 2)
+            quiet, _, _, _, _ = self.build.fit_board("u", "Üyelik", "19-giris", lib, 2)
         self.assertTrue(quiet)
-        self.assertEqual(len(seen), 2)
+        self.assertEqual(len(seen), 3)
         self.assertNotIn("const IK = (function", seen[0])
         self.assertIn("const IK = (function", seen[1])
+        self.assertIn("const IK = (function", seen[2])
 
 
 if __name__ == "__main__":

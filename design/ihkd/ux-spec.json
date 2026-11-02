@@ -39,7 +39,7 @@
         {"state": "default", "board": "07-program"},
         {"state": "loading", "board": "07-program-loading"}
       ],
-      "mobile": "n/a",
+      "mobile": {"board": "07-program-m", "page": "Mobil"},
       "firstViewport": ["p label", "p title", "p note", "sess title 0"],
       "accentMaxRatio": 0.01,
       "claims": [

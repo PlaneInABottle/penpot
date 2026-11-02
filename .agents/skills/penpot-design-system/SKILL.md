@@ -376,12 +376,13 @@ Five user-reported defects that every gate had passed; each became a rule above 
   `visual-interface-design`'s `references/craft-checklist.md` (type-size count and ratio,
   line-height and tracking bands, measure, accent count, placeholder-as-material, section
   rhythm). Passing them proves compliance, not design.
-- **After a rebuild**, re-check the prototype: rebuilding deletes the shapes that carried
-  interactions, so links vanish and a second `createFlow` leaves a duplicate with no pages.
-  Re-wire, then verify `page.flows.length` and the per-board interaction count before
-  claiming the file is done. This step is DoD item 5 — it is never scoped out of a
-  rebuild milestone; a 10-board tighten once shipped with four boards' links wiped
-  because re-link was left for "later", and only a post-hoc flows re-apply caught it.
+- **A rebuild is lossless or it is not done.** Rebuilding deletes the shapes that carried
+  photos and interactions: re-place every provenance photo on the board, re-wire the
+  links, then verify `page.flows.length`, the per-board interaction count and a live
+  `photos N/N` before claiming the file is done. This is DoD item 5 and is never scoped
+  out of a rebuild milestone; a 10-board tighten once shipped with four boards' links
+  wiped because re-link was left for "later". Automate the repair in the build runner
+  (İHKD `build.py` does) so no manual step remains.
 - **Sweep by fingerprint, not by helper name.** A helper change reaches only its callers;
   hand-rolled copies of the same numbers do not move (pageHead tightened, but 18-uyelik
   painted its own head with the old 236/500 and kept the 152px void; flows.js wired

@@ -1,0 +1,4 @@
+{
+  "_why": "The type scale's body/meta pair is 13 -> 16px (1.23). The 1.25 default assumes a prose scale; this project's 13px labels and table meta are a deliberate step. This is the only project deviation: the uppercase ceiling is a lint DEFAULT (0.35), not a rule here.",
+  "min_step_ratio": 1.2
+}

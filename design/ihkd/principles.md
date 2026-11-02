@@ -154,25 +154,29 @@ screen, assert edges from the lint JSON geometry, and check margin symmetry at 1
 
 ## 8. Standing explanations (lint mediums/lows that are by design)
 
-- Uppercase ratio (~20% on most pages): labels, kickers, table headers and section
-  markers are uppercase-tracked 11–12px by the type system. This is wayfinding, not
-  shouting; the lint 15% default assumes prose-heavy pages. Not fixed, by decision.
+- Uppercase ratio: labels, kickers, table headers and section markers are
+  uppercase-tracked 11–12px by the type system. This is wayfinding, not shouting.
+  The label-heavy ceiling is now the lint DEFAULT (0.35); the fee matrix on 09
+  reaches 27/87 = 31%, so it no longer needs a project deviation.
 - 13px microcopy everywhere: kickers, helper text, captions, time gutter, IDs,
   prices and legal share one micro size, so the scale stays at six sizes. The 13→16
   step (1.23) is the craft checklist's body/meta-pair exception class (the checklist
-  names 16/14; ours is the same pair, one step tighter). Long 13px table-meta lines
-  still trip the `min_body_size` low — they are short tabular lines by design, and the
-  low stays visible rather than exempted.
+  names 16/14; ours is the same pair, one step tighter). That is the one recorded
+  deviation in `craft-rules.json` (`min_step_ratio: 1.2`); every other threshold
+  runs on DEFAULTS. Long 13px table-meta lines still trip the `min_body_size` low —
+  they are short tabular lines by design, and the low stays visible rather than
+  exempted.
 - Row heights are declared per surface, not tightened to one law: programme table
   92px, fee/guideline/news rows 64–68px, bilim-kurulu index 44px. Scan tables breathe;
   the dense index runs tight. Density follows the reading task.
 - Ghost numerals (`head num`, ink.400, 2.07:1) are exempt from the contrast gate:
   44px order marks redundant with the section title beside them — felt, not read.
   Real copy never uses ink.400; run contrast gates with `--ignore "head num"`.
-- Gate invocation for this project always adds `--rules design/ihkd/craft-rules.json`:
-  the ghost numerals are excluded from the dominant-element check (they are chrome,
-  never the dominant element) and the uppercase ceiling is 0.35. Both are recorded
-  deviations in `craft-rules.json`, not silent weakenings.
+  They are not exempt from lint; they simply sit beside the largest type.
+- Other lint mediums stay visible rather than being thresholded away: inline
+  mixed-size baselines, dead space, and intra-card gaps are measured per screen.
+  A medium is fixed on the board when it is a defect; a number in a rules file is
+  not an exemption.
 
 ## 9. Decisions — home tightening + programme rebuild (Nov 2026)
 

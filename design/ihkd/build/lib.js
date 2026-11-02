@@ -190,10 +190,30 @@ const IK = (function () {
     return b;
   }
 
+  /**
+   * A link underline is the label's ink, not a per-character guess: "PDF indir →"
+   * advances 82px while the old 8.2px/char model drew 92px. Until layout commits,
+   * the text's own seeded width is the closest honest measure; fit() calls the
+   * same function again once textBounds exists.
+   */
+  function underlineWidth(t) {
+    const b = t.textBounds;
+    if (b && b.height) return Math.ceil(b.width) + 2;
+    return Math.max(12, Math.ceil(t.width));
+  }
+
+  function fitLink(t) {
+    if (t.type !== "text" || !t.textBounds || !t.textBounds.height || !t.parent) return 0;
+    const under = (t.parent.children || []).filter((c) => c.name === t.name + " under")[0];
+    if (!under) return 0;
+    const w = underlineWidth(t);
+    if (Math.abs(under.width - w) > 0.5) { under.resize(w, under.height); return 1; }
+    return 0;
+  }
+
   function link(parent, name, label, x, y, colorToken) {
     const t = text(parent, name, label, "nav", colorToken || "red.700", { x: x, y: y });
-    const w = Math.round(label.length * 8.2) + 2;
-    rect(parent, name + " under", x, y + 24, w, 1, colorToken || "red.700");
+    rect(parent, name + " under", x, y + 24, underlineWidth(t), 1, colorToken || "red.700");
     return t;
   }
 
@@ -586,6 +606,7 @@ const IK = (function () {
           if (Math.abs(s.height - h) > 1) { s.resize(s.width, h); n++; }
         }
       }
+      n += fitLink(s);
       (s.children || []).forEach(walk);
     };
     roots.forEach(walk);
@@ -660,7 +681,7 @@ const IK = (function () {
   }
 
   /** Bumped when this file changes: build.py re-sends it only on a mismatch. */
-  const VERSION = "1.1.0";
+  const VERSION = "1.2.1";
 
   return {
     SET, W, X, CW, ROLE, FONT, warnings, gaps, VERSION, HELPERS: H.version,

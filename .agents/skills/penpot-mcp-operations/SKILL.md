@@ -108,7 +108,7 @@ was written.
 
 ## Failures
 
-The full table of 31 observed failure modes, with the exact error strings and fixes, is in
+The full table of 42 observed failure modes, with the exact error strings and fixes, is in
 [references/mcp-failures.md](references/mcp-failures.md). Open it on the first failed call.
 The four that hit first: async commit, remove-and-recreate in one call, `easing` missing on
 animations, and a bound fill that never painted.

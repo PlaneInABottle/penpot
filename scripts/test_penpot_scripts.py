@@ -23,12 +23,15 @@ from unittest import mock
 
 HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
+sys.path.insert(0, str(HERE.parent / "design" / "ihkd" / "tools"))
+sys.path.insert(0, str(HERE.parent / "design" / "ihkd" / "build"))
 
 import design_qa  # noqa: E402
 import penpot_exec  # noqa: E402
 import tokens_sync  # noqa: E402
 import design_lint  # noqa: E402
 import rhythm  # noqa: E402
+import media  # noqa: E402
 
 TOKENS_FILE = HERE.parent / "design" / "tokens.json"
 
@@ -985,6 +988,59 @@ class ExportRescueTest(unittest.TestCase):
         self.assertIn("timed out after 120 seconds", str(ctx.exception))
         self.assertFalse(self.target.exists(), "a wrong-sized render must not be written")
 
+    def test_export_rescue_uses_the_same_verifier(self):
+        """The entry point must not re-implement "newest file": same verify path."""
+        import export_rescue
+        self.assertIs(export_rescue.export_png, self.eb.export_png)
+        self.assertIs(export_rescue.png_size, self.eb.png_size)
+
+    def test_export_rescue_rejects_a_neighbour_render_end_to_end(self):
+        import export_rescue
+
+        out = self.tmp / "out"
+
+        def execute(_url, _code):
+            return content_result(json.dumps(self.info))
+
+        def fire(*_a, **_k):
+            self.listing = ["neighbour"]  # lands after the export fires
+            return self._timeout_result()
+
+        with mock.patch.object(export_rescue, "load_url", lambda: "u"), \
+                mock.patch.object(export_rescue, "call_execute_code", execute), \
+                mock.patch.object(self.eb, "call_tool", fire), \
+                mock.patch.object(self.eb, "exporter_renders", lambda: list(self.listing)), \
+                mock.patch.object(self.eb, "compose", self._fake_compose()):
+            self._write_png(1440, 2296)
+            with self.assertRaises(SystemExit) as ctx:
+                export_rescue.main(["--board", "01-ana-sayfa", "--out", str(out),
+                                    "--wait", "0.2", "--poll", "0.01"])
+        self.assertEqual(ctx.exception.code, 2)
+        self.assertFalse((out / "01-ana-sayfa.png").exists(),
+                         "a neighbouring board's render must never be written")
+
+    def test_export_rescue_writes_only_a_matching_render(self):
+        import export_rescue
+
+        out = self.tmp / "out"
+
+        def execute(_url, _code):
+            return content_result(json.dumps(self.info))
+
+        def fire(*_a, **_k):
+            self.listing = ["fresh"]  # lands after the export fires
+            return self._timeout_result()
+
+        with mock.patch.object(export_rescue, "load_url", lambda: "u"), \
+                mock.patch.object(export_rescue, "call_execute_code", execute), \
+                mock.patch.object(self.eb, "call_tool", fire), \
+                mock.patch.object(self.eb, "exporter_renders", lambda: list(self.listing)), \
+                mock.patch.object(self.eb, "compose", self._fake_compose()):
+            self._write_png(1440, 4464)
+            self.assertEqual(export_rescue.main(["--board", "01-ana-sayfa", "--out", str(out),
+                                                 "--wait", "1", "--poll", "0.01"]), 0)
+        self.assertEqual(self.eb.png_size(out / "01-ana-sayfa.png"), (1440, 4464))
+
     def test_silence_ends_with_the_measured_wait(self):
         with mock.patch.object(self.eb, "call_tool",
                                lambda *a, **k: (_ for _ in ()).throw(self.eb.McpError("bridge down"))), \
@@ -1005,6 +1061,68 @@ class ExportRescueTest(unittest.TestCase):
                 self.eb.export_png("u", self.info, self.target, wait=0.15, poll=0.01)
         # the render existed before the export fired: it belongs to an earlier call
         self.assertFalse(self.target.exists())
+
+
+class RebuildLosslessTest(unittest.TestCase):
+    """A rebuild must re-place provenance photos and report real counts."""
+
+    def test_entries_for_board_requires_name_at_board_keys(self):
+        prov = {
+            "img-a": {"board": "13-kilavuzlar"},                  # legacy bare key
+            "img-a@13-kilavuzlar": {"board": "13-kilavuzlar"},
+            "img-b@13-kilavuzlar": {"board": "13-kilavuzlar"},
+            "img-c@14-dergi": {"board": "14-dergi"},
+        }
+        self.assertEqual(media.entries_for_board(prov, "13-kilavuzlar"), ["img-a", "img-b"])
+        self.assertEqual(media.entries_for_board(prov, "14-dergi"), ["img-c"])
+        self.assertEqual(media.entries_for_board(prov, "99-yok"), [])
+
+    def test_media_cache_key_carries_source_and_size(self):
+        a = media.cached_path("img-x", 408, 320, "https://example/a.jpg")
+        b = media.cached_path("img-x", 408, 320, "https://example/b.jpg")
+        c = media.cached_path("img-x", 300, 320, "https://example/a.jpg")
+        self.assertNotEqual(a, b)
+        self.assertNotEqual(a, c)
+        self.assertEqual(a, media.cached_path("img-x", 408, 320, "https://example/a.jpg"))
+
+    def test_expected_photo_names_reads_only_at_board_records(self):
+        import build
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "provenance.json"
+            path.write_text(json.dumps({
+                "img-a": {"board": "13-kilavuzlar"},
+                "img-a@13-kilavuzlar": {"board": "13-kilavuzlar"},
+                "img-b@13-kilavuzlar": {"board": "13-kilavuzlar"},
+            }))
+            with mock.patch.object(build, "PROVENANCE", path):
+                self.assertEqual(build.expected_photo_names("13-kilavuzlar"),
+                                 ["img-a", "img-b"])
+
+    def test_verify_photos_counts_exactly_one_fill_per_name(self):
+        import build
+        with mock.patch.object(build, "photo_counts",
+                               lambda *a: {"img-a": 1, "img-b": 0, "img-c": 2}):
+            ok, msg = build.verify_photos("u", "P", "B", ["img-a", "img-b", "img-c"])
+        self.assertFalse(ok)
+        self.assertIn("photos 1/3", msg)
+        self.assertIn("img-b", msg)
+        self.assertIn("img-c", msg)
+
+    def test_verify_links_matches_destination_not_just_any_interaction(self):
+        import build
+        state = {"cta": ["next-board"], "other": ["next-board"]}
+        with mock.patch.object(build, "current_page", lambda _u: "P"), \
+                mock.patch.object(build, "call_execute_code",
+                                  lambda *a: content_result(json.dumps(state))):
+            ok, msg, missing = build.verify_links(
+                "u", "P", "B", [{"shape": "cta", "dest": "next-board"}])
+            self.assertTrue(ok)
+            self.assertEqual(msg, "links 1/1")
+            ok, msg, missing = build.verify_links(
+                "u", "P", "B", [{"shape": "cta", "dest": "elsewhere"}])
+        self.assertFalse(ok)
+        self.assertIn("links 0/1", msg)
+        self.assertIn("elsewhere", missing[0])
 
 
 if __name__ == "__main__":

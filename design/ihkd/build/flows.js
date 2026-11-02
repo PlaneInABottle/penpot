@@ -9,7 +9,7 @@
  * destination proxy {id:"",name:null} — verified live 2026-11-02; cross-page
  * journeys stay unwired by design):
  *   keşif (Kurumsal, start 01-ana-sayfa):
- *     "hero ghost" @ 01-ana-sayfa (Derneği tanı) -> 02-dernek
+ *     "hero cta link" @ 01-ana-sayfa (Derneği tanı) -> 02-dernek
  *     "board all" @ 02-dernek (Tüm kurullar)     -> 03-yonetim
  *   kayıt (Kongre, start 09-kayit):
  *     "k cta" @ 09-kayit (Kaydı tamamla)         -> 10-konaklama
@@ -40,10 +40,13 @@ const ensureFlow = (pg, name, start) => {
 };
 const links = [];
 const errors = [];
+const byBoard = {};
 const wire = (label, shapeName, srcBoard, destBoard) => {
   const s = need(kid(srcBoard, shapeName), "shape " + shapeName);
   const r = H.link(s, "click", NAV(destBoard));
   links.push(label + " -> " + destBoard.name + " (replaced " + r.replaced + ")");
+  (byBoard[srcBoard.name] = byBoard[srcBoard.name] || []).push(
+    { shape: shapeName, dest: destBoard.name });
 };
 const section = (pageName, fn) => {
   try {
@@ -59,7 +62,7 @@ section("Kurumsal", (pg) => {
   const b03 = need(board(pg, "03-yonetim"), "board 03-yonetim");
   // "Üye ol" is the membership journey (cross-page, unwired by design); the
   // same-page route off 01 is the ghost link "Derneği tanı" -> 02-dernek.
-  wire("01 hero ghost", "hero ghost", b01, b02);
+  wire("01 hero link", "hero cta link", b01, b02);
   wire("02 board all", "board all", b02, b03);
   ensureFlow(pg, "kayıt", b01);
   ensureFlow(pg, "keşif", b01);
@@ -92,4 +95,4 @@ section("Üyelik", (pg) => {
   wire("20 p cta", "p cta", b20, b18);
   ensureFlow(pg, "üye", b19);
 });
-return JSON.stringify({ links: links, errors: errors });
+return JSON.stringify({ links: links, errors: errors, byBoard: byBoard });
