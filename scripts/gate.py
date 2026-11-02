@@ -153,6 +153,9 @@ def gate(pages: list[str], boards: list[str], project: pathlib.Path, timeout: fl
             steps.append(run_step(f"design_qa {page}",
                                   py("design_qa.py") + ["--page", page, "--lint-json", str(lint_json)],
                                   timeout))
+            steps.append(run_step(f"copy_lint {page}",
+                                  py("copy_lint.py") + ["--page", page, "--project", str(project)],
+                                  timeout))
 
         spec = project / "ux-spec.json"
         if spec.is_file():

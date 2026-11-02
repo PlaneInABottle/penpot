@@ -338,6 +338,10 @@ Five user-reported defects that every gate had passed; each became a rule above 
   middle line), write the failing test, then the rule, then the fix — in
   that order. The DAHİL/'Devam et' overlap and the mid-row separator both
   entered the gate this way.
+- **A PASS claim is checked by eye.** An "open item" that reads as a visual
+  defect is not PASS: fix it before returning, never explain it away.
+- **Parallel agents never write the same live page or `lib.js`.** Ownership
+  lives in the dispatch; a shared live page is split by board, not by session.
 - **A "looked at 1:1" claim without an attested manifest is not evidence.**
   Tile the render with `crop_board.py`, review every tile and region, mark
   `reviewed` with a finding note, and let `--attest` pass — that is the

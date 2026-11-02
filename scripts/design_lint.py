@@ -46,6 +46,27 @@ DEFAULTS = {
     "fit_tol": 1.0,        # px tolerance for ink-vs-container containment
     "fit_bar_delta": 4.0,  # MEDIUM when an accent bar differs from its text span by more
     "fit_rule_min": 60.0,  # hairline rules shorter than this are ticks, not boundaries
+    # Audit rules (2026-11-02): classes the eye found and the gate could not see.
+    "min_gap_ratio": 0.35,       # stacked title/meta ink gap under this x its line is a finding
+    "min_gap_high_ratio": 0.25,  # under this share of the line it is HIGH
+    "min_gap_title_size": 22,    # only a heading over a meta (not a label over a title)
+    "min_gap_meta_size": 16,
+    "marker_centre_tol": 1.5,    # px a bullet centre may drift from the line's ink centre
+    "marker_rule_tol": 2.0,      # px a list separator may drift from the marker's left edge
+    "marker_rule_gap": 48.0,     # how close below the item a separator still belongs to it
+    "surface_white": ["#FFFFFF"],
+    "surface_alt": ["#E8EBED"],  # inset/side-panel surface, never a card grid
+    "surface_card_min_w": 120.0,
+    "surface_card_min_h": 60.0,
+    "surface_alt_min_w": 400.0,  # a large alt card beside white cards is a role conflict
+    "surface_band_ratio": 0.8,   # wider than this share of the board is a band, not a card
+    "float_btn_min_w": 60.0,
+    "float_btn_max_w": 420.0,
+    "float_max_gap": 160.0,      # horizontal gap between a button and its row link
+    "float_centre_tol": 6.0,     # px the two centres may differ before it reads misaligned
+    "float_high_centre_diff": 16.0,
+    "float_max_centre_diff": 120.0,
+    "min_stat_size": 30.0,       # a stats-row number is display type, not body copy
 }
 
 BANNED_EXACT = {"Text", "Rectangle", "Board", "Group"}
@@ -161,6 +182,7 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
             findings.append({"board": region, "severity": severity, "finding": message})
 
         inside = subtree(board["id"])
+        by_id = {n["id"]: n for n in inside}
         if int(board["w"]) not in rules["board_widths"]:
             add("medium", f"board width {board['w']} is not one of {rules['board_widths']}")
 
@@ -417,20 +439,25 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
         # that wraps the text BOX wins (parent chain or a same-parent slot);
         # when the measured INK leaves that container, the content outgrew
         # its slot. The top board itself is excluded — box-vs-board overflow
-        # above already owns that edge.
+        # above already owns that edge. When no slot wraps the box, the
+        # nearest rect/board ancestor (else the board) becomes the container,
+        # so a board-level text can no longer skip the ink check silently; a
+        # box that leaves even that fallback is a MEDIUM "no container".
         slots = [n for n in inside
                  if n["type"] in ("rectangle", "board") and n["id"] != board["id"]
                  and (n["w"] or 0) > 4 and (n["h"] or 0) > 4]
-        for t in inked:
-            lx, ty, rx, by = t["x"], t["y"], t["x"] + (t["w"] or 0), t["y"] + (t["h"] or 0)
-            cands = [s for s in slots
-                     if (s["id"] == t.get("parentId") or is_ancestor(s["id"], t["id"])
-                         or s.get("parentId") == t.get("parentId"))
-                     and contains(s, lx, ty, rx, by)]
-            if not cands:
-                continue
-            slot = min(cands, key=lambda s: (s["w"] or 0) * (s["h"] or 0))
-            ix, iy, ir, ib = ink_box(t)
+
+        def nearest_box(t):
+            current, seen = t.get("parentId"), set()
+            while current and current not in seen:
+                node = by_id.get(current)
+                if node and node["type"] in ("rectangle", "board"):
+                    return node
+                seen.add(current)
+                current = node.get("parentId") if node else None
+            return board
+
+        def overflow_text(slot, ix, iy, ir, ib):
             over = []
             if ix < slot["x"] - tol:
                 over.append(f"left +{slot['x'] - ix:.0f}px")
@@ -440,6 +467,33 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
                 over.append(f"top +{slot['y'] - iy:.0f}px")
             if ib > slot["y"] + slot["h"] + tol:
                 over.append(f"bottom +{ib - slot['y'] - slot['h']:.0f}px")
+            return over
+
+        for t in inked:
+            lx, ty, rx, by = t["x"], t["y"], t["x"] + (t["w"] or 0), t["y"] + (t["h"] or 0)
+            parent_slot = nearest_box(t)
+            if parent_slot and parent_slot.get("id") != board["id"]:
+                box_over = overflow_text(parent_slot, lx, ty, rx, by)
+                if box_over:
+                    add("high", f"text {t['name']} box ({rx - lx:.0f}x{by - ty:.0f}) exceeds its "
+                                f"container {parent_slot['name']} ({', '.join(box_over)} outside)")
+                    continue
+            cands = [s for s in slots
+                     if (s["id"] == t.get("parentId") or is_ancestor(s["id"], t["id"])
+                         or s.get("parentId") == t.get("parentId"))
+                     and contains(s, lx, ty, rx, by)]
+            if cands:
+                slot = min(cands, key=lambda s: (s["w"] or 0) * (s["h"] or 0))
+            else:
+                fallback = parent_slot or board
+                if contains(fallback, lx, ty, rx, by):
+                    slot = fallback
+                else:
+                    add("medium", f"text {t['name']} has no enclosing container "
+                                  f"(box {rx - lx:.0f}x{by - ty:.0f} at x={lx:.0f} y={ty:.0f})")
+                    continue
+            ix, iy, ir, ib = ink_box(t)
+            over = overflow_text(slot, ix, iy, ir, ib)
             if over:
                 add("high", f"text {t['name']} overflows its container {slot['name']} ({', '.join(over)} ink outside)")
 
@@ -722,6 +776,257 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
                 continue
             add("high", f"empty corridor {e2 - e1:.0f}px (y {e1:.0f}-{e2:.0f}px): "
                         f"no content, no divider — reads as a missing row")
+
+        # ---- audit rules (2026-11-02): classes the eye caught, no gate owned ----
+
+        # 9. min-gap: a title and its meta in one list row must not touch.
+        # The 01 group rows sit 5px apart against a 19.5px meta line. Scoped to
+        # a heading over a meta inside a row closed by a hairline, so the
+        # 19-giris logo lockup and the 12-kurs-detay progress stat stay clean.
+        for i, a in enumerate(inked):
+            ax0, ay0, ax1, ay1 = ink_box(a)
+            for b in inked[i + 1:]:
+                if a.get("parentId") != b.get("parentId"):
+                    continue
+                bx0, by0, bx1, by1 = ink_box(b)
+                if by0 >= ay1:
+                    gap, top, bot = by0 - ay1, a, b
+                elif ay0 >= by1:
+                    gap, top, bot = ay0 - by1, b, a
+                else:
+                    continue
+                band = min(ax1, bx1) - max(ax0, bx0)
+                if band <= 0.5 * min(ax1 - ax0, bx1 - bx0):
+                    continue
+                line = min(
+                    (top.get("fontSize") or 0) * (line_height_multiplier(top.get("lineHeight")) or 1.5),
+                    (bot.get("fontSize") or 0) * (line_height_multiplier(bot.get("lineHeight")) or 1.5),
+                )
+                if line <= 0 or gap >= rules["min_gap_ratio"] * line:
+                    continue
+                if (top.get("fontSize") or 0) < rules["min_gap_title_size"]:
+                    continue
+                if (bot.get("fontSize") or 0) > rules["min_gap_meta_size"]:
+                    continue
+                bx0, by0, bx1, by1 = ink_box(bot)
+                seps = [r for r in inside
+                        if r["type"] == "rectangle" and (r["h"] or 0) <= 2
+                        and (r["w"] or 0) >= rules["fit_rule_min"]
+                        and r.get("parentId") == bot.get("parentId")
+                        and 6 <= r["y"] - by1 <= 48
+                        and min(bx1, r["x"] + r["w"]) - max(bx0, r["x"]) > 0.5 * (bx1 - bx0)]
+                if not seps:
+                    continue
+                level = "high" if gap < rules["min_gap_high_ratio"] * line else "medium"
+                add(level, f"text {top['name']} / {bot['name']} ink gap {gap:.0f}px "
+                           f"under {rules['min_gap_ratio']:.2f}x line ({line:.0f}px) — title and meta touch")
+
+        # 10. list marker: a bullet/dot belongs on the line's ink centre, and
+        # the separator starts at the marker's left edge. A dot at row+6 sits
+        # 2-4px high; the rule below it drifts left/right.
+        markers = [n for n in inside
+                   if n["type"] in ("rectangle", "ellipse", "circle")
+                   and 2 <= (n["w"] or 0) <= 10 and 2 <= (n["h"] or 0) <= 10
+                   and (n.get("fill") or n.get("img"))]
+        for dot in markers:
+            dcy = dot["y"] + (dot["h"] or 0) / 2
+            mates = []
+            for t in inked:
+                if t.get("parentId") != dot.get("parentId"):
+                    continue
+                ix0, iy0, ix1, iy1 = ink_box(t)
+                if ix0 < dot["x"] + (dot["w"] or 0) - 2:
+                    continue
+                line = (t.get("fontSize") or 0) * (line_height_multiplier(t.get("lineHeight")) or 1.5)
+                if line <= 0:
+                    continue
+                centre = iy0 + min(iy1 - iy0, line) / 2
+                if abs(centre - dcy) > 0.9 * line:
+                    continue
+                if ix0 - (dot["x"] + (dot["w"] or 0)) > 40:
+                    continue
+                mates.append((abs(centre - dcy), t, centre))
+            if not mates:
+                continue
+            diff, mate, centre = min(mates)
+            if diff > rules["marker_centre_tol"]:
+                add("high", f"list marker {dot['name']} centre {dcy:.1f}px vs "
+                            f"{mate['name']} line centre {centre:.1f}px (Δ{diff:.1f}px)")
+                continue
+            expected = min(dot["x"], ink_box(mate)[0])
+            for r in inside:
+                if (r["type"] != "rectangle" or (r["h"] or 0) > 2
+                        or (r["w"] or 0) < rules["fit_rule_min"]
+                        or r.get("parentId") != dot.get("parentId")):
+                    continue
+                if not (ink_box(mate)[3] < r["y"] <= ink_box(mate)[3] + 64):
+                    continue
+                if abs(r["x"] - expected) > rules["marker_rule_gap"]:
+                    continue
+                if abs(r["x"] - expected) > rules["marker_rule_tol"]:
+                    add("medium", f"list separator {r['name']} starts at x={r['x']:.0f}, "
+                                  f"expected {expected:.0f} from {dot['name']}")
+                break
+
+        # 11. surface role: cards are white, surface.alt is for insets. A grid
+        # of alt cards beside a white card (13-kilavuzlar pockets) and a large
+        # alt card on a page of white cards (20-panel ecg) are one defect.
+        white = {value.upper() for value in rules["surface_white"]}
+        alt = {value.upper() for value in rules["surface_alt"]}
+
+        def surface_role(n):
+            fill = (n.get("fill") or "").upper()
+            if fill in white:
+                return "white"
+            if fill in alt:
+                return "alt"
+            return None
+
+        cards = []
+        for n in inside:
+            if n["type"] not in ("rectangle", "board") or n["id"] == board["id"]:
+                continue
+            if n.get("img") or not surface_role(n):
+                continue
+            width, height = n["w"] or 0, n["h"] or 0
+            if width < rules["surface_card_min_w"] or height < rules["surface_card_min_h"]:
+                continue
+            if width >= 0.9 * board["w"]:
+                continue
+            if n["x"] <= board["x"] + 1 or n["x"] + width >= board["x"] + board["w"] - 1:
+                continue
+            if not any(t["id"] == n["id"] or is_ancestor(n["id"], t["id"]) for t in inked):
+                continue
+            cards.append(n)
+        for i, a in enumerate(cards):
+            for b in cards[i + 1:]:
+                if a.get("parentId") != b.get("parentId"):
+                    continue
+                if (abs((a["w"] or 0) - (b["w"] or 0)) <= max(8, 0.08 * (a["w"] or 0))
+                        and abs((a["h"] or 0) - (b["h"] or 0)) <= max(8, 0.08 * (a["h"] or 0))
+                        and surface_role(a) != surface_role(b)):
+                    add("medium", f"same-size cards {a['name']} ({surface_role(a)}) and "
+                                   f"{b['name']} ({surface_role(b)}) use different surface tokens")
+        by_parent_cards: dict[str, list[dict]] = {}
+        for c in cards:
+            by_parent_cards.setdefault(c.get("parentId") or "", []).append(c)
+        for group in by_parent_cards.values():
+            alt_cards = [c for c in group if surface_role(c) == "alt"]
+            if not alt_cards or not any(surface_role(c) == "white" for c in group):
+                continue
+            for i, a in enumerate(alt_cards):
+                mates = [b for b in alt_cards[i + 1:]
+                         if abs((a["w"] or 0) - (b["w"] or 0)) <= max(8, 0.08 * (a["w"] or 0))
+                         and abs((a["h"] or 0) - (b["h"] or 0)) <= max(8, 0.08 * (a["h"] or 0))]
+                if mates:
+                    add("medium", f"{1 + len(mates)} same-size cards in {a.get('parent')} use "
+                                   f"surface.alt beside a white card — card surface is white; "
+                                   f"alt is for insets")
+                    break
+        large_alt = [c for c in cards if surface_role(c) == "alt"
+                     and (c["w"] or 0) >= rules["surface_alt_min_w"]
+                     and (c["w"] or 0) < rules["surface_band_ratio"] * board["w"]]
+        if large_alt and any(surface_role(c) == "white" for c in cards):
+            card = large_alt[0]
+            add("medium", f"large surface.alt card {card['name']} "
+                           f"({card['w']:.0f}x{card['h']:.0f}x) sits with white cards on the same "
+                           f"board — alt is for insets, not cards")
+
+        # 12. floating sibling: a link and a button in one CTA row share a
+        # centre line. The 01 kongre band put "Programı gör" 63px above the
+        # "Kayıt ol" button (different parents, no x-overlap), so the gap read
+        # as two unrelated actions.
+        buttons = [n for n in inside
+                   if n["type"] in ("rectangle", "board")
+                   and rules["float_btn_min_w"] <= (n["w"] or 0) <= rules["float_btn_max_w"]
+                   and 24 <= (n["h"] or 0) <= 88
+                   and any(c.get("parentId") == n["id"] and c["type"] == "text"
+                           and "/ label" in (c["name"] or "") for c in inside)]
+        links = []
+        for t in inked:
+            name = (t["name"] or "").lower()
+            is_link = any(k in name for k in ("link", "cta", "under"))
+            if not is_link:
+                is_link = any(
+                    s["type"] == "rectangle" and s.get("parentId") == t.get("parentId")
+                    and (s["h"] or 0) <= 2 and (s["w"] or 0) >= 20
+                    and abs(s["y"] - (t["y"] + (t["h"] or 0) + 2)) <= 8
+                    and abs(s["x"] - t["x"]) <= 4
+                    for s in inside
+                )
+            if is_link:
+                links.append(t)
+        for button in buttons:
+            bcy = button["y"] + (button["h"] or 0) / 2
+            for link in links:
+                if link.get("parentId") != button.get("parentId"):
+                    continue
+                ix0, iy0, ix1, iy1 = ink_box(link)
+                if min(button["x"] + (button["w"] or 0), ix1) - max(button["x"], ix0) > 0:
+                    continue
+                hgap = max(0, max(button["x"], ix0) - min(button["x"] + (button["w"] or 0), ix1))
+                if hgap > rules["float_max_gap"]:
+                    continue
+                diff = abs((iy0 + iy1) / 2 - bcy)
+                if diff <= rules["float_centre_tol"] or diff > rules["float_max_centre_diff"]:
+                    continue
+                row0 = min(iy0, button["y"]) - 8
+                row1 = max(iy1, button["y"] + (button["h"] or 0)) + 8
+                gap0 = min(button["x"] + (button["w"] or 0), ix1)
+                gap1 = max(button["x"], ix0)
+                blocked = any(
+                    n["id"] not in (button["id"], link["id"])
+                    and n["type"] in ("rectangle", "board", "text")
+                    and (n.get("fill") or n.get("img"))
+                    and n["x"] < gap1 and n["x"] + (n["w"] or 0) > gap0
+                    and n["y"] < row1 and n["y"] + (n["h"] or 0) > row0
+                    and not is_ancestor(n["id"], button["id"])
+                    and not is_ancestor(n["id"], link["id"])
+                    for n in inside
+                )
+                if blocked:
+                    continue
+                level = "high" if diff > rules["float_high_centre_diff"] else "medium"
+                add(level, f"CTA group misaligned: {link['name']} centre {((iy0 + iy1) / 2):.0f}px "
+                           f"vs {button['name']} centre {bcy:.0f}px (Δ{diff:.0f}px) — link and "
+                           f"button should share a centre line")
+
+        # 13. stat size: a stats row's number is display type, not body copy.
+        # 01's dark proof band ran 16px values against 13px labels; the
+        # threshold lives in DEFAULTS so a project can declare a smaller grid.
+        def numeric(t):
+            value = (t.get("text") or "").strip()
+            if not value or len(value) > 16:
+                return False
+            digits = sum(ch.isdigit() for ch in value)
+            return digits >= 1 and digits / len(value) >= 0.4
+
+        stat_values = []
+        for t in texts:
+            if not numeric(t):
+                continue
+            for label in texts:
+                if (label["id"] == t["id"] or label.get("parentId") != t.get("parentId")
+                        or numeric(label) or (label.get("fontSize") or 0) >= (t.get("fontSize") or 0)):
+                    continue
+                if abs((label.get("inkX") or label["x"]) - (t.get("inkX") or t["x"])) > 6:
+                    continue
+                below = (label.get("inkY") or label["y"]) - ((t.get("inkY") or t["y"]) + (t.get("inkH") or t["h"]))
+                if 0 < below <= 60:
+                    stat_values.append(t)
+                    break
+        stat_rows: dict[tuple, list[dict]] = {}
+        for t in stat_values:
+            stat_rows.setdefault((t.get("parentId"), round(t["y"] / 8)), []).append(t)
+        for group in stat_rows.values():
+            if len(group) < 2:
+                continue
+            small = [t for t in group if (t.get("fontSize") or 0) < rules["min_stat_size"]]
+            if small:
+                value = min(small, key=lambda t: t["fontSize"] or 0)
+                add("medium", f"stats row in {group[0].get('parent')}: {value['name']} is "
+                               f"{value['fontSize']}px under the {rules['min_stat_size']}px stat "
+                               f"minimum ({len(group)} values)")
 
     return findings
 

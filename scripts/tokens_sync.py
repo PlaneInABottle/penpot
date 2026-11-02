@@ -101,6 +101,24 @@ def to_specs(doc: dict) -> list[dict]:
     return specs
 
 
+def duplicate_values(specs: list[dict]) -> list[tuple[str, list[str]]]:
+    """Colour tokens that carry the same value under different names.
+
+    A second name for the same hex is a role collision, not an alias: the two
+    roles cannot be retuned independently (İHKD `white` and `bone` are both
+    #FFFFFF). Returns (value, sorted names) only for groups with 2+ names.
+    """
+    by_value: dict[str, list[str]] = {}
+    for spec in specs:
+        if spec.get("type") == "color":
+            by_value.setdefault(str(spec["value"]).upper(), []).append(spec["name"])
+    return [
+        (value, sorted(names))
+        for value, names in sorted(by_value.items())
+        if len(names) > 1
+    ]
+
+
 def to_dtcg(tokens: list[dict]) -> tuple[dict, list[str]]:
     """Penpot tokens -> DTCG document, plus the token names that could not be mapped."""
     by_type = {token_type: (group, name_prefix) for group, (token_type, name_prefix) in GROUPS.items()}
@@ -212,6 +230,8 @@ def check(args, url: str, specs: list[dict]) -> int:
     current = {token["name"]: token for token in (data or {}).get("tokens", [])}
     drift, extras = compare(specs, current)
     print("\n".join(drift + extras) if drift or extras else "no drift")
+    for value, names in duplicate_values(specs):
+        print(f"warning: colour tokens share {value}: {', '.join(names)} — one role, one value")
     if drift:
         return 1
     if extras:

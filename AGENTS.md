@@ -67,6 +67,10 @@ docker exec penpot-penpot-postgres-1 pg_dump -U penpot penpot > ~/penpot-$(date 
 - **No screens before a direction.** Sketch on a scratch page, one-sentence pick.
 - **A decision not in a file does not exist.** Record in
   `design/<project>/brief.md` (+ stance in `principles.md`).
+- **A PASS claim is checked by eye.** An "open item" that reads as a visual
+  defect is not PASS; fix it before returning.
+- **One owner per live page and `lib.js`.** Parallel agents split by board,
+  never share a live page; the dispatch names the owner.
 
 ## Project lifecycle
 
