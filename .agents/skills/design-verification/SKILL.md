@@ -4,7 +4,7 @@ description: The one definition of done for a Penpot screen or file — which ga
 license: MIT
 metadata:
   author: configs
-  version: "1.0.0"
+  version: "1.1.0"
 ---
 
 # Design verification
@@ -73,7 +73,8 @@ Anything not covered is reported as a gap, never as done.
 - **Baselines, not boxes.** A line built from two text sizes gets a 2× crop on baseline
   continuity; optical alignment is invisible to a geometry dump.
 - **Stale renders lie.** Never open a PNG older than the last build that touched its board;
-  check mtime first, or you review yesterday's state as today's.
+  check mtime first, or you review yesterday's state as today's. Review carry requires the
+  same board, source hash and region geometry; a changed input needs a new inspection.
 - **Coverage**: unexplained hard-coded fills, unnamed shapes, orphan components and render
   mismatches are findings, not noise.
 - **Craft** is checked against `visual-interface-design`'s `references/craft-checklist.md`.
@@ -86,6 +87,14 @@ Anything not covered is reported as a gap, never as done.
 
 ## Change discipline
 
+- **Test the evidence pipeline, not only its arithmetic.** After a false PASS, drive the
+  production collector → resolver → verdict with a real failure fixture; include inherited
+  opacity, hidden layers and unsupported paint when relevant (`ContrastAuditTest`).
+- **Exercise geometry away from the origin.** Crop changes need off-origin boards, the
+  actual observed shape names, wrong-board reuse and mismatched render dimensions; assert
+  pixels and preserved evidence, not just coordinates (`CropBoardTest`).
+- **Revision labels are part of review evidence.** Name the checkout and SHA of each
+  observation; a worktree's project snapshot does not describe a newer primary checkout.
 - **A lint rule is earned.** Fix the screen first, then encode the defect. It starts from a defect the eye caught and lint missed: a
   failing fixture in `test_lint_rules.py` first, then the rule, then its wrong-positive
   count on the frozen corpus (`--from-nodes`, `--rules-report`) written into `RULES`.

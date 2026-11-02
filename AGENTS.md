@@ -106,6 +106,7 @@ check, not a script.
 
 ## Ownership and safety
 
+- For false-PASS recovery and evidence-tool changes, follow `design-verification` § Change discipline.
 - **One plugin, one writer.** Every MCP call holds a `flock` in `~/.cache/penpot-mcp/`; a
   second writer waits and exits 2 (`plugin busy: held by pid=…`). One owner per live page and
   per `lib.js`; parallel agents split by board, never by session. The OS releases a `flock`
