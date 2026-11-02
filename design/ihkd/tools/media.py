@@ -46,7 +46,7 @@ UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML,
 # name -> (query or pinned URL, page, board, credit)
 IMAGES = {
     "img-echo": ("https://images.pexels.com/photos/6129683/pexels-photo-6129683.jpeg", "Kurumsal", "01-ana-sayfa", "https://www.pexels.com/photo/6129683/ by RDNE Stock project"),
-    "img-hero": ("https://images.pexels.com/photos/39192342/pexels-photo-39192342.jpeg", "Kurumsal", "01-ana-sayfa", "https://www.pexels.com/photo/39192342/ by Vitaly Gariev"),
+    "img-hero": ("https://images.pexels.com/photos/20733081/pexels-photo-20733081.jpeg", "Kurumsal", "01-ana-sayfa", "https://www.pexels.com/photo/20733081/ by BBSO"),
     "img-journal": ("https://images.pexels.com/photos/3860983/pexels-photo-3860983.jpeg", "Kurumsal", "01-ana-sayfa", "https://www.pexels.com/photo/3860983/ by Robert Munteanu"),
     "img-round": ("internal medicine ward round doctors", "İçerik", "15-haberler"),
     "img-cath": ("catheterization laboratory angiography", "Kongre", "06-kongre"),
@@ -213,6 +213,10 @@ const shape = penpot.createRectangle();
 shape.name = __NAME__;
 shape.resize(w, h);
 host.appendChild(shape);
+// Replace the slot where it sits, not on top of the stack: a photo appended
+// last paints over every sibling the slot used to sit under (01 hero: white
+// type on a scene board vanished behind its own photo).
+shape.setParentIndex(existing.parentIndex);
 shape.x = x;
 shape.y = y;
 shape.fills = [{ fillOpacity: 1, fillImage: media }];

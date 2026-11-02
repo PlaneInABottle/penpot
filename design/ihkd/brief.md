@@ -159,7 +159,7 @@ Card: 24px padding (32 for feature cards), 1px border, no shadow.
 
 | # | Page | Board | Primary action | Height |
 |---|---|---|---|---|
-| 01 | `Kurumsal` | `01-ana-sayfa` | Kongreye kayıt ol | 4064 |
+| 01 | `Kurumsal` | `01-ana-sayfa` | Kongreye kayıt ol | 4076 |
 | 02 | `Kurumsal` | `02-dernek` | Tüzüğü oku | 2452 |
 | 03 | `Kurumsal` | `03-yonetim` | Kurul üyesine ulaş | 2296 |
 | 04 | `Kurumsal` | `04-calisma-gruplari` | Grup seç | 2088 |
@@ -188,17 +188,16 @@ Copy below is final Turkish; build it verbatim.
 
 ### 01 · Ana sayfa
 - Nav: İHKD + `Dernek · Çalışma grupları · Kongre · Akademi · Yayın · Haberler` + `Üye girişi` + ghost `Üye ol` (tek doygun primary hero'dadır).
-- Hero (seçim SAYI, M7): the page opens as the society's own issue. A 1200×740 `white` cover sheet at 120,140: masthead `İHKD` (the mono wordmark at 80, `fs.80` bound; the nav keeps wordmark 22), `KARDİYOVASKÜLER KLİNİK` label + `Cilt 12 · Sayı 1 · Mart 2027` data, coverline `Hastanın hekimi.` (h2 44); congress coverline `12. ULUSAL KONGRE` (label) + `22–25 Nisan 2027 · Antalya` (h3 30) + `147 gün · erken kayıt 31 Ocak 2027'de kapanıyor · 96 oturum` (meta). The cover figure is a self-drawn three-lead strip (I/II/III, 640×220, 8px minor / 40px major grid, `25 mm/s · 10 mm/mV`), labelled `KAPAK · EKG KAYDI`. `BU SAYIDA` TOC six rows — Kongre s.01 / Kılavuzlar s.12 / Akademi s.30 / Yayın s.38 / Topluluk s.44 / Haberler s.50 — each with a 13px note; one primary `Kongreye kayıt ol` + ghost `Derneği tanı`; imprint `6.847 üye · 41 il · 12 çalışma grubu · 10 kılavuz` (13px). No photo, no proof strip, no congress band: the cover carries the date, the countdown and the action.
-- `Gündem` starts at 992 (cover bottom 880 + the 112 rhythm); the seam is the cover's own edge, not a strip. The page resumes on `paper`.
-- `Gündem` — 3 rows (tarih, kategori, başlık, okuma süresi) + `Tüm haberler →` + yayım notu.
+- Hero (seçim AFİŞ, M8; kullanıcı seçti): the page opens as a congress poster over a full hall. `hero scene` board 1440×668 at y 108, fill `ink.900`, with a full-bleed `img-hero` rect (Pexels 20733081, cool grade). White type on it: `12. ULUSAL İÇ HASTALIKLARI VE KARDİYOLOJİ KONGRESİ` (label), `22–25 Nisan 2027` (display 80), `Antalya Kongre Merkezi, Belek · 96 oturum · 214 konuşmacı` (body), `147` (stat 44) + `gün kaldı · erken kayıt 31 Ocak 2027'de kapanıyor` (meta), one primary `Kongreye kayıt ol` + ghost `Programı gör`; the edition numeral `12` is a vector path (469×384 at 904, Inter Tight 700 outlines) and a white 1440×30 ECG trace crosses the audience. The society signs the poster: `Hastanın hekimi.` (h3 30) above the trace and `İHKD · İç Hastalıkları ve Kardiyoloji Derneği · 1998'den beri Ankara` (label) as the imprint below it. No scrim, no gradient.
+- `hero proof` — the poster's evidence on paper, not on the photo: 44px `stat` strip at y 776 (`6.847` Üye · `41` İl temsilcisi · `12` Çalışma grubu · `10` Kılavuz), values `ink.900`, labels 13px `ink.600`, dividers on the cell boundaries, no white band. The poster's dark edge is the joint; the next section starts at 1006 (strip bottom 894 + 112).
 - `Çalışma grupları` — 6 rows, iki kolon (576 + 48 + 576 = 1200) + `12 çalışma grubunun tümü →`; sıra numarası `data` 13px, ok kolonun sağ kenarında ve başlığın ilk satırına hizalı.
 - `Akademi` — 3 course rows; meta 1200'de biter, `Başla →` 1320 grid kenarında; STE notu.
 - `Yayın` — kitap fotoğrafı (280×300) + dergi kolonu (3 TOC satırı, `Sayıyı oku`) + ayın kılavuzu kolonu (ECG şeridi 360×44, `Kılavuzu indir`); iki link aynı satırda, fotoğrafın alt kenarı o çizgiye oturur.
+- `Gündem` — **Yayın'dan sonra** (`Bu hafta`): 3 rows (tarih, kategori, başlık, okuma süresi) + `Tüm haberler →` + yayım notu. Kongre satırı tektir; hero'nun duyurusunu dev bir bantla tekrarlamaz.
 - `Üyelik` — `white` bant: `Yazan, toplayan, öğreten.`, lede, 3 madde, `Başvuruyu başlat →` linki, aidat satırı. İkinci doygun buton yok.
-- Footer white. Board yüksekliği 4064.
-- Declared bleeds: `top bar`, `masthead rule`, `uyelik band`, `footer` / `footer bar`. The cover is contained 120..1320; no hero bleed. Diğer her şey `X..X+CW` içinde (grid denetimi: 0 ihlal; cover kenar boşlukları 120/120).
-- Açıklanan lint medium'ları (düzeltildi değil, gerekçeli): `type steps too close [1.23, 1.38, 1.36, 1.47, 1.82]` — 13→16 microcopy pair, the 80/44 masthead step and the 30/22 coverline step; principles §8. `dead space in uyelik band (74)` — the band's padding is symmetric 72/72, the measurement starts at the last ink. 13px microcopy (cover imprint, countdown, caption): the project's micro size. `inline mixed-size pair toc title/page` — the page number is nudged to the name's ink (+2) and read at 1:1; the flag is a review pointer, not a collision.
-
+- Footer white. Board yüksekliği 4076.
+- Declared bleeds: `top bar`, `masthead rule`, `hero scene` / `img-hero` (1440 wide, the poster edge), `hero ecg` (1440 wide trace), `uyelik band`, `footer` / `footer bar`, `hero twelve` (its right edge ends on 1296, inside the poster). Diğer her şey `X..X+CW` içinde (grid denetimi: 0 ihlal).
+- Açıklanan lint medium/low'ları (düzeltildi değil, gerekçeli): `type steps too close [1.23, 1.38, 1.36, 1.47, 1.82]` — 13→16 microcopy pair and the display steps; principles §8. `type.small_body` ×6 at 13px (`hero label`, `hero countdown note`, `hero society line`, `member fee`, `akademi note`, footer microcopy) — these are the project's `label`/`meta` micro role, not body copy (13px minimum, brief §3). `dead space in uyelik band` — the band's padding is symmetric 72/72. The ghost section numerals are `ink.400` (2.07:1 on paper): a decorative-structural numeral, principles §4 "felt, not read", on every board of the set.
 ### 02 · Dernek
 Hero (white card, no photo) with `1998'den beri`, display `1998'den beri tek çatı.`, lead.
 Story: 3 paragraphs + a pull quote card (accent.050). Timeline 1998 · 2004 · 2011 · 2017 · 2023 · 2027 as a vertical list with year in `data`.
@@ -570,6 +569,44 @@ concepts.
 - **Society identity stays in the first viewport** as a secondary line: `Hastanın hekimi.`
   at 30px plus the association's name at 13px, bottom-left of the poster. The congress is
   the poster's message, the society is its signature; the date is not contested.
+
+### As-built (2026-11-03, 1:1)
+
+Poster 108..776 (`hero scene` 1440×668, `img-hero` full bleed), `hero proof` strip 776..894
+(44px figures, pad 20, no surface), Çalışma grupları head 1006, Akademi 1660, Yayın 2196,
+Gündem 2788 (head labels 1012 / 1664 / 2220 / 2812), Üyelik band 3344..3680, footer 3736;
+board **4076**. The `12` is 392×321 at 904 — its ink right edge 1296 keeps the candidate's
+144px margin, and its share of the poster (48%) is the candidate's (49%). ECG trace
+540..570, brand line 424..445, imprint 626..643.
+
+White type was measured against the pixels actually behind each ink box (graded photo
+cache), not against `ink.900`: worst is the 13px imprint at **5.17:1** (95th-percentile
+background), then brand line 6.55:1 (large text), date 11.03:1, label 19.3:1, venue 18.7:1,
+countdown 19.6:1. AA holds with no scrim. Paper pairs: `ink.900` 16.92, `ink.600` 5.83,
+`ink.500` 5.04, `red.700` 8.42, `on.red` 6.04.
+
+Two fixes this milestone made, both rebuild-safe:
+
+1. **`media.py` PLACE now inserts a photo at its slot's stack index.** Appending it last put
+   the hero photo over its own white type (the first build rendered an empty poster). A photo
+   replaces its slot where the slot sat; every board's slots keep their place.
+2. **The numeral is a vector path, and its group is resized after import.** `createShapeFromSvg`
+   sizes a group from the viewBox, not from the svg's width/height, so the first build ignored
+   the scale; `posterNumeral` resizes the group. It is a path, not a text node, because at
+   520px a text node would be the board's seventh type size (`type.sizes`, max 6).
+
+Prototype: 01's same-page interaction is now `groups all` → `04-calisma-gruplari` (the hero
+ghost `Programı gör` and the primary `Kongreye kayıt ol` both leave the Kurumsal page, and
+cross-page navigation stays unwired by design). `flows.js` carries the change.
+
+Verified: `build.py screen-01` → `RESULT ok nulls=0`, `photos 2/2` (`img-hero`,
+`img-journal`), `links 1/1`, layout quiet after 3 fit passes; `design_lint` 0 high;
+`design_qa` `findings: none`, fills 742/742, text sizes 577/577; `copy_lint` clean;
+`ux_gate` reports only the two state boards owned by a later round (`01-bos`,
+`07-program-loading`). Tiles + regions attested in `shots/01-ana-sayfa/manifest.json`
+(5 tiles, 11 regions, the hero CTA among them); the crop tool's own heuristic still picks
+the nav CTA as "primary-action", so the hero primary is covered by an explicit
+`region-hero-cta.png` crop.
 
 ## Parked concepts
 

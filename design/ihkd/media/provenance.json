@@ -77,6 +77,36 @@
     "source": "https://images.pexels.com/photos/28583897/pexels-photo-28583897.jpeg",
     "credit": "https://www.pexels.com/photo/28583897/ by محمد عزام الشيخ يوسف"
   },
+  "img-hero@01-ana-sayfa": {
+    "board": "01-ana-sayfa",
+    "page": "Kurumsal",
+    "source": "https://images.pexels.com/photos/20733081/pexels-photo-20733081.jpeg",
+    "credit": "https://www.pexels.com/photo/20733081/ by BBSO"
+  },
+  "img-c2-ecg@cand-2-kapak": {
+    "board": "cand-2-kapak",
+    "page": "_scratch",
+    "source": "https://images.pexels.com/photos/415779/pexels-photo-415779.jpeg",
+    "credit": "https://www.pexels.com/photo/415779/ by Pixabay"
+  },
+  "img-c4-poster@cand-4-topluluk": {
+    "board": "cand-4-topluluk",
+    "page": "_scratch",
+    "source": "https://images.pexels.com/photos/12319354/pexels-photo-12319354.jpeg",
+    "credit": "https://www.pexels.com/photo/12319354/ by Roxanne Minnish"
+  },
+  "img-c4-audience@cand-4-topluluk": {
+    "board": "cand-4-topluluk",
+    "page": "_scratch",
+    "source": "https://images.pexels.com/photos/15325468/pexels-photo-15325468.jpeg",
+    "credit": "https://www.pexels.com/photo/15325468/ by Luis Quintero"
+  },
+  "img-c4-hall@cand-4-topluluk": {
+    "board": "cand-4-topluluk",
+    "page": "_scratch",
+    "source": "https://images.pexels.com/photos/35138560/pexels-photo-35138560.jpeg",
+    "credit": "https://www.pexels.com/photo/35138560/ by Tahir Xələfquliyev"
+  },
   "img-journal@01-ana-sayfa": {
     "board": "01-ana-sayfa",
     "page": "Kurumsal",

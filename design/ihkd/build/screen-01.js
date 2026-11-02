@@ -3,47 +3,59 @@
  *
  *   python3 design/ihkd/build/build.py screen-01
  *
- * Story (brief §5): hook → proof → path → action.
- *   hook    hero — the society's sentence, one primary action
- *   proof   figures strip docked to the hero's bottom edge + the congress band
- *   path    gündem, working groups, academy, publication
+ * Story (brief §5, M8): hook → proof → path → action.
+ *   hook    hero — the 12th congress as a poster over a full hall, one primary
+ *   proof   hero proof — 6.847 / 41 / 12 / 10 as a 44px stat strip on paper
+ *   path    çalışma grupları, akademi, yayın, then this week's gündem
  *   action  membership band, one link
  *
- * One red field (the congress band), one saturated primary (the hero's congress
- * registration). The figures strip is a white band on the paper: the page's
- * near-black surface was killed in this milestone (principles §6).
+ * The hero is the user's choice (cand-1-afis): a 1440×668 photo (Pexels
+ * 20733081) under white type, the edition numeral as a vector layer and one
+ * white ECG trace across the audience. The photo is `img-hero`, a full-bleed
+ * rect inside the `hero scene` board: build.py restores it from provenance and
+ * verifies it, and the board's ink.900 fill is the surface the type sits on —
+ * no scrim, no gradient.
  * Every y below the masthead comes from the cursor; the board is resized to the
  * footer at the end, so no height literal can outlive a copy change.
  */
 const S = IK;
-const pb = S.start("Kurumsal", "01-ana-sayfa", 4200);
+const pb = S.start("Kurumsal", "01-ana-sayfa", 4300);
 const RHYTHM = 112;   // section gap, brief §3
-const HEAD = 148;     // headIndex → first row (rule at +108, 40 below it)
 
-/* The cover figure is a local drawing: lib.js is shared, and the ECG plate is
-   the only place this page needs a grid + sampled trace. pb = the board origin
-   (shape coords in this file are page-absolute once the board is placed). */
-function coverGrid(parent, name, x, y, w, h, step, skip, colorToken) {
-  const lines = [];
-  for (let gx = 0; gx <= w; gx += step) {
-    if (skip && gx % skip === 0) continue;
-    lines.push('<line x1="' + gx + '" y1="0" x2="' + gx + '" y2="' + h + '"/>');
-  }
-  for (let gy = 0; gy <= h; gy += step) {
-    if (skip && gy % skip === 0) continue;
-    lines.push('<line x1="0" y1="' + gy + '" x2="' + w + '" y2="' + gy + '"/>');
-  }
+/* The poster numeral is a path, not a text node: at 520px it would be the
+   board's seventh type size (design_lint type.sizes, max 6), and the numeral is
+   a graphic layer of the poster, not copy. Outlines: Inter Tight 700, 520px,
+   tracking −16, baked here so the build needs no font file. */
+const TWELVE_D = "M183.3 -378.3V0.0H103.6V-302.4H101.4L14.9 -247.9V-319.0L108.5 -378.3Z M213.7 0.0V-57.4L348.4 -18" +
+  "2.3Q365.5 -198.9 377.3 -212.1Q389.0 -225.4 395.0 -238.3Q401.1 -251.1 401.1 -266.1Q401.1 -282.8 3" +
+  "93.6 -294.8Q386.0 -306.8 373.1 -313.3Q360.1 -319.8 343.3 -319.8Q326.1 -319.8 313.1 -312.8Q300.2 " +
+  "-305.9 293.1 -292.9Q286.0 -279.9 286.0 -261.6H210.1Q210.1 -298.8 227.0 -326.1Q243.8 -353.4 274.1" +
+  " -368.4Q304.4 -383.4 343.9 -383.4Q384.5 -383.4 414.7 -369.1Q444.9 -354.8 461.7 -329.5Q478.4 -304" +
+  ".2 478.4 -271.3Q478.4 -249.8 470.0 -229.1Q461.6 -208.4 440.2 -182.9Q418.8 -157.5 379.8 -122.1L32" +
+  "4.5 -68.0V-65.3H483.5V0.0Z";
+const TWELVE = { d: TWELVE_D, w: 469, h: 384, view: "14.9 -383.4 468.6 383.4" };
+
+function posterNumeral(parent, name, x, y, size, colorToken) {
+  /* `size` is the type size the outlines were drawn from: the path keeps the
+     poster's ratio (520 in the candidate) inside a shorter poster. */
+  const w = Math.round((TWELVE.w * size) / 520);
+  const h = Math.round((TWELVE.h * size) / 520);
   const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + h +
-    '" viewBox="0 0 ' + w + " " + h + '" stroke="#DDE1E4" stroke-width="1">' + lines.join("") + "</svg>";
+    '" viewBox="' + TWELVE.view + '"><path d="' + TWELVE.d + '" fill="#FFFFFF"/></svg>';
   const g = penpot.createShapeFromSvg(svg);
   g.name = name;
   parent.appendChild(g);
+  // the importer sizes the group from the viewBox, not the svg's width/height:
+  // the group resize is what actually scales the outlines
+  g.resize(w, h);
   g.x = pb.x + S.snap(x);
   g.y = pb.y + S.snap(y);
   const walk = (s) => {
-    if (s.strokes && s.strokes.length) {
-      s.strokes = [{ strokeColor: "#000000", strokeOpacity: 1, strokeStyle: "solid", strokeWidth: 1, strokeAlignment: "center" }];
-      S.bind(s, colorToken, ["strokeColor"]);
+    if (s.type === "path") {
+      s.fills = [{ fillColor: "#FFFFFF", fillOpacity: 1 }];
+      S.bind(s, colorToken, ["fill"]);
+    } else if (s.type === "rectangle") {
+      s.fills = [];
     }
     (s.children || []).forEach(walk);
   };
@@ -51,132 +63,52 @@ function coverGrid(parent, name, x, y, w, h, step, skip, colorToken) {
   return g;
 }
 
-
-/* The cover masthead is the brand wordmark at display size (JetBrains Mono 600),
-   not the display face: the cover is a publication of the same mark as the nav. */
-function coverMark(parent, name, chars, x, y, size) {
-  const t = penpot.createText(String(chars));
-  t.name = name;
-  t.fontId = "gfont-jetbrains-mono";
-  t.fontFamily = "JetBrains Mono";
-  t.fontVariantId = "600";
-  t.fontSize = String(size);
-  t.lineHeight = "1.0";
-  t.letterSpacing = "2";
-  parent.appendChild(t);
-  t.growType = "auto-width";
-  t.resize(Math.ceil(String(chars).length * size * 0.62) + 8, Math.ceil(size));
-  t.x = pb.x + S.snap(x);
-  t.y = pb.y + S.snap(y);
-  S.paint(t, "ink.900");
-  S.bind(t, "fs.80", ["fontSize"]);
-  return t;
-}
-
-function coverTrace(parent, name, x, base, w, amp, beats) {
-  const H = amp * 2 + 16, N = Math.round(beats * 300);
-  const bump = (t, c, s) => Math.exp(-Math.pow((t - c) / s, 2));
-  const pts = [];
-  for (let i = 0; i <= N; i += 1) {
-    const t = (i / N) * beats, p = t % 1;
-    const v = 0.07 * bump(p, 0.20, 0.030) - 0.06 * bump(p, 0.355, 0.010) + 0.62 * bump(p, 0.373, 0.009) -
-      0.14 * bump(p, 0.392, 0.011) + 0.17 * bump(p, 0.66, 0.050);
-    pts.push([(i / N) * w, H / 2 - v * amp]);
-  }
-  const d = pts.map((q, i) => (i ? "L" : "M") + q[0].toFixed(1) + " " + q[1].toFixed(1)).join(" ");
-  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + H +
-    '" viewBox="0 0 ' + w + " " + H + '"><path d="' + d +
-    '" fill="none" stroke="#C4122F" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></svg>';
-  const sh = penpot.createShapeFromSvg(svg);
-  sh.name = name;
-  parent.appendChild(sh);
-  sh.x = pb.x + S.snap(x);
-  sh.y = pb.y + S.snap(base - H / 2);
-  const walk = (s) => {
-    if (s.strokes && s.strokes.length) {
-      s.strokes = [{ strokeColor: "#000000", strokeOpacity: 1, strokeStyle: "solid", strokeWidth: 1, strokeAlignment: "center" }];
-      S.bind(s, "red.600", ["strokeColor"]);
-    }
-    (s.children || []).forEach(walk);
-  };
-  walk(sh);
-  return sh;
-}
-
 S.masthead(pb, null, { cta: "ghost" });
 
 /* ------------------------------------------------------------------- hero */
-/* M7 (2026-11-02): the home page opens as the society's own issue. The hero
-   is a cover — masthead, coverlines, a self-drawn ECG plate as the cover
-   figure, and "Bu sayıda" as the page's table of contents. No photo, no
-   proof strip, no congress band: the cover carries the date, the countdown
-   and the one primary. The page's sections resume on paper below. */
-const COVER_Y = 140, COVER_H = 740, FIG_Y = COVER_Y + 382;
-S.rect(pb, "cover sheet", S.X, COVER_Y, 1200, COVER_H, "white",
-  { stroke: "line.soft", radius: "radius.2" });
-coverMark(pb, "cover mast", "İHKD", 160, COVER_Y + 36, 80);
-S.text(pb, "cover journal", "KARDİYOVASKÜLER KLİNİK", "label", "ink.500", { x: 160, y: COVER_Y + 142 });
-S.text(pb, "cover issue", "Cilt 12 · Sayı 1 · Mart 2027", "data", "ink.500", { x: 160, y: COVER_Y + 164 });
-S.text(pb, "cover line", "Hastanın hekimi.", "h2", "ink.900", { x: 160, y: COVER_Y + 200, w: 620 });
-S.text(pb, "cover congress label", "12. ULUSAL KONGRE", "label", "ink.500", { x: 160, y: COVER_Y + 260 });
-S.text(pb, "cover congress date", "22–25 Nisan 2027 · Antalya", "h3", "ink.900",
-  { x: 160, y: COVER_Y + 280, w: 620 });
-S.text(pb, "cover countdown", "147 gün · erken kayıt 31 Ocak 2027'de kapanıyor · 96 oturum",
-  "meta", "ink.600", { x: 160, y: COVER_Y + 322, w: 600 });
+/* M8 (2026-11-03): the user chose the poster. Poster = photo scene board +
+   white type + vector numeral + one white trace; the society is the signature
+   line at the poster's foot, the congress is the message. Proof leaves the
+   photo: the numbers are a stat strip on paper under the poster's edge. */
+const HERO_Y = 108, HERO_H = 668;
+const hero = S.board(pb, "hero scene", 0, HERO_Y, S.W, HERO_H, "ink.900");
+/* the photo slot: restored from provenance by build.py; the board clips it */
+S.rect(hero, "img-hero", 0, HERO_Y, S.W, HERO_H, "surface.alt");
 
-/* the cover figure: a three-lead strip drawn here, 25 mm/s · 10 mm/mV */
-S.text(pb, "cover figure label", "KAPAK · EKG KAYDI", "label", "ink.500", { x: 160, y: COVER_Y + 360 });
-coverGrid(pb, "cover ecg minor", 160, FIG_Y, 640, 220, 8, 40, "line.soft");
-coverGrid(pb, "cover ecg major", 160, FIG_Y, 640, 220, 40, 0, "line.300");
-["I", "II", "III"].forEach((lead, i) => {
-  S.text(pb, "cover lead " + i, lead, "label", "ink.500", { x: 168, y: FIG_Y + 26 + i * 70 });
-  coverTrace(pb, "cover trace " + i, 200, FIG_Y + 48 + i * 70, 580, [52, 64, 44][i], 4);
-});
-S.text(pb, "cover caption", "25 mm/s · 10 mm/mV", "meta", "ink.500",
-  { x: 160, y: COVER_Y + 620 });
+S.text(hero, "hero label", "12. ULUSAL İÇ HASTALIKLARI VE KARDİYOLOJİ KONGRESİ",
+  "label", "on.ink", { x: 120, y: HERO_Y + 40, w: 760 });
+S.text(hero, "hero date", "22–25 Nisan 2027", "display", "on.ink",
+  { x: 120, y: HERO_Y + 72, w: 760 });
+S.text(hero, "hero venue", "Antalya Kongre Merkezi, Belek · 96 oturum · 214 konuşmacı",
+  "body", "on.ink", { x: 120, y: HERO_Y + 176, w: 680 });
+/* the countdown is one figure + one note: the candidate repeated "147 gün"
+   twice (a 13px sentence above the 44px value); the value carries it now. */
+S.text(hero, "hero countdown value", "147", "stat", "on.ink", { x: 120, y: HERO_Y + 216 });
+S.text(hero, "hero countdown note", "gün kaldı · erken kayıt 31 Ocak 2027'de kapanıyor",
+  "meta", "on.ink", { x: 216, y: HERO_Y + 244, w: 420 });
+S.ctaRow(hero, "hero cta", 120, HERO_Y + 300, "Kongreye kayıt ol",
+  { w: 236, link: "Programı gör", gap: 24, linkInk: "on.ink" });
+/* the society speaks in the first viewport, second to the date (M8: it was a
+   13px kicker in the candidate) */
+S.text(hero, "hero society", "Hastanın hekimi.", "h3", "on.ink",
+  { x: 120, y: HERO_Y + 420, w: 560 });
+/* the identity line is an imprint: below the trace, on the poster's darkest
+   band (mean luminance 28 of 255 at 1:1), so 13px white keeps its AA ratio
+   without a scrim; on the crowd above it dropped to 3.2:1 at the bright pixels */
+S.text(hero, "hero society line", "İHKD · İç Hastalıkları ve Kardiyoloji Derneği · 1998'den beri Ankara",
+  "label", "on.ink", { x: 120, y: HERO_Y + 624, w: 720 });
+/* the numeral keeps the candidate's share of the poster (435 in 668 = 520 in
+   792), right edge on 1294 so the audience's faces stay outside its left half */
+posterNumeral(hero, "hero twelve", 902, HERO_Y + 130, 435, "on.ink");
+S.ecg(hero, "hero ecg", 0, HERO_Y + 540, S.W, 30, "on.ink");
 
-/* the contents column: the issue's pages are the site's paths */
-S.text(pb, "cover toc label", "BU SAYIDA", "label", "ink.500", { x: 880, y: COVER_Y + 142 });
-const coverToc = [
-  ["Kongre", "s. 01", "Program ve kayıt"],
-  ["Kılavuzlar", "s. 12", "2027 hipertansiyon"],
-  ["Akademi", "s. 30", "KKY kursu · 6 STE"],
-  ["Yayın", "s. 38", "Dergi ve kılavuz"],
-  ["Topluluk", "s. 44", "41 il · 12 çalışma grubu"],
-  ["Haberler", "s. 50", "Bu hafta"],
-];
-coverToc.forEach((t, i) => {
-  const ty = COVER_Y + 180 + i * 64;
-  S.text(pb, "toc name " + i, t[0], "bodyMed", "ink.900", { x: 880, y: ty });
-  S.text(pb, "toc page " + i, t[1], "data", "ink.500", { x: 1180, y: ty + 2, w: 100, align: "right" });
-  S.text(pb, "toc note " + i, t[2], "meta", "ink.500", { x: 880, y: ty + 24, w: 280 });
-  S.rule(pb, "toc rule " + i, 880, ty + 54, 400, "line.soft", 1);
-});
-S.ctaRow(pb, "hero cta", 880, COVER_Y + 620, "Kongreye kayıt ol",
-  { w: 236, link: "Derneği tanı", gap: 24 });
-S.text(pb, "cover imprint", "6.847 üye · 41 il · 12 çalışma grubu · 10 kılavuz", "meta", "ink.500",
-  { x: 160, y: COVER_Y + 680, w: 700 });
-let y = COVER_Y + COVER_H;
-/* --------------------------------------------------------------- gündem */
-y = S.headIndex(pb, S.X, y + RHYTHM, "GÜNDEM", "Bu hafta", { link: "Tüm haberler →" });
-const news = [
-  ["12 Mart 2027", "Kongre", "Program yayınlandı: 96 oturum, dört salon", "6 dk"],
-  ["4 Mart 2027", "Akademi", "Kalp yetersizliği kursu için kayıtlar açıldı", "2 dk"],
-  ["26 Şubat 2027", "Dernek", "Çalışma grubu başkanları belirlendi", "4 dk"],
-];
-/* One shared top per row: title box at +24, the 13px meta rides +4 from it
-   (the pair reads on one baseline at 1:1; the old +26 date sat low). */
-y = S.rows(pb, "news", S.X, y, S.CW, news.map((n, i) => ({
-  h: 24 + 36 + 24,
-  draw(yRow) {
-    S.text(pb, "news date " + i, n[0], "data", "ink.500", { x: S.X, y: yRow + 28 });
-    S.text(pb, "news cat " + i, n[1], "label", "ink.500", { x: S.X + 180, y: yRow + 28 });
-    S.text(pb, "news title " + i, n[2], "h3", "ink.900", { x: S.X + 320, y: yRow + 24, w: 760 });
-    S.text(pb, "news time " + i, n[3], "data", "ink.500", { x: S.X + S.CW - 80, y: yRow + 28, w: 80, align: "right" });
-  },
-})), { rule: "line.soft" });
-S.text(pb, "news note", "Duyurular Pazartesi 09:00'da yayımlanır.", "meta", "ink.500", { x: S.X, y: y + 24 });
-y += 24 + 20;
+/* proof: 44px figures on paper, the poster's edge is the joint */
+let y = S.statsStrip(pb, "hero proof", S.X, HERO_Y + HERO_H, S.CW, [
+  ["6.847", "Üye"],
+  ["41", "İl temsilcisi"],
+  ["12", "Çalışma grubu"],
+  ["10", "Kılavuz"],
+], { pad: 20, rule: false });
 
 /* ------------------------------------------------------- çalışma grupları */
 y = S.headIndex(pb, S.X, y + RHYTHM, "ÇALIŞMA GRUPLARI", "On iki grup, on iki soru.");
@@ -280,6 +212,30 @@ S.text(pb, "guide body", "Ev ölçümü, ofis dışı tansiyon ve tedavi eşikle
   "body", "ink.600", { x: GX2, y: PUB + 204, w: GW2 });
 S.link(pb, "guide cta", "Kılavuzu indir", GX2, PUB + 282, "ink.900");
 y = PUB + 332;
+
+/* --------------------------------------------------------------- gündem */
+/* The news moves behind the three routes: the hero already announced the
+   congress, so the page proves its numbers, names its paths, and only then
+   reports this week. One row may mention the programme; no repeated band. */
+y = S.headIndex(pb, S.X, y + RHYTHM, "GÜNDEM", "Bu hafta", { link: "Tüm haberler →" });
+const news = [
+  ["12 Mart 2027", "Kongre", "Program yayınlandı: 96 oturum, dört salon", "6 dk"],
+  ["4 Mart 2027", "Akademi", "Kalp yetersizliği kursu için kayıtlar açıldı", "2 dk"],
+  ["26 Şubat 2027", "Dernek", "Çalışma grubu başkanları belirlendi", "4 dk"],
+];
+/* One shared top per row: title box at +24, the 13px meta rides +4 from it
+   (the pair reads on one baseline at 1:1; the old +26 date sat low). */
+y = S.rows(pb, "news", S.X, y, S.CW, news.map((n, i) => ({
+  h: 24 + 36 + 24,
+  draw(yRow) {
+    S.text(pb, "news date " + i, n[0], "data", "ink.500", { x: S.X, y: yRow + 28 });
+    S.text(pb, "news cat " + i, n[1], "label", "ink.500", { x: S.X + 180, y: yRow + 28 });
+    S.text(pb, "news title " + i, n[2], "h3", "ink.900", { x: S.X + 320, y: yRow + 24, w: 760 });
+    S.text(pb, "news time " + i, n[3], "data", "ink.500", { x: S.X + S.CW - 80, y: yRow + 28, w: 80, align: "right" });
+  },
+})), { rule: "line.soft" });
+S.text(pb, "news note", "Duyurular Pazartesi 09:00'da yayımlanır.", "meta", "ink.500", { x: S.X, y: y + 24 });
+y += 24 + 20;
 
 /* -------------------------------------------------------------- üyelik */
 /* The story closes on the action the home page exists for. White band, one

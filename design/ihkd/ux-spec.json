@@ -8,20 +8,21 @@
       "task": "Ziyaretçi derneğin ne yaptığını bir bakışta anlar ve yaklaşan kongreye kaydolur.",
       "primaryCta": "hero cta",
       "story": {
-        "hook": "cover mast + cover line: derneğin kendi yayını olarak açılış (İHKD, Hastanın hekimi.)",
-        "proof": "cover imprint + cover congress date + cover figure: 6.847 üye, 41 il, 12 grup, 10 kılavuz; 22–25 Nisan 2027; 3 derivasyon",
-        "path": "toc name 0-5: Kongre, Kılavuzlar, Akademi, Yayın, Topluluk, Haberler",
+        "hook": "hero label + hero date: 12. Ulusal Kongre, 22–25 Nisan 2027, Antalya; hero society: Hastanın hekimi.",
+        "proof": "hero proof value 0-3: 6.847 üye, 41 il, 12 çalışma grubu, 10 kılavuz (44px stat şeridi, paper)",
+        "path": "group name 0-5 → course cta 0-2 → toc title 0-2: çalışma grupları, akademi, yayın",
         "action": "hero cta: kongre kaydı; sayfa member cta ile üyeliğe kapanır"
       },
       "states": [
         {"state": "default", "board": "01-ana-sayfa"},
         {"state": "empty", "board": "01-bos"}
       ],
-      "firstViewport": ["cover mast", "cover line", "cover congress date", "cover imprint", "hero cta", "masthead cta"],
+      "firstViewport": ["hero date", "hero society", "hero cta", "hero proof value 0", "masthead cta"],
       "claims": [
-        {"pattern": "course cta [0-9]", "count": 3, "label": "öne çıkan kurs yolu"},
-        {"pattern": "toc name [0-9]", "count": 6, "label": "bu sayıda altı yol"},
-        {"pattern": "cover lead [0-9]", "count": 3, "label": "kapak EKG'sinin üç derivasyonu"}
+        {"pattern": "hero proof value [0-9]", "count": 4, "label": "kanıt şeridinin dört sayısı"},
+        {"pattern": "group name [0-9]", "count": 6, "label": "öne çıkan altı çalışma grubu"},
+        {"pattern": "course cta [0-9]", "count": 3, "label": "öne çıkan üç kurs yolu"},
+        {"pattern": "toc title [0-9]", "count": 3, "label": "derginin üç içindekiler satırı"}
       ]
     },
     {

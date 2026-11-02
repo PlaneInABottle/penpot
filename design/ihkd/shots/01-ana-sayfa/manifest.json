@@ -3,7 +3,7 @@
  "source": "01-ana-sayfa.png",
  "image": {
   "w": 1440,
-  "h": 4064
+  "h": 4076
  },
  "tile": {
   "w": 1440,
@@ -18,7 +18,7 @@
    "x1": 1440,
    "y1": 900,
    "reviewed": true,
-   "note": "Cover at 1:1: İHKD mono wordmark at 80 (same mark as the nav), journal line + issue, coverline 44, congress date 30; EKG plate 640x220 with 8/40px grid, limb leads I/II/III with distinct amplitudes, labels and 25 mm/s · 10 mm/mV; TOC page numbers sit on the names' baselines; CTA at 760 and imprint 13 inside the sheet; edges 120/1320, bottom 880; no photo."
+   "note": "Hero 0-900: poster 108-776 (photo, white type, vector 12 at 904-1296), stat strip 776-894. Date 80px is the dominant type, the only red is the one primary, no gap over 100px, the poster edge is the paper joint."
   },
   {
    "file": "tile-02.png",
@@ -27,7 +27,7 @@
    "x1": 1440,
    "y1": 1710,
    "reviewed": true,
-   "note": "Cover bottom is the sheet's own 1px edge at 880, then 112px paper to the Gündem head at 992 — no strip, no glued joint. Gündem rows share one top per row (date/category/title/time), rule ends at 1320."
+   "note": "Proof labels + çalışma grupları: 576+48+576 columns, rules on the block bottoms, group rows share one top, link red.700 at the section foot."
   },
   {
    "file": "tile-03.png",
@@ -36,7 +36,7 @@
    "x1": 1440,
    "y1": 2520,
    "reviewed": true,
-   "note": "Group rows: rules land on the block bottom edge, index and arrow on the column edges; academy meta ends at 1200 and Başla at 1320; no overflow or crossing."
+   "note": "Akademi rows (title 640, meta right edge 1200, Başla at 1320) and the Yayın head; journal photo 280x300 at the grid edge."
   },
   {
    "file": "tile-04.png",
@@ -45,16 +45,16 @@
    "x1": 1440,
    "y1": 3330,
    "reviewed": true,
-   "note": "Academy tail + publication: book photo 280x300 (publication object), TOC rows from rows(), both links on one line; guideline ECG strip 360x44 reads as data; no collision with the column rule."
+   "note": "Yayın contents + guide ECG strip; Gündem three rows with date/category/title/reading time on one top; no repeated congress band."
   },
   {
    "file": "tile-05.png",
    "x0": 0,
-   "y0": 3164,
+   "y0": 3176,
    "x1": 1440,
-   "y1": 4064,
+   "y1": 4076,
    "reviewed": true,
-   "note": "Membership white band: bullets, link, fee line; footer at the board end, legal line right-aligned to 1320; no trailing canvas void."
+   "note": "Gündem note, üyelik band (white, one red link, 72/72 padding) and footer with its 2px bar; 56px paper between band and footer."
   }
  ],
  "regions": [
@@ -66,17 +66,17 @@
    "w": 163,
    "h": 65,
    "reviewed": true,
-   "note": "Smallest text at 1:1 is the 13px mono nav sub on paper; ink is crisp, no clipping; the cover's 13px caption/imprint read at the same size."
+   "note": "Heuristic picked the nav kicker 'ÜYE PLATFORMU' (13px ink.500 on paper, 5.04:1) - clean, but the hero's smallest text is checked in region-hero-imprint-2x and region-proof-strip instead."
   },
   {
    "file": "region-densest.png",
-   "subject": "94 texts near x=120",
+   "subject": "96 texts near x=120",
    "x": 96,
    "y": 0,
    "w": 768,
    "h": 948,
    "reviewed": true,
-   "note": "Densest window is the cover left column: mono masthead→coverline→congress→plate; the 8px plate grid and the three leads stay legible at 1:1; no glyph crosses a rule or a lead."
+   "note": "Hero stack at 1:1: label, date, venue, countdown, CTA, brand line and imprint all inside the poster, no cross-ink, no clipped glyph."
   },
   {
    "file": "region-primary-action.png",
@@ -86,17 +86,79 @@
    "w": 91,
    "h": 67,
    "reviewed": true,
-   "note": "The heuristic picked the nav ghost Üye ol (smallest y); the page primary is the hero CTA at 880,760, read in tile-01 and region-hero-primary.png."
+   "note": "Heuristic picked the NAV ghost 'Üye ol' (topmost *cta* text), not the hero primary: the real primary is region-hero-cta.png. The nav CTA is a ghost by design - the home page carries exactly one saturated primary."
   },
   {
-   "file": "region-hero-primary.png",
-   "subject": "hero cta / hero cta link",
-   "x": 840,
-   "y": 720,
-   "w": 500,
-   "h": 120,
+   "file": "region-hero-cta.png",
+   "x": 100,
+   "y": 395,
+   "w": 520,
+   "h": 75,
    "reviewed": true,
-   "note": "Hero primary at 1:1: 236x52 red.600 button, label on.red centered; ghost Derneği tanı on the same vertical centre with a red underline sized to its ink; 32px gap."
+   "note": "Hero primary 'Kongreye kayıt ol' (red.600, 236x52, label centred) + ghost 'Programı gör' (white, white underline) sharing one vertical centre; no clipping."
+  },
+  {
+   "file": "region-hero-top.png",
+   "x": 100,
+   "y": 130,
+   "w": 1340,
+   "h": 200,
+   "reviewed": true,
+   "note": "Label 13 / date 80 / venue 16 at 1:1: crisp white on the dark ceiling band, 120px left margin, the date's ink ends at 745 so the 12 (904+) never crowds it."
+  },
+  {
+   "file": "region-hero-numeral.png",
+   "x": 860,
+   "y": 200,
+   "w": 580,
+   "h": 420,
+   "reviewed": true,
+   "note": "Vector 12 at 1:1 (392x321 at 904): clean path edges, no font fallback; it covers the right balcony but leaves the left audience and both counters open - the approved poster layer, scaled to its original share of the poster."
+  },
+  {
+   "file": "region-hero-foot.png",
+   "x": 100,
+   "y": 515,
+   "w": 720,
+   "h": 265,
+   "reviewed": true,
+   "note": "'Hastanın hekimi.' 30px white over the crowd, the white ECG trace, then the 13px association imprint on the dark foreground: readable, no collision, no scrim."
+  },
+  {
+   "file": "region-hero-cta-2x.png",
+   "x": 100,
+   "y": 395,
+   "w": 300,
+   "h": 75,
+   "reviewed": true,
+   "note": "2x: button label centred, radius 2, white on red.600 (6.04:1)."
+  },
+  {
+   "file": "region-hero-imprint-2x.png",
+   "x": 100,
+   "y": 715,
+   "w": 600,
+   "h": 50,
+   "reviewed": true,
+   "note": "2x: 13px tracked mono imprint at its new y (ink 734-751 on the render); crisp strokes, brightest background pixel 5.17:1 white-on-photo, no scrim."
+  },
+  {
+   "file": "region-proof-strip.png",
+   "x": 0,
+   "y": 750,
+   "w": 1440,
+   "h": 190,
+   "reviewed": true,
+   "note": "Poster edge -> paper strip: 44px figures at 120/426/732/1038, dividers on the cell boundaries, 13px labels (5.83:1); no white band and no seam."
+  },
+  {
+   "file": "region-transition.png",
+   "x": 0,
+   "y": 900,
+   "w": 1440,
+   "h": 300,
+   "reviewed": true,
+   "note": "Strip bottom 894 -> groups head 1006 (112 rhythm) -> rule 1118 -> first row 1158; the 01 ghost numeral is ink.400 by design, not body copy."
   }
  ]
 }

@@ -9,7 +9,7 @@
  * destination proxy {id:"",name:null} — verified live 2026-11-02; cross-page
  * journeys stay unwired by design):
  *   keşif (Kurumsal, start 01-ana-sayfa):
- *     "hero cta link" @ 01-ana-sayfa (Derneği tanı) -> 02-dernek
+ *     "groups all" @ 01-ana-sayfa (12 çalışma grubu) -> 04-calisma-gruplari
  *     "board all" @ 02-dernek (Tüm kurullar)     -> 03-yonetim
  *   kayıt (Kongre, start 09-kayit):
  *     "k cta" @ 09-kayit (Kaydı tamamla)         -> 10-konaklama
@@ -60,9 +60,12 @@ section("Kurumsal", (pg) => {
   const b01 = need(board(pg, "01-ana-sayfa"), "board 01-ana-sayfa");
   const b02 = need(board(pg, "02-dernek"), "board 02-dernek");
   const b03 = need(board(pg, "03-yonetim"), "board 03-yonetim");
-  // "Üye ol" is the membership journey (cross-page, unwired by design); the
-  // same-page route off 01 is the ghost link "Derneği tanı" -> 02-dernek.
-  wire("01 hero link", "hero cta link", b01, b02);
+  const b04 = need(board(pg, "04-calisma-gruplari"), "board 04-calisma-gruplari");
+  // "Üye ol", the hero primary (Kongreye kayıt ol) and the hero ghost
+  // (Programı gör) all leave the Kurumsal page, and cross-page navigation is
+  // unwired by design. The same-page route off 01 is the groups link, which
+  // keeps the discovery flow real: 01 -> 04 -> (05).
+  wire("01 groups all", "groups all", b01, b04);
   wire("02 board all", "board all", b02, b03);
   ensureFlow(pg, "kayıt", b01);
   ensureFlow(pg, "keşif", b01);
