@@ -175,10 +175,18 @@ A screen is not finished because it was written. All of these must hold on the f
    placeholders). A medium is either fixed or explained.
 2. `design_qa.py --page <page>` → `findings: none`, `renderMismatches: 0`, fills bound.
 3. `check_contrast.py` → every pair used on the screen passes; the pairs are listed, not assumed.
-4. `export_board.py` for the screen, then **look at it at 1:1** in the four places: smallest
-   text, densest region, primary action, every icon/arrow row.
+4. `export_board.py` for the screen (if the MCP task times out on a tall board, the
+   exporter has usually still rendered — rescue the newest `penpot.*.png.*` from the
+   exporter container instead of re-running blind), then **look at it at 1:1** in the
+   four places: smallest
+   text, densest region, primary action, every icon/arrow row, and any mixed-size
+   baseline the lint flags.
 5. Prototype: `page.flows.length` is what you claim, and the per-board interaction count is
    non-zero after the last rebuild.
 6. An independent reviewer has seen the render and crops (the maker's own pass is not review).
+7. Grid edges hold: every content shape sits inside the declared grid and only the
+   brief-declared bleeds touch the board edge — verified from the lint `--json`
+   geometry, and margin symmetry checked at 1:1 on the hero. A page-scale glance
+   is not evidence for this item.
 
-Anything not covered by 1–6 is reported as a gap, never as done.
+Anything not covered by 1–7 is reported as a gap, never as done.
