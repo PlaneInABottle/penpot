@@ -656,6 +656,12 @@ class UxGateTest(unittest.TestCase):
         import ux_gate
         self.assertEqual(ux_gate.evaluate(self._screen_spec(), {"Web": self._screen_nodes()}), [])
 
+    def test_mobile_is_opt_in_when_the_key_is_omitted(self):
+        import ux_gate
+        spec = self._screen_spec()
+        del spec["screens"][0]["mobile"]
+        self.assertEqual(ux_gate.evaluate(spec, {"Web": self._screen_nodes()}), [])
+
     def test_missing_cta_and_double_primary_and_fold_and_claim(self):
         import ux_gate
         nodes = self._screen_nodes()

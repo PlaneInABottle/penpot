@@ -17,7 +17,6 @@
         {"state": "default", "board": "01-ana-sayfa"},
         {"state": "empty", "board": "01-bos"}
       ],
-      "mobile": {"board": "01-ana-sayfa-m", "page": "Mobil"},
       "firstViewport": ["cover mast", "cover line", "cover congress date", "cover imprint", "hero cta", "masthead cta"],
       "claims": [
         {"pattern": "course cta [0-9]", "count": 3, "label": "öne çıkan kurs yolu"},
@@ -40,7 +39,6 @@
         {"state": "default", "board": "07-program"},
         {"state": "loading", "board": "07-program-loading"}
       ],
-      "mobile": {"board": "07-program-m", "page": "Mobil"},
       "firstViewport": ["p label", "p title", "p note", "sess title 0"],
       "accentMaxRatio": 0.01,
       "claims": [

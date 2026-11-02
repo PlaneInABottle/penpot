@@ -19,7 +19,7 @@ Spec schema:
         "primaryCta": "hero cta",            # shape name under the board
         "story": {"hook": "…", "proof": "…", "path": "…", "action": "…"},
         "states": [{"state": "empty", "board": "…"}],   # boards/shapes that must exist
-        "mobile": {"board": "01-home-m", "page": "Mobil"} | "n/a: <reason>",
+        "mobile": {"board": "01-home-m", "page": "Mobil"} | "n/a: <reason>",   # optional: omit when mobile is out of scope
         "firstViewport": ["hero title", "hero cta"],    # shapes inside the first 900px
         "accentMaxRatio": 0.3,               # optional per-screen override
         "claims": [{"pattern": "sess title", "count": 96, "label": "sessions listed"}]
@@ -104,8 +104,17 @@ def evaluate(spec: dict, pages: dict[str, list[dict]]) -> list[dict]:
         cta = screen.get("primaryCta") or ""
         if cta not in by_name:
             add(name, f"primaryCta {cta!r} not found under board")
+        # Dominance is visual: only saturated-fill buttons count. A ghost
+        # or white secondary action named *cta* converts without dominating.
+        def _saturated(node: dict) -> bool:
+            try:
+                return bool(node.get("fill")) and saturation(node["fill"]) > 0.5
+            except (ValueError, TypeError):
+                return False
+
         primaries = sorted({n["name"] for n in inside
-                            if n.get("type") in ("board", "rectangle") and is_button(n.get("name", ""))})
+                            if n.get("type") in ("board", "rectangle") and is_button(n.get("name", ""))
+                            and _saturated(n)})
         if len(primaries) > 1:
             add(name, f"{len(primaries)} primary actions ({', '.join(primaries)}) — one dominant CTA per board")
 
@@ -136,7 +145,9 @@ def evaluate(spec: dict, pages: dict[str, list[dict]]) -> list[dict]:
             add(name, f"accent fills {ratio:.3f} of the first viewport (max {ceiling:.3f})")
 
         mobile = screen.get("mobile")
-        if isinstance(mobile, dict):
+        if mobile is None:
+            pass  # mobile is opt-in: a project that scopes it out simply omits the key
+        elif isinstance(mobile, dict):
             twin = boards.get((mobile.get("page", page), mobile.get("board")))
             if twin is None:
                 add(name, f"mobile board {mobile.get('board')!r} not found")
