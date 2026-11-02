@@ -217,3 +217,13 @@ Made from verified renders (01-ana-sayfa, 07-program), not from the old brief te
    toplam 96 oturum` (96 is the four-day total).
 6. **Masthead estimator 8.9→8.2** so inter-link gaps match the underline estimator
    used elsewhere; verified at 1:1 on the new export.
+
+## 10. Görsel dil (2026-11-02)
+
+- **Hasta, muayene, steteskop yok.** Hastanın bedeni, göğüs, ele alınan bir beden ya da rutin muayene karesi, ne kadar klinik görünürse görünsün kullanılmaz.
+- **Görsel, hekimin her gün tanıdığı bir artefaktır.** 12 derivasyon şeridi, kılavuz figürü (forest plot, kanıt tablosu), anatomi levhası, klinik algoritma, dergi kapağı, kongre programı. Vektörü kendimiz çizeriz; görsel markanın kendisidir.
+- **Önce bilim, sonra topluluk.** Kanıtı veri figürleri taşır; kongre salonu ya da poster oturumu topluluğu gösterebilir, kameraya gülümseyen stok asla.
+- **Fotoğraf ruh hâli değildir.** Yer (salon, mekân) ya da yayın nesnesi olarak girer; derneğin işinin yerine geçmez.
+- **Figür ölçülüdür.** Izgara, eksen, derivasyon etiketi, birim (`25 mm/s · 10 mm/mV`), kanıt düzeyi ve sayfa sayısı gerçektir; dekoratif bir kıvrım EKG değildir.
+- **Hero'da tek yazarlı nesne.** Kapak, levha, algoritma ya da afiş; fotoğraflı kart yığını değil.
+- **Kırmızı eylem ve veriye harcanır.** EKG izi, forest plot özet baklavası ve tek primary kırmızı olabilir; kırmızı bant varsayılan değildir.

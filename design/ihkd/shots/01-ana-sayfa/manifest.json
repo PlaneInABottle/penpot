@@ -1,0 +1,102 @@
+{
+ "board": "01-ana-sayfa",
+ "source": "01-ana-sayfa.png",
+ "image": {
+  "w": 1440,
+  "h": 4064
+ },
+ "tile": {
+  "w": 1440,
+  "h": 900,
+  "overlap": 0.1
+ },
+ "tiles": [
+  {
+   "file": "tile-01.png",
+   "x0": 0,
+   "y0": 0,
+   "x1": 1440,
+   "y1": 900,
+   "reviewed": true,
+   "note": "Cover at 1:1: İHKD mono wordmark at 80 (same mark as the nav), journal line + issue, coverline 44, congress date 30; EKG plate 640x220 with 8/40px grid, three leads I/II/V1, labels and 25 mm/s · 10 mm/mV caption; TOC page numbers sit on the names' baselines; CTA at 760 and imprint 13 inside the sheet; sheet edges 120/1320, bottom 880; no photo."
+  },
+  {
+   "file": "tile-02.png",
+   "x0": 0,
+   "y0": 810,
+   "x1": 1440,
+   "y1": 1710,
+   "reviewed": true,
+   "note": "Cover bottom is the sheet's own 1px edge at 880, then 112px paper to the Gündem head at 992 — no strip, no glued joint. Gündem rows share one top per row (date/category/title/time), rule ends at 1320."
+  },
+  {
+   "file": "tile-03.png",
+   "x0": 0,
+   "y0": 1620,
+   "x1": 1440,
+   "y1": 2520,
+   "reviewed": true,
+   "note": "Group rows: rules land on the block bottom edge, index and arrow on the column edges; academy meta ends at 1200 and Başla at 1320; no overflow or crossing."
+  },
+  {
+   "file": "tile-04.png",
+   "x0": 0,
+   "y0": 2430,
+   "x1": 1440,
+   "y1": 3330,
+   "reviewed": true,
+   "note": "Academy tail + publication: book photo 280x300 (publication object), TOC rows from rows(), both links on one line; guideline ECG strip 360x44 reads as data; no collision with the column rule."
+  },
+  {
+   "file": "tile-05.png",
+   "x0": 0,
+   "y0": 3164,
+   "x1": 1440,
+   "y1": 4064,
+   "reviewed": true,
+   "note": "Membership white band: bullets, link, fee line; footer at the board end, legal line right-aligned to 1320; no trailing canvas void."
+  }
+ ],
+ "regions": [
+  {
+   "file": "region-smallest-text.png",
+   "subject": "masthead sub",
+   "x": 200,
+   "y": 15,
+   "w": 163,
+   "h": 65,
+   "reviewed": true,
+   "note": "Smallest text at 1:1 is the 13px mono nav sub on paper; ink is crisp, no clipping; the cover's 13px caption/imprint read at the same size."
+  },
+  {
+   "file": "region-densest.png",
+   "subject": "94 texts near x=120",
+   "x": 96,
+   "y": 0,
+   "w": 768,
+   "h": 948,
+   "reviewed": true,
+   "note": "Densest window is the cover left column: mono masthead→coverline→congress→plate; the 8px plate grid and the traces stay legible at 1:1; no glyph crosses a rule or a lead."
+  },
+  {
+   "file": "region-primary-action.png",
+   "subject": "masthead cta / label",
+   "x": 1206,
+   "y": 9,
+   "w": 91,
+   "h": 67,
+   "reviewed": true,
+   "note": "The heuristic picked the nav ghost Üye ol (smallest y); the page primary is the hero CTA at 880,760, read in tile-01 and region-hero-primary.png."
+  },
+  {
+   "file": "region-hero-primary.png",
+   "subject": "hero cta / hero cta link",
+   "x": 840,
+   "y": 720,
+   "w": 500,
+   "h": 120,
+   "reviewed": true,
+   "note": "Hero primary at 1:1: 236x52 red.600 button, label on.red centered; ghost Derneği tanı on the same vertical centre with a red underline sized to its ink; 32px gap."
+  }
+ ]
+}

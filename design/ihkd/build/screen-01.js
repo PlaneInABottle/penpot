@@ -20,57 +20,145 @@ const pb = S.start("Kurumsal", "01-ana-sayfa", 4200);
 const RHYTHM = 112;   // section gap, brief §3
 const HEAD = 148;     // headIndex → first row (rule at +108, 40 below it)
 
+/* The cover figure is a local drawing: lib.js is shared, and the ECG plate is
+   the only place this page needs a grid + sampled trace. pb = the board origin
+   (shape coords in this file are page-absolute once the board is placed). */
+function coverGrid(parent, name, x, y, w, h, step, skip, colorToken) {
+  const lines = [];
+  for (let gx = 0; gx <= w; gx += step) {
+    if (skip && gx % skip === 0) continue;
+    lines.push('<line x1="' + gx + '" y1="0" x2="' + gx + '" y2="' + h + '"/>');
+  }
+  for (let gy = 0; gy <= h; gy += step) {
+    if (skip && gy % skip === 0) continue;
+    lines.push('<line x1="0" y1="' + gy + '" x2="' + w + '" y2="' + gy + '"/>');
+  }
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + h +
+    '" viewBox="0 0 ' + w + " " + h + '" stroke="#DDE1E4" stroke-width="1">' + lines.join("") + "</svg>";
+  const g = penpot.createShapeFromSvg(svg);
+  g.name = name;
+  parent.appendChild(g);
+  g.x = pb.x + S.snap(x);
+  g.y = pb.y + S.snap(y);
+  const walk = (s) => {
+    if (s.strokes && s.strokes.length) {
+      s.strokes = [{ strokeColor: "#000000", strokeOpacity: 1, strokeStyle: "solid", strokeWidth: 1, strokeAlignment: "center" }];
+      S.bind(s, colorToken, ["strokeColor"]);
+    }
+    (s.children || []).forEach(walk);
+  };
+  walk(g);
+  return g;
+}
+
+
+/* The cover masthead is the brand wordmark at display size (JetBrains Mono 600),
+   not the display face: the cover is a publication of the same mark as the nav. */
+function coverMark(parent, name, chars, x, y, size) {
+  const t = penpot.createText(String(chars));
+  t.name = name;
+  t.fontId = "gfont-jetbrains-mono";
+  t.fontFamily = "JetBrains Mono";
+  t.fontVariantId = "600";
+  t.fontSize = String(size);
+  t.lineHeight = "1.0";
+  t.letterSpacing = "2";
+  parent.appendChild(t);
+  t.growType = "auto-width";
+  t.resize(Math.ceil(String(chars).length * size * 0.62) + 8, Math.ceil(size));
+  t.x = pb.x + S.snap(x);
+  t.y = pb.y + S.snap(y);
+  S.paint(t, "ink.900");
+  S.bind(t, "fs.80", ["fontSize"]);
+  return t;
+}
+
+function coverTrace(parent, name, x, base, w, amp, beats) {
+  const H = amp * 2 + 16, N = Math.round(beats * 300);
+  const bump = (t, c, s) => Math.exp(-Math.pow((t - c) / s, 2));
+  const pts = [];
+  for (let i = 0; i <= N; i += 1) {
+    const t = (i / N) * beats, p = t % 1;
+    const v = 0.07 * bump(p, 0.20, 0.030) - 0.06 * bump(p, 0.355, 0.010) + 0.62 * bump(p, 0.373, 0.009) -
+      0.14 * bump(p, 0.392, 0.011) + 0.17 * bump(p, 0.66, 0.050);
+    pts.push([(i / N) * w, H / 2 - v * amp]);
+  }
+  const d = pts.map((q, i) => (i ? "L" : "M") + q[0].toFixed(1) + " " + q[1].toFixed(1)).join(" ");
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + H +
+    '" viewBox="0 0 ' + w + " " + H + '"><path d="' + d +
+    '" fill="none" stroke="#C4122F" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></svg>';
+  const sh = penpot.createShapeFromSvg(svg);
+  sh.name = name;
+  parent.appendChild(sh);
+  sh.x = pb.x + S.snap(x);
+  sh.y = pb.y + S.snap(base - H / 2);
+  const walk = (s) => {
+    if (s.strokes && s.strokes.length) {
+      s.strokes = [{ strokeColor: "#000000", strokeOpacity: 1, strokeStyle: "solid", strokeWidth: 1, strokeAlignment: "center" }];
+      S.bind(s, "red.600", ["strokeColor"]);
+    }
+    (s.children || []).forEach(walk);
+  };
+  walk(sh);
+  return sh;
+}
+
 S.masthead(pb, null, { cta: "ghost" });
 
 /* ------------------------------------------------------------------- hero */
-/* Candidate A (chosen, 2026-11-02): the message column is centred against a
-   full-height cardiology frame; the figures strip docks to the photo's
-   bottom edge and closes the hero on a single horizontal. */
-const HERO_TOP = 156, PHOTO_X = 760, PHOTO_W = 560, PHOTO_H = 560;
-/* Committed ink heights, not the declared line-height multipliers: fit()
-   shrinks a text box to its painted ink, so display 80/2 lines = 178,
-   lead 22/2 lines = 62, label 13 = 20, nav 16 = 22. */
-const HERO_BLOCK = 20 + 28 + 178 + 32 + 62 + 40 + 52; // kicker → CTA
-let hy = Math.round((HERO_TOP + (PHOTO_H - HERO_BLOCK) / 2) / 4) * 4;
-S.text(pb, "hero label", "1998'DEN BERİ · ANKARA", "label", "ink.500", { x: S.X, y: hy });
-S.text(pb, "hero title", "Hastanın hekimi.", "display", "ink.900", { x: S.X, y: hy + 48, w: 560 });
-S.text(pb, "hero lede",
-  "1998'den beri iç hastalıkları hekimlerinin camiası: kılavuz, kongre, akademi tek adreste.",
-  "lead", "ink.600", { x: S.X, y: hy + 48 + 178 + 32, w: 520 });
-S.ctaRow(pb, "hero cta", S.X, hy + 48 + 178 + 32 + 62 + 40, "Kongreye kayıt ol",
-  { w: 236, link: "Derneği tanı" });
-S.photo(pb, "img-hero", PHOTO_X, HERO_TOP, PHOTO_W, PHOTO_H, null);
+/* M7 (2026-11-02): the home page opens as the society's own issue. The hero
+   is a cover — masthead, coverlines, a self-drawn ECG plate as the cover
+   figure, and "Bu sayıda" as the page's table of contents. No photo, no
+   proof strip, no congress band: the cover carries the date, the countdown
+   and the one primary. The page's sections resume on paper below. */
+const COVER_Y = 140, COVER_H = 740, FIG_Y = COVER_Y + 382;
+S.rect(pb, "cover sheet", S.X, COVER_Y, 1200, COVER_H, "white",
+  { stroke: "line.soft", radius: "radius.2" });
+coverMark(pb, "cover mast", "İHKD", 160, COVER_Y + 36, 80);
+S.text(pb, "cover journal", "KARDİYOVASKÜLER KLİNİK", "label", "ink.500", { x: 160, y: COVER_Y + 142 });
+S.text(pb, "cover issue", "Cilt 12 · Sayı 1 · Mart 2027", "data", "ink.500", { x: 160, y: COVER_Y + 164 });
+S.text(pb, "cover line", "Hastanın hekimi.", "h2", "ink.900", { x: 160, y: COVER_Y + 200, w: 620 });
+S.text(pb, "cover congress label", "12. ULUSAL KONGRE", "label", "ink.500", { x: 160, y: COVER_Y + 260 });
+S.text(pb, "cover congress date", "22–25 Nisan 2027 · Antalya", "h3", "ink.900",
+  { x: 160, y: COVER_Y + 280, w: 620 });
+S.text(pb, "cover countdown", "147 gün · erken kayıt 31 Ocak 2027'de kapanıyor · 96 oturum",
+  "meta", "ink.600", { x: 160, y: COVER_Y + 322, w: 600 });
 
-/* proof: the numbers are the hero's evidence, not a section below it */
-let y = S.statsStrip(pb, "hero proof", S.X, HERO_TOP + PHOTO_H, S.CW, [
-  ["6.847", "üye"], ["41", "il"], ["12", "çalışma grubu"], ["10", "kılavuz"],
-], { bleed: S.W, surface: "white" });
+/* the cover figure: a three-lead strip drawn here, 25 mm/s · 10 mm/mV */
+S.text(pb, "cover figure label", "KAPAK · 12 DERİVASYON", "label", "ink.500", { x: 160, y: COVER_Y + 360 });
+coverGrid(pb, "cover ecg minor", 160, FIG_Y, 640, 220, 8, 40, "line.soft");
+coverGrid(pb, "cover ecg major", 160, FIG_Y, 640, 220, 40, 0, "line.300");
+["I", "II", "V1"].forEach((lead, i) => {
+  S.text(pb, "cover lead " + i, lead, "label", "ink.500", { x: 168, y: FIG_Y + 26 + i * 70 });
+  coverTrace(pb, "cover trace " + i, 200, FIG_Y + 48 + i * 70, 580, 64, 4);
+});
+S.text(pb, "cover caption", "25 mm/s · 10 mm/mV", "meta", "ink.500",
+  { x: 160, y: COVER_Y + 620 });
 
-/* --------------------------------------------------------------- kongre */
-/* The page's only red field. Two balanced columns: the date/destination on the
-   left, the countdown instrument on the right; CTA and its ghost link share one
-   row (ctaRow owns both centres — no hand-written y). */
-const BY = y + RHYTHM;
-const BAND_H = 316;
-const band = S.board(pb, "kongre band", 0, BY, S.W, BAND_H, "red.600");
-S.text(band, "band label", "12. ULUSAL KONGRE", "label", "on.red", { x: S.X, y: BY + 56 });
-S.text(band, "band title", "22–25 Nisan 2027", "h2", "on.red", { x: S.X, y: BY + 92, w: 720 });
-S.text(band, "band venue", "Antalya Kongre Merkezi, Belek · 96 oturum · 214 konuşmacı",
-  "body", "on.red", { x: S.X, y: BY + 159, w: 600, opacity: 0.92 });
-S.ctaRow(band, "band cta", S.X, BY + 205, "Kayıt ol",
-  { w: 168, kind: "onred", link: "Programı gör", linkInk: "on.red", gap: 32 });
-
-const CB = { x: 840, w: 480 }, CB_H = 204;
-const cby = BY + Math.round((BAND_H - CB_H) / 2);
-const counter = S.board(band, "countdown block", CB.x, cby, CB.w, CB_H, "red.700");
-S.text(counter, "cd label", "KONGREYE KALAN", "label", "on.red", { x: CB.x + 28, y: cby + 28, opacity: 0.7 });
-S.text(counter, "cd value", "147", "stat", "on.red", { x: CB.x + 28, y: cby + 60 });
-S.text(counter, "cd unit", "GÜN", "label", "on.red", { x: CB.x + 28, y: cby + 120, opacity: 0.8 });
-S.text(counter, "cd note", "Erken kayıt 31 Ocak 2027'de kapanıyor.", "meta", "on.red",
-  { x: CB.x + 28, y: cby + 156, w: 424, opacity: 0.85 });
-
+/* the contents column: the issue's pages are the site's paths */
+S.text(pb, "cover toc label", "BU SAYIDA", "label", "ink.500", { x: 880, y: COVER_Y + 142 });
+const coverToc = [
+  ["Kongre", "s. 01", "Program ve kayıt"],
+  ["Kılavuzlar", "s. 12", "2027 hipertansiyon"],
+  ["Akademi", "s. 30", "KKY kursu · 6 STE"],
+  ["Yayın", "s. 38", "Dergi ve kılavuz"],
+  ["Topluluk", "s. 44", "41 il · 12 çalışma grubu"],
+  ["Haberler", "s. 50", "Bu hafta"],
+];
+coverToc.forEach((t, i) => {
+  const ty = COVER_Y + 180 + i * 64;
+  S.text(pb, "toc name " + i, t[0], "bodyMed", "ink.900", { x: 880, y: ty });
+  S.text(pb, "toc page " + i, t[1], "data", "ink.500", { x: 1180, y: ty + 2, w: 100, align: "right" });
+  S.text(pb, "toc note " + i, t[2], "meta", "ink.500", { x: 880, y: ty + 24, w: 280 });
+  S.rule(pb, "toc rule " + i, 880, ty + 54, 400, "line.soft", 1);
+});
+S.ctaRow(pb, "hero cta", 880, COVER_Y + 620, "Kongreye kayıt ol",
+  { w: 236, link: "Derneği tanı", gap: 24 });
+S.text(pb, "cover imprint", "6.847 üye · 41 il · 12 çalışma grubu · 10 kılavuz", "meta", "ink.500",
+  { x: 160, y: COVER_Y + 680, w: 700 });
+let y = COVER_Y + COVER_H;
 /* --------------------------------------------------------------- gündem */
-y = S.headIndex(pb, S.X, BY + BAND_H + RHYTHM, "GÜNDEM", "Bu hafta", { link: "Tüm haberler →" });
+y = S.headIndex(pb, S.X, y + RHYTHM, "GÜNDEM", "Bu hafta", { link: "Tüm haberler →" });
 const news = [
   ["12 Mart 2027", "Kongre", "Program yayınlandı: 96 oturum, dört salon", "6 dk"],
   ["4 Mart 2027", "Akademi", "Kalp yetersizliği kursu için kayıtlar açıldı", "2 dk"],

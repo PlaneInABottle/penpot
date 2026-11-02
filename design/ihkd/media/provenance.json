@@ -143,18 +143,6 @@
     "source": "https://images.pexels.com/photos/28585011/pexels-photo-28585011.jpeg",
     "credit": "https://www.pexels.com/photo/28585011/ by Marta Branco"
   },
-  "img-hero@01-ana-sayfa": {
-    "board": "01-ana-sayfa",
-    "page": "Kurumsal",
-    "source": "https://images.pexels.com/photos/39192342/pexels-photo-39192342.jpeg",
-    "credit": "https://www.pexels.com/photo/39192342/ by Vitaly Gariev"
-  },
-  "img-hero": {
-    "board": "01-ana-sayfa",
-    "page": "Kurumsal",
-    "source": "https://images.pexels.com/photos/39192342/pexels-photo-39192342.jpeg",
-    "credit": "https://www.pexels.com/photo/39192342/ by Vitaly Gariev"
-  },
   "img-angio@05-grup-detay": {
     "board": "05-grup-detay",
     "page": "Kurumsal",
