@@ -57,8 +57,9 @@ const shape = penpot.createRectangle();
 shape.name = __NAME__;
 shape.resize(__W__, __H__);
 board.appendChild(shape);
-shape.x = __X__;
-shape.y = __Y__;
+// shape coords are page-absolute even inside a board, but --x/--y are board-local:
+shape.x = __X__ + board.x;
+shape.y = __Y__ + board.y;
 shape.fills = [{ fillOpacity: 1, fillImage: media }];
 return JSON.stringify({ mediaId: media && media.id, width: shape.width, height: shape.height });
 """

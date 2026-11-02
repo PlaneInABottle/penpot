@@ -4,6 +4,9 @@
     tokens_sync.py --file design/tokens.json            # JSON -> Penpot (additive)
     tokens_sync.py --file design/tokens.json --check    # compare only, no writes
     tokens_sync.py --file design/tokens.json --export   # Penpot -> JSON (overwrites)
+    tokens_sync.py --repaint --file F --set S --page P [--dry-run]
+        # repaint literals bound to color tokens of set S on page P
+        # (--dry-run lists what would change, changes nothing)
 
 Sync is additive: it adds missing tokens and updates changed values, never
 deletes. `--check` therefore reports tokens that exist only in Penpot as
@@ -231,6 +234,112 @@ def sync(args, url: str, specs: list[dict]) -> int:
     return 1 if summary.get("conflicts") else 0
 
 
+REPAINT_JS = """
+const pageName = __PAGE__;
+const live = __LIVE__;
+const dryRun = __DRY__;
+const file = penpot.currentFile;
+const pg = file.pages.filter((p) => p.name === pageName)[0];
+if (!pg) throw new Error("page not found: " + pageName);
+const set = penpot.library.local.tokens.sets.filter((s) => s.name === __SET__)[0];
+if (!set) throw new Error("token set not found: " + __SET__);
+const byName = {};
+set.tokens.forEach((t) => { byName[t.name] = t; });
+const fixed = [];
+const unknown = [];
+let bound = 0, repainted = 0, skippedImage = 0, skippedCurrent = 0;
+const walk = (s) => {
+  const tokName = s.tokens && s.tokens.fill;
+  if (tokName !== undefined && tokName !== null) {
+    const want = live[tokName];
+    const tok = byName[tokName];
+    const f = s.fills && s.fills[0];
+    if (f && f.fillImage) {
+      skippedImage++;
+    } else if (want === undefined || !tok || tok.type !== "color") {
+      if (unknown.indexOf(String(tokName)) === -1) unknown.push(String(tokName));
+    } else {
+      bound++;
+      const actual = f && f.fillColor ? String(f.fillColor).toUpperCase() : null;
+      if (actual === String(want).toUpperCase()) {
+        skippedCurrent++;
+      } else {
+        const detail = s.name + ": " + tokName + " renders " + actual + " not " + String(want).toUpperCase();
+        if (dryRun) {
+          fixed.push(detail);
+        } else {
+          if (f) {
+            // explicit keys only: enumerating a live fill object can hit
+            // read-only members (e.g. "constructor"); opacity is preserved
+            s.fills = [{ fillColor: String(want),
+              fillOpacity: (f.fillOpacity === undefined || f.fillOpacity === null) ? 1 : f.fillOpacity,
+              fillColorGradient: null, fillColorRefFile: null, fillColorRefId: null, fillImage: null }];
+          } else {
+            s.fills = [{ fillColor: String(want), fillOpacity: 1 }];
+          }
+          // rewriting fills clears the binding; restore it (bind touches nothing else)
+          const live_tok = set.tokens.filter((t) => t.name === tokName)[0];
+          if (live_tok) s.applyToken(live_tok, ["fill"]);
+          fixed.push(detail);
+        }
+        repainted++;
+      }
+    }
+  }
+  (s.children || []).forEach(walk);
+};
+(pg.root.children || []).forEach(walk);
+return JSON.stringify({ page: pageName, bound: bound, repainted: repainted,
+  skippedImage: skippedImage, skippedCurrent: skippedCurrent,
+  unknown: unknown, fixed: fixed.slice(0, 20), dryRun: dryRun });
+"""
+
+
+def repaint(args, url: str, specs: list[dict]) -> int:
+    file_colors = {spec["name"]: spec["value"] for spec in specs if spec["type"] == "color"}
+    if not file_colors:
+        print(f"repaint: no color tokens in {args.file}, nothing to do")
+        return 1
+    data = read_set(url, args.set)
+    if data is None:
+        fail(f"token set {args.set!r} not found in the file")
+    live_all = {token["name"]: token for token in data["tokens"]}
+    live_colors = {
+        name: str(token.get("value", ""))
+        for name, token in live_all.items()
+        if token.get("type") == "color" and name in file_colors
+    }
+    if not live_colors:
+        print(f"repaint: no file color tokens present in set {args.set!r}, nothing to do")
+        return 1
+    for name, value in sorted(live_colors.items()):
+        if str(file_colors[name]).upper() != str(value).upper():
+            print(f"warning: {name}: file={file_colors[name]} penpot={value} (repainting to the Penpot value)")
+    code = (
+        REPAINT_JS.replace("__PAGE__", json.dumps(args.page))
+        .replace("__LIVE__", json.dumps(live_colors))
+        .replace("__DRY__", "true" if args.dry_run else "false")
+        .replace("__SET__", json.dumps(args.set))
+    )
+    try:
+        summary = payload(call_execute_code(url, code))
+    except McpError as exc:
+        fail(str(exc))
+    if not isinstance(summary, dict):
+        fail(f"unexpected repaint result: {summary!r}")
+    verb = "would repaint" if summary.get("dryRun") else "repainted"
+    print(
+        f"repaint {summary.get('page')}: bound-found {summary.get('bound')}, "
+        f"{verb} {summary.get('repainted')}, skipped-image {summary.get('skippedImage')}, "
+        f"skipped-current {summary.get('skippedCurrent')}"
+    )
+    for line in summary.get("fixed") or []:
+        print(f"  {'would fix' if summary.get('dryRun') else 'fixed'} {line}")
+    if summary.get("unknown"):
+        print(f"  skipped-unknown {len(summary['unknown'])}: {', '.join(sorted(summary['unknown']))}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--file", type=pathlib.Path, required=True)
@@ -242,9 +351,26 @@ def main(argv: list[str] | None = None) -> int:
         help="with --check: also exit 1 for tokens that exist only in Penpot",
     )
     ap.add_argument("--export", action="store_true", help="write Penpot state back to the file")
+    ap.add_argument(
+        "--repaint",
+        action="store_true",
+        help="rewrite stale fill literals bound to color tokens of --set (requires --page)",
+    )
+    ap.add_argument("--page", help="with --repaint: the single page to walk")
+    ap.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="with --repaint: list what would change, change nothing",
+    )
     args = ap.parse_args(argv)
     if args.check and args.export:
         ap.error("--check and --export are mutually exclusive")
+    if args.repaint and (args.check or args.export):
+        ap.error("--repaint is mutually exclusive with --check and --export")
+    if args.dry_run and not args.repaint:
+        ap.error("--dry-run requires --repaint")
+    if args.repaint and not args.page:
+        ap.error("--repaint requires --page (one page at a time)")
 
     try:
         url = load_url()
@@ -252,6 +378,8 @@ def main(argv: list[str] | None = None) -> int:
         if args.export:
             return export(args, url)
         specs = load_specs(args.file)
+        if args.repaint:
+            return repaint(args, url, specs)
         return check(args, url, specs) if args.check else sync(args, url, specs)
     except ValueError as exc:
         fail(str(exc), code=1)
