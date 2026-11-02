@@ -60,7 +60,11 @@ grows, either show all of it or change the claim — never keep the number and
 crop the list. Fixed grids (calendars, tables) derive their row heights from
 the tallest measured content via `fit-slot.js`, or fail the build; the lint
 `fit` family (overflow, boundary entry, rule crossing, bar-vs-content)
-proves the last build.
+proves the last build. Time-proportional calendars are allowed only above
+~50% density; a sparse program is an agenda: one row per start time, row
+height from content, no empty rows, duration as a label. Every card keeps
+a content-fill ratio ≥ 0.6 (ink span over card height) — below that the
+card is a box around air.
 
 ## 5. Rhythm, then eyes
 

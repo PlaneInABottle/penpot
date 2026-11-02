@@ -80,65 +80,70 @@ const tstr = (s) => {
   return ("0" + Math.floor(m / 60)).slice(-2) + ":" + ("0" + (m % 60)).slice(-2);
 };
 
-// İçerik ölçümü: her oturum bloğu başlık satırları + aralık + meta satırları + padding.
-const need = SESS.map((s) => {
-  const tl = S.estLines(s[3], HW - 24, 16, false);
-  const ml = S.estLines(tstr(s[0]) + "–" + tstr(s[0] + s[1]) + " · " + s[4], HW - 24, 13, false);
-  return { slots: s[1], h: tl * 24 + 14 + ml * 20 + 22 };
-});
-const ROW_H = S.snap(Math.max(92, ...need.map((c) => Math.ceil(c.h / c.slots))));
-// NSLOT 17: 09:00–17:30. Grid model: uniform time rows (ROW_H per 30 min,
-// derived from the tallest content), NO zebra, NO column rules, NO row
-// rules — only faint hour lines. Session cards span their FULL duration, so
-// card edges ARE the time boundaries and no text can meet a boundary line.
-// The 48px break markers interrupt the grid without consuming time rows;
-// slots 6,7,12 hold no rows. A card floating mid-row ("box outside the box"
-// feel) is unwritable here: card height comes from the slot span, never
-// from the content alone.
-const NSLOT = 17;
+// İçerik ölçümü: başlık satırları + aralık + meta satırları. Süre etiketi
+// metanın parçasıdır ('09:00–10:00 · 60 dk · Konuşmacı').
+const metaOf = (s) => tstr(s[0]) + "–" + tstr(s[0] + s[1]) + " · " + (s[1] * 30) + " dk · " + s[4];
+const contentH = (s) => S.estLines(s[3], HW - 24, 16, false) * 24 + 10
+  + S.estLines(metaOf(s), HW - 24, 13, false) * 20;
+const bySlot = {};
+SESS.forEach((s, i) => { (bySlot[s[0]] = bySlot[s[0]] || []).push(i); });
+const ROWS = [0, 1, 2, 4, 5, 8, 9, 10, 11, 13, 14, 15];
+const rowH = (slot) => S.snap(Math.max(...bySlot[slot].map((i) => contentH(SESS[i]))) + 22);
+// Agenda model: one row per START slot — no empty rows, no time math. Row
+// height = tallest content in that row + padding (space-between: title top,
+// meta bottom-anchored, so bottoms align with < 1 line of slack). A 30-min
+// session that cannot use 30 min of height does not exist here: duration
+// lives in the meta line ('09:00–10:00 · 60 dk · Speaker'), not in pixels.
+// Full-width hour lines separate the row groups; the 48px break markers sit
+// between groups with no gap on either side. Zebra and column rules are gone:
+// the schedule reads top-to-bottom, not left-to-right.
 const BANDS = [
-  { at: 6, label: "12:00–13:00 · Öğle arası · poster sunumları" },
-  { at: 12, label: "15:00–15:30 · Kahve arası" },
+  { after: 5, label: "12:00–13:00 · Öğle arası · poster sunumları" },
+  { after: 11, label: "15:00–15:30 · Kahve arası" },
 ];
-const shift = (slot) => 48 * BANDS.filter((b) => b.at < slot).length;
-const yOf = (slot) => TOP + slot * ROW_H + shift(slot);
-const isBandSlot = (i) => BANDS.some((b) => b.at === i || (b.at === 6 && i === 7));
 
 S.text(pb, "th time", "SAAT", "label", "ink.500", { x: 120, y: 448 });
 HALLS.forEach((h, i) => S.text(pb, "th hall " + i, h, "label", "ink.500", { x: HX[i], y: 448 }));
 S.rule(pb, "th rule", 120, 472, 1200, "line.strong", 1);
 
-// hour lines on even slots that hold rows; time labels on every held slot
-for (let i = 0; i < NSLOT; i++) {
-  if (isBandSlot(i)) continue;
-  if (i % 2 === 0) S.rule(pb, "hour " + i, 120, yOf(i), 1200, "line.soft");
-  S.text(pb, "row time " + i, tstr(i), "data", "ink.500", { x: 120, y: yOf(i) + 12 });
-}
+const drawRow = (slot, yRow, hRow) => {
+  const cardH = hRow - 8;
+  S.text(pb, "row time " + slot, tstr(slot), "data", "ink.500", { x: 120, y: yRow + 4 });
+  bySlot[slot].forEach((i) => {
+    const s = SESS[i];
+    const cx = HX[s[2]];
+    const tl = S.estLines(s[3], HW - 24, 16, false);
+    const ml = S.estLines(metaOf(s), HW - 24, 13, false);
+    const card = S.board(pb, "sess card " + i, cx, yRow + 4, HW - 8, cardH, "white");
+    S.rect(card, "sess bar " + i, cx, yRow + 14, 2, cardH - 20, s[5] ? "red.600" : "line.strong");
+    S.text(card, "sess title " + i, s[3], "bodyMed", "ink.900", { x: cx + 14, y: yRow + 14, w: HW - 24 });
+    S.text(card, "sess meta " + i, metaOf(s), "meta", s[5] ? "red.700" : "ink.500",
+      { x: cx + 14, y: yRow + 4 + cardH - 12 - ml * 20, w: HW - 24 });
+  });
+};
 
-BANDS.forEach((b, i) => {
-  const y0 = TOP + b.at * ROW_H + shift(b.at);
-  S.rect(pb, "band " + i, 240, y0, 1080, 48, "white");
-  S.text(pb, "band text " + i, b.label, "meta", "ink.500",
-    { x: 560, y: y0 + S.vcenter(48, 20), w: 600, align: "center" });
-});
+const band = (label, yBand) => {
+  S.rect(pb, "band " + label.slice(0, 5), 240, yBand, 1080, 48, "white");
+  S.text(pb, "band text " + label.slice(0, 5), label, "meta", "ink.500",
+    { x: 560, y: yBand + S.vcenter(48, 20), w: 600, align: "center" });
+  return yBand + 48;
+};
 
-SESS.forEach((s, i) => {
-  const ry = yOf(s[0]);
-  const cx = HX[s[2]];
-  const spanH = s[1] * ROW_H;
-  const range = tstr(s[0]) + "–" + tstr(s[0] + s[1]);
-  const tl = S.estLines(s[3], HW - 24, 16, false);
-  // Full-span card: height comes from the DURATION, position from the time
-  // math above. Text sits top-aligned inside its own time box; the accent
-  // bar matches the content (fitBars post-pass), not the span.
-  const card = S.board(pb, "sess card " + i, cx, ry + 4, HW - 8, spanH - 8, "white");
-  S.rect(card, "sess bar " + i, cx, ry + 10, 2, spanH - 20, s[5] ? "red.600" : "line.strong");
-  S.text(card, "sess title " + i, s[3], "bodyMed", "ink.900", { x: cx + 14, y: ry + 10, w: HW - 24 });
-  S.text(card, "sess meta " + i, range + " · " + s[4], "meta", s[5] ? "red.700" : "ink.500", { x: cx + 14, y: ry + 14 + tl * 24, w: HW - 24 });
-});
-
+let ry = TOP;
+const GROUPS = [[0, 1, 2, 4, 5], [8, 9, 10, 11], [13, 14, 15]];
+ry = S.rows(pb, "ag0", 120, ry, 1200, GROUPS[0].map((slot) => ({
+  h: rowH(slot), draw(yRow) { drawRow(slot, yRow, rowH(slot)); },
+})), {});
+ry = band(BANDS[0].label, ry);
+ry = S.rows(pb, "ag1", 120, ry, 1200, GROUPS[1].map((slot) => ({
+  h: rowH(slot), draw(yRow) { drawRow(slot, yRow, rowH(slot)); },
+})), {});
+ry = band(BANDS[1].label, ry);
+ry = S.rows(pb, "ag2", 120, ry, 1200, GROUPS[2].map((slot) => ({
+  h: rowH(slot), draw(yRow) { drawRow(slot, yRow, rowH(slot)); },
+})), { trailing: true });
 /* ------------------------------------------------------------------ notlar */
-const notesY = yOf(NSLOT - 1) + ROW_H + 40;
+const notesY = ry + 40;
 S.text(pb, "pn label", "PROGRAM NOTLARI", "label", "ink.500", { x: 120, y: notesY });
 const notes = [
   "Konsey oturumlarını iki başkan yönetir; konuşmacı listesi oturumdan 15 gün önce kesinleşir.",

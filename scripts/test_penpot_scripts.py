@@ -690,6 +690,70 @@ class OverlapBlindSpotTest(unittest.TestCase):
                             for f in findings),
                         [f["finding"] for f in findings])
 
+    def test_dead_space_flags_hollow_card(self):
+        card = _node(id="card", name="sess card 0", type="board", parentId="pg",
+                     parent="pg", x=240, y=480, w=232, h=280, fill="#FFFFFF", stroke=True)
+        title = _ink_text(node_id="t", parent="card", x=254, y=490, w=204, h=26,
+                          inkX=254, inkY=492, inkW=150, inkH=20)
+        meta = _ink_text(node_id="m", parent="card", x=254, y=524, w=204, h=40,
+                         inkX=254, inkY=526, inkW=180, inkH=36)
+        findings = design_lint.lint([_page_board(), card, title, meta],
+                                    dict(design_lint.DEFAULTS))
+        self.assertTrue(any("dead space" in f["finding"] and f["severity"] == "high"
+                            for f in findings),
+                        [f["finding"] for f in findings])
+
+    def test_snug_card_stays_clean(self):
+        card = _node(id="card", name="sess card 0", type="board", parentId="pg",
+                     parent="pg", x=240, y=480, w=232, h=120, fill="#FFFFFF", stroke=True)
+        title = _ink_text(node_id="t", parent="card", x=254, y=490, w=204, h=26,
+                          inkX=254, inkY=492, inkW=150, inkH=20)
+        meta = _ink_text(node_id="m", parent="card", x=254, y=524, w=204, h=60,
+                         inkX=254, inkY=526, inkW=180, inkH=56)
+        findings = design_lint.lint([_page_board(), card, title, meta],
+                                    dict(design_lint.DEFAULTS))
+        self.assertEqual([f for f in findings if "dead space" in f["finding"]], [])
+
+    def test_empty_corridor_flags_missing_row(self):
+        head = _node(id="h", name="head", type="rectangle", parentId="pg",
+                     parent="pg", x=0, y=0, w=1440, h=996, fill="#F4F5F6")
+        top = _node(id="a", name="band", type="rectangle", parentId="pg",
+                    parent="pg", x=240, y=1000, w=1080, h=48, fill="#FFFFFF")
+        mid = _node(id="m", name="sess card 0", type="board", parentId="pg",
+                    parent="pg", x=240, y=880, w=232, h=120, fill="#FFFFFF", stroke=True)
+        bottom = _node(id="b", name="sess card 1", type="board", parentId="pg",
+                       parent="pg", x=240, y=1240, w=232, h=120, fill="#FFFFFF", stroke=True)
+        foot = _node(id="f", name="foot", type="rectangle", parentId="pg",
+                     parent="pg", x=0, y=1360, w=1440, h=640, fill="#F4F5F6")
+        findings = design_lint.lint([_page_board(), head, top, mid, bottom, foot], dict(design_lint.DEFAULTS))
+        self.assertTrue(any("empty corridor" in f["finding"] and f["severity"] == "high"
+                            for f in findings),
+                        [f["finding"] for f in findings])
+
+    def test_one_sided_air_stays_clean(self):
+        head = _node(id="h", name="head", type="rectangle", parentId="pg",
+                     parent="pg", x=0, y=0, w=1440, h=996, fill="#F4F5F6")
+        top = _node(id="a", name="band", type="rectangle", parentId="pg",
+                    parent="pg", x=240, y=1000, w=1080, h=48, fill="#FFFFFF")
+        foot = _node(id="f", name="foot", type="rectangle", parentId="pg",
+                     parent="pg", x=0, y=1200, w=1440, h=800, fill="#F4F5F6")
+        findings = design_lint.lint([_page_board(), head, top, foot], dict(design_lint.DEFAULTS))
+        self.assertEqual([f for f in findings if "empty corridor" in f["finding"]], [])
+
+    def test_bridged_gap_stays_clean(self):
+        head = _node(id="h", name="head", type="rectangle", parentId="pg",
+                     parent="pg", x=0, y=0, w=1440, h=996, fill="#F4F5F6")
+        top = _node(id="a", name="band", type="rectangle", parentId="pg",
+                    parent="pg", x=240, y=1000, w=1080, h=48, fill="#FFFFFF")
+        band2 = _node(id="r", name="section band", type="rectangle", parentId="pg",
+                     parent="pg", x=0, y=1100, w=1440, h=48, fill="#F4F5F6")
+        bottom = _node(id="b", name="sess card 1", type="board", parentId="pg",
+                       parent="pg", x=240, y=1240, w=232, h=120, fill="#FFFFFF", stroke=True)
+        foot = _node(id="f", name="foot", type="rectangle", parentId="pg",
+                     parent="pg", x=0, y=1360, w=1440, h=640, fill="#F4F5F6")
+        findings = design_lint.lint([_page_board(), head, top, band2, bottom, foot], dict(design_lint.DEFAULTS))
+        self.assertEqual([f for f in findings if "empty corridor" in f["finding"]], [])
+
     def test_gapped_siblings_stay_clean(self):
         panel = _node(id="panel", name="side", type="board", parentId="pg",
                       parent="pg", x=960, y=412, w=360, h=439, fill="#F4F5F6")

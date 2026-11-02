@@ -147,9 +147,12 @@ right. A 120px asymmetry survived every gate because the grid lived only in pros
 ## Slots derive from content
 
 A slot's height comes from its measured content, never from a fixed grid
-constant. A time grid that maps minutes to px while copy height varies paints
-text over the next row — the lint `fit` family reports that after the fact;
-build it right the first time instead.
+constant. A row's height comes from its tallest card, never from an average —
+and a card whose fill ratio (ink span over card height) drops under 0.6 is a
+box around air: shrink the card, not the content. A time grid that maps minutes
+to px while copy height varies paints text over the next row — the lint `fit`
+family reports that after the fact, including its dead-space and corridor
+checks; build it right the first time instead.
 
 - `assets/fit-slot.js` (loaded like `helpers.js`, exposes `storage.FIT`):
   `fitSlotLive(container, children, opts)` grows the container to its ink

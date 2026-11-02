@@ -573,6 +573,82 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
                         add("medium", f"{a['name']} touches {b['name']} "
                                      f"({hgap:.0f}px gap, different surfaces) — a glued joint reads as a leak")
 
+        # 6. dead space: a card/panel whose content ends far above its own
+        # bottom edge reads as a leak, not air. Trailing void (container
+        # bottom minus last descendant ink bottom) beyond dead_med — and
+        # beyond 1.5x the largest contained line height, so display type
+        # is not punished — is MEDIUM; beyond dead_high is HIGH.
+        dead_med, dead_high = 32.0, 80.0
+        for c in surfaces:
+            desc = [t for t in inked if t["id"] == c["id"] or is_ancestor(c["id"], t["id"])]
+            if not desc:
+                continue
+            bottoms = [ink_box(t)[3] for t in desc]
+            lines = [(t.get("fontSize") or 0) * (line_height_multiplier(t.get("lineHeight")) or 1.5)
+                     for t in desc]
+            trailing = (c["y"] + c["h"]) - max(bottoms)
+            if trailing > dead_med and trailing > 1.5 * max(lines or [0]):
+                level = "high" if trailing > dead_high else "medium"
+                add(level, f"dead space in {c['name']}: {trailing:.0f}px below the last ink "
+                           f"(content ends, card continues)")
+
+        # 7. empty corridor: a horizontal strip with no content spanning most
+        # of the board reads as a missing row, not air — but only inside a
+        # data region. Section air between prose blocks is rhythm and stays
+        # clean: the strip must touch a card-like solid (a filled rect/board
+        # narrower than the full grid, e.g. a session card or a break band)
+        # on its top or bottom edge. Strips taller than corr_h with content
+        # coverage under corr_cover and no near-full-width block touching
+        # either edge are HIGH.
+        corr_h, corr_cover, corr_span = 64.0, 0.4, 0.8
+        kids = [n for n in inside if n.get("parentId") == board["id"]]
+        edges = sorted({board["y"], board["y"] + board["h"]}
+                       | {k["y"] for k in kids} | {k["y"] + (k["h"] or 0) for k in kids})
+        for e1, e2 in zip(edges, edges[1:]):
+            if e2 - e1 <= corr_h:
+                continue
+            inter = [k for k in kids if k["y"] < e2 - 0.5 and k["y"] + (k["h"] or 0) > e1 + 0.5]
+            spans = sorted((max(k["x"], board["x"]), min(k["x"] + (k["w"] or 0), board["x"] + board["w"]))
+                           for k in inter)
+            union, cx0, cx1 = 0.0, None, None
+            for s0, s1 in spans:
+                if cx0 is None:
+                    cx0, cx1 = s0, s1
+                elif s0 <= cx1:
+                    cx1 = max(cx1, s1)
+                else:
+                    union += max(0.0, cx1 - cx0)
+                    cx0, cx1 = s0, s1
+            if cx0 is not None:
+                union += max(0.0, cx1 - cx0)
+            if union / (board["w"] or 1) >= corr_cover:
+                continue
+            touch = [k for k in kids
+                     if abs(k["y"] + (k["h"] or 0) - e1) <= 1 or abs(k["y"] - e2) <= 1]
+            # a hairline is not a block: only a substantial full-width band
+            # (content grid or wider) turns the strip into section air
+            if any((k["w"] or 0) >= corr_span * (board["w"] or 0) and (k["h"] or 0) >= 24
+                   for k in touch):
+                continue
+            # tolerance 6: cards carry a 4px top pad, so a card starting
+            # just inside the next row still bounds the strip above it
+            above = [k for k in kids
+                       if k["type"] in ("rectangle", "board") and (k.get("fill") or k.get("img"))
+                       and (k["w"] or 0) >= 24 and (k["h"] or 0) >= 24
+                       and (k["w"] or 0) < corr_span * (board["w"] or 0)
+                       and 40 <= (k["h"] or 0) <= 400
+                       and abs(k["y"] + (k["h"] or 0) - e1) <= 6]
+            below = [k for k in kids
+                       if k["type"] in ("rectangle", "board") and (k.get("fill") or k.get("img"))
+                       and (k["w"] or 0) >= 24 and (k["h"] or 0) >= 24
+                       and (k["w"] or 0) < corr_span * (board["w"] or 0)
+                       and 40 <= (k["h"] or 0) <= 400
+                       and abs(k["y"] - e2) <= 6]
+            if not above or not below:
+                continue
+            add("high", f"empty corridor {e2 - e1:.0f}px (y {e1:.0f}-{e2:.0f}px): "
+                        f"no content, no divider — reads as a missing row")
+
     return findings
 
 
