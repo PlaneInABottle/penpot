@@ -152,6 +152,12 @@ const IK = (function () {
       t.resize(o.w, Math.ceil(r.size * r.lh * lines));
       t.growType = "auto-height";
     } else {
+      // Never leave a 1x1 box to async layout: a board-scale build can
+      // return before unmeasured auto-width texts commit, and the exporter
+      // clips them to their box (invisible nav on a finished board). Seed
+      // an estimated width now; fit() tightens it once ink commits.
+      const est = Math.ceil(String(chars).length * r.size * (r.font === "mono" ? 0.62 : 0.55)) + 8;
+      t.resize(Math.max(est, 12), Math.ceil(r.size * r.lh));
       t.growType = "auto-width";
     }
     if (o.align) t.align = o.align;
@@ -379,10 +385,12 @@ const IK = (function () {
    * In fixed-pitch mode (opts.pitch) content taller than the pitch THROWS:
    * a grid that cannot hold its content is a build error, not an overlap.
    * Center content with vcenter(hRow, estH). Returns the y below the
-   * last row (gap included).
+   * last row (gap included). Pass {rule: false} (or {bare: true}) for a
+   * rule-less list: uniform pitch carries the rhythm, not separators.
    */
   function rows(parent, name, x, y, w, items, opts) {
     const o = opts || {};
+    const wantRule = !o.bare && o.rule !== false;
     let cy = y;
     items.forEach((it, i) => {
       let h = it.h;
@@ -394,7 +402,7 @@ const IK = (function () {
         h = o.pitch;
       }
       it.draw(snap(cy), snap(h));
-      if (!o.bare && (i < items.length - 1 || o.trailing)) rule(parent, name + " rule " + i, x, snap(cy) + snap(h) - 1, w, o.rule || "line.soft");
+      if (wantRule && (i < items.length - 1 || o.trailing)) rule(parent, name + " rule " + i, x, snap(cy) + snap(h) - 1, w, o.rule || "line.soft");
       cy = snap(cy + h + (o.gap || 0));
     });
     return cy;

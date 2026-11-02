@@ -669,6 +669,43 @@ class OverlapBlindSpotTest(unittest.TestCase):
         findings = design_lint.lint([_page_board(), pill, label], dict(design_lint.DEFAULTS))
         self.assertEqual([f for f in findings if "sibling control" in f["finding"] or
                           "paints over shape" in f["finding"]], [])
+
+    def test_touching_siblings_flag_medium(self):
+        panel = _node(id="panel", name="side", type="board", parentId="pg",
+                      parent="pg", x=960, y=412, w=360, h=439, fill="#F4F5F6")
+        photo = _node(id="photo", name="img-lab", type="rectangle", parentId="pg",
+                      parent="pg", x=992, y=851, w=296, h=160, fill="#F4F5F6", img=True)
+        findings = design_lint.lint([_page_board(), panel, photo], dict(design_lint.DEFAULTS))
+        self.assertTrue(any("touch" in f["finding"] and f["severity"] == "medium"
+                            for f in findings),
+                        [f["finding"] for f in findings])
+
+    def test_unlaid_box_is_high(self):
+        bad = _node(id="u", name="nav X", type="text", parentId="pg",
+                    parent="pg", x=120, y=32, w=1, h=1, fill="#0E1318",
+                    fontSize=16, lineHeight="1.5", text="Missing",
+                    inkX=None, inkY=None, inkW=None, inkH=None)
+        findings = design_lint.lint([_page_board(), bad], dict(design_lint.DEFAULTS))
+        self.assertTrue(any("unlaid-out" in f["finding"] and f["severity"] == "high"
+                            for f in findings),
+                        [f["finding"] for f in findings])
+
+    def test_gapped_siblings_stay_clean(self):
+        panel = _node(id="panel", name="side", type="board", parentId="pg",
+                      parent="pg", x=960, y=412, w=360, h=439, fill="#F4F5F6")
+        photo = _node(id="photo", name="img-lab", type="rectangle", parentId="pg",
+                      parent="pg", x=992, y=875, w=296, h=160, fill="#F4F5F6", img=True)
+        findings = design_lint.lint([_page_board(), panel, photo], dict(design_lint.DEFAULTS))
+        self.assertEqual([f for f in findings if "touch" in f["finding"]], [])
+
+    def test_same_surface_touch_stays_clean(self):
+        a = _node(id="a", name="band a", type="rectangle", parentId="pg",
+                  parent="pg", x=0, y=0, w=1440, h=100, fill="#FFFFFF")
+        b = _node(id="b", name="band b", type="rectangle", parentId="pg",
+                  parent="pg", x=0, y=100, w=1440, h=100, fill="#FFFFFF")
+        findings = design_lint.lint([_page_board(), a, b], dict(design_lint.DEFAULTS))
+        self.assertEqual([f for f in findings if "touch" in f["finding"]], [])
+
     def test_cross_parent_text_overlap_still_flags(self):
         a = _ink_text(node_id="a", parent="pg", x=120, y=540, inkX=120, inkY=540)
         b = _ink_text(node_id="b", parent="side", x=200, y=540, inkX=200, inkY=540)

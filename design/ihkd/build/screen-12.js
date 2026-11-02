@@ -12,7 +12,7 @@ const pb = S.start("Akademi", "12-kurs-detay", 1740);
 
 S.masthead(pb, "Akademi");
 S.crumbs(pb, ["Akademi", "Kurslar", "Kalp yetersizliğinde güncel tedavi"], 120, 132);
-S.text(pb, "k label", "KURS · KAP YETERSİZLİĞİ", "label", "red.600", { x: 120, y: 160 });
+S.text(pb, "k label", "KURS · KALP YETERSİZLİĞİ", "label", "red.600", { x: 120, y: 160 });
 S.text(pb, "k title", "Kalp yetersizliğinde güncel tedavi", "h2", "ink.900", { x: 120, y: 188, w: 900 });
 S.text(pb, "k meta", "8 modül · 6 STE · 4s 20dk · Türkçe · Üyeler için ücretsiz", "data", "ink.500", { x: 120, y: 264, w: 900 });
 S.text(pb, "k instructor", "Eğitmen: Prof. Dr. Murat Şen · Ankara Üniversitesi", "meta", "ink.600", { x: 120, y: 290, w: 900 });
@@ -30,13 +30,13 @@ const out = [
 S.rows(pb, "o", 120, 444, 740, out.map((t, i) => {
   const lines = S.estLines(t, 740, 16, false);
   return {
-    h: S.snap(6 + lines * 26 + 6),
+    h: S.snap(6 + lines * 26 + 4),
     draw(yRow) {
       S.rect(pb, "o dot " + i, 120, yRow + 6, 6, 6, "red.600");
       S.text(pb, "o " + i, t, "body", "ink.700", { x: 140, y: yRow, w: 740 });
     },
   };
-}), { rule: "line.soft" });
+}), { rule: false });
 
 /* -------------------------------------------------------------------- müfredat */
 S.text(pb, "cur label", "MÜFREDAT", "label", "red.600", { x: 120, y: 668 });
@@ -91,13 +91,12 @@ incItems.forEach((t, i) => {
 });
 sc += 16;
 S.text(side, "s cert", "STE kredisi: 6 · Türk Tabipleri Birliği onaylı", "meta", "ink.500", { x: SC_X, y: sc, w: SC_W });
-const contentBottom = sc + certLines * 20;
-side.resize(360, contentBottom - 412 + 24);
-const photoY = contentBottom + 24;
-S.photo(pb, "img-lab", SC_X, photoY, SC_W, 160, "Uygulamalı tedavi oturumu, Ankara");
+const contentBottom = sc + certLines * 20 + 24;
+S.photo(side, "img-lab", SC_X, sc + certLines * 20 + 24, SC_W, 160, "Uygulamalı tedavi oturumu, Ankara");
+side.resize(360, contentBottom + 160 + 12 + 20 + 24 - 412);
+const lowerY = Math.max(contentBottom + 160 + 12 + 20 + 24, mEnd + 48);
 
 /* --------------------------------------------------------------- alt bilgiler */
-const lowerY = Math.max(photoY + 160 + 12 + 20 + 48, mEnd + 48);
 S.text(pb, "for label", "KİMLER İÇİN", "label", "red.600", { x: 120, y: lowerY });
 S.text(pb, "for text", "Kardiyoloji ve iç hastalıkları uzmanları, yan dal asistanları, KKY polikliniğinde çalışan hemşireler.", "body", "ink.700", { x: 120, y: lowerY + 28, w: 360 });
 S.text(pb, "pre label", "ÖN KOŞUL", "label", "red.600", { x: 540, y: lowerY });

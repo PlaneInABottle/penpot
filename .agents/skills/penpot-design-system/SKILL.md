@@ -174,6 +174,13 @@ build it right the first time instead.
   literal. Cards, lists, schedules and side panels share the same chain,
   so a taller row above pushes everything below instead of burying it.
   A literal y past the head is a defect, not a shortcut.
+- **Seed every box, trust no commit.** A shape created without dimensions
+  (bare auto-width text, unmeasured slot) is invisible until Penpot's async
+  layout reaches it — on a board-scale build that can be never, and the
+  exporter clips to the 1×1 box. Estimate the box at creation (estLines for
+  text), let `fit()` tighten it after commit, and gate the 1×1 leftover in
+  lint. Never retry a timed-out build blindly: the first task may still be
+  running server-side and race its own replacement.
 
 ## Media and rhythm (generic)
 
@@ -297,6 +304,11 @@ build it right the first time instead.
   Tile the render with `crop_board.py`, review every tile and region, mark
   `reviewed` with a finding note, and let `--attest` pass — that is the
   1:1 review, not a sentence in a report.
+- **Copy rides along, never retyped.** A rewrite preserves string literals
+  verbatim — retyping "KALP" as "KAP" ships a typo no gate can catch (no
+  dictionary flags a real word in the wrong place). After any copy-touching
+  change, read the diff's string lines one by one: kicker against title,
+  numbers against claims, names against the brief.
 
 - **Structure**: read back name, size, position, children and token bindings for every
   claimed shape in a later call than the write.

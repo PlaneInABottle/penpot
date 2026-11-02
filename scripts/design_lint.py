@@ -329,6 +329,16 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
             if any(word in blob for word in rules["banned_text"]) or (node["text"] or "").strip() in BANNED_EXACT:
                 add("high", f"placeholder copy in {node['name']}: {node['text'][:40]!r}")
 
+        # a text that never laid out (1x1 box with copy) paints nothing:
+        # the exporter clips to the box, so an unmeasured label is an
+        # invisible label. Layout that never commits is a build defect —
+        # seed an estimated box at build time and refit — not a timing
+        # artifact worth waiting out.
+        for node in texts:
+            if (node["w"] or 0) <= 2 and (node["h"] or 0) <= 2 and (node["text"] or "").strip():
+                add("high", f"text {node['name']} has an unlaid-out box "
+                             f"({node['w']:.0f}x{node['h']:.0f}px) — refit, then re-export")
+
         # text must not hug a panel's stroked/surface edge: S.board children
         # use page-absolute coords, so x:120 inside a board at x:120 is zero
         # padding against the stroke (İHKD 04 propose). A label fully ON a
@@ -517,6 +527,51 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
             if abs(bar["h"] - (bot - top)) > rules["fit_bar_delta"]:
                 add("medium", f"bar {bar['name']} h={bar['h']:.0f}px vs content span {bot - top:.0f}px "
                               f"(Δ{abs(bar['h'] - (bot - top)):.0f}px over {rules['fit_bar_delta']:.0f}px)")
+
+        # 5. sibling surfaces must not touch: two same-parent rect/board
+        # solids (hairlines and chips excluded by touch_min) whose facing
+        # edges close under touch_gap with a real run along the edge, on
+        # different surfaces (fills differ, or either is an image). A photo
+        # glued to its card's edge with a 0px joint reads as a leak, not a
+        # layout; same-fill joints are invisible seams and stay clean.
+        touch_min, touch_gap, touch_run = 24.0, 4.0, 24.0
+        surfaces = [n for n in inside
+                    if n["type"] in ("rectangle", "board") and n["id"] != board["id"]
+                    and (n["w"] or 0) >= touch_min and (n["h"] or 0) >= touch_min
+                    and (n.get("fill") or n.get("img"))]
+
+        def same_surface(a: dict, b: dict) -> bool:
+            if a.get("img") or b.get("img"):
+                return False
+            fa, fb = (a.get("fill") or "").upper(), (b.get("fill") or "").upper()
+            return bool(fa) and fa == fb
+
+        for ia in range(len(surfaces)):
+            for ib in range(ia + 1, len(surfaces)):
+                a, b = surfaces[ia], surfaces[ib]
+                if a.get("parentId") != b.get("parentId"):
+                    continue
+                if same_surface(a, b):
+                    continue
+                if a["y"] <= b["y"]:
+                    vgap = b["y"] - (a["y"] + a["h"])
+                else:
+                    vgap = a["y"] - (b["y"] + b["h"])
+                if 0 <= vgap < touch_gap:
+                    run = min(a["x"] + a["w"], b["x"] + b["w"]) - max(a["x"], b["x"])
+                    if run >= touch_run:
+                        add("medium", f"{a['name']} touches {b['name']} "
+                                     f"({vgap:.0f}px gap, different surfaces) — a glued joint reads as a leak")
+                        continue
+                if a["x"] <= b["x"]:
+                    hgap = b["x"] - (a["x"] + a["w"])
+                else:
+                    hgap = a["x"] - (b["x"] + b["w"])
+                if 0 <= hgap < touch_gap:
+                    run = min(a["y"] + a["h"], b["y"] + b["h"]) - max(a["y"], b["y"])
+                    if run >= touch_run:
+                        add("medium", f"{a['name']} touches {b['name']} "
+                                     f"({hgap:.0f}px gap, different surfaces) — a glued joint reads as a leak")
 
     return findings
 

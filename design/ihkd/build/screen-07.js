@@ -87,69 +87,58 @@ const need = SESS.map((s) => {
   return { slots: s[1], h: tl * 24 + 14 + ml * 20 + 22 };
 });
 const ROW_H = S.snap(Math.max(92, ...need.map((c) => Math.ceil(c.h / c.slots))));
-// NSLOT 17: 09:00–17:30. 6-7 öğle arası, 12 kahve arası bandı; boş satır yok.
+// NSLOT 17: 09:00–17:30. Grid model: uniform time rows (ROW_H per 30 min,
+// derived from the tallest content), NO zebra, NO column rules, NO row
+// rules — only faint hour lines. Session cards span their FULL duration, so
+// card edges ARE the time boundaries and no text can meet a boundary line.
+// The 48px break markers interrupt the grid without consuming time rows;
+// slots 6,7,12 hold no rows. A card floating mid-row ("box outside the box"
+// feel) is unwritable here: card height comes from the slot span, never
+// from the content alone.
 const NSLOT = 17;
 const BANDS = [
-  { from: 6, to: 7, label: "Öğle arası · poster sunumları" },
-  { from: 12, to: 12, label: "Kahve arası" },
+  { at: 6, label: "12:00–13:00 · Öğle arası · poster sunumları" },
+  { at: 12, label: "15:00–15:30 · Kahve arası" },
 ];
+const shift = (slot) => 48 * BANDS.filter((b) => b.at < slot).length;
+const yOf = (slot) => TOP + slot * ROW_H + shift(slot);
+const isBandSlot = (i) => BANDS.some((b) => b.at === i || (b.at === 6 && i === 7));
 
 S.text(pb, "th time", "SAAT", "label", "ink.500", { x: 120, y: 448 });
 HALLS.forEach((h, i) => S.text(pb, "th hall " + i, h, "label", "ink.500", { x: HX[i], y: 448 }));
 S.rule(pb, "th rule", 120, 472, 1200, "line.strong", 1);
 
-// zebra first, so the rules and session cells draw over it
+// hour lines on even slots that hold rows; time labels on every held slot
 for (let i = 0; i < NSLOT; i++) {
-  if (i % 2 === 1) S.rect(pb, "row zebra " + i, 120, TOP + i * ROW_H, 1200, ROW_H, "surface.alt");
-}
-[1, 2, 3].forEach((i) => {
-  // column rules skip the band rows (lunch, coffee): a centered band label
-  // must never meet a vertical line. Segments are content-derived from BANDS.
-  const blocked = new Set();
-  BANDS.forEach((b) => { for (let r = b.from; r <= b.to; r++) blocked.add(r); });
-  let s0 = 0;
-  const segs = [];
-  for (let r = 0; r <= NSLOT; r++) {
-    if (blocked.has(r) || r === NSLOT) {
-      if (r > s0) segs.push([s0, r]);
-      s0 = r + 1;
-    }
-  }
-  segs.forEach(([a, z], k) => S.vrule(pb, "col rule " + i + "-" + k, HX[i] - 20, TOP + a * ROW_H, (z - a) * ROW_H, "line.soft"));
-});
-
-for (let i = 0; i < NSLOT; i++) {
-  const ry = TOP + i * ROW_H;
-  S.text(pb, "row time " + i, tstr(i), "data", "ink.500", { x: 120, y: ry + 12 });
-  if (i < NSLOT - 1) S.rule(pb, "row rule " + i, 120, ry + ROW_H, 1200, "line.soft");
+  if (isBandSlot(i)) continue;
+  if (i % 2 === 0) S.rule(pb, "hour " + i, 120, yOf(i), 1200, "line.soft");
+  S.text(pb, "row time " + i, tstr(i), "data", "ink.500", { x: 120, y: yOf(i) + 12 });
 }
 
 BANDS.forEach((b, i) => {
-  const y0 = TOP + b.from * ROW_H, y1 = TOP + (b.to + 1) * ROW_H;
-  S.rect(pb, "band " + i, 240, y0 + 8, 1080, y1 - y0 - 16, "white");
-  // one line, parked inside the band's first row — never on a boundary
-  S.text(pb, "band text " + i, tstr(b.from) + "–" + tstr(b.to + 1) + " · " + b.label, "meta", "ink.500",
-    { x: 560, y: y0 + S.vcenter(ROW_H, 20), w: 600, align: "center" });
+  const y0 = TOP + b.at * ROW_H + shift(b.at);
+  S.rect(pb, "band " + i, 240, y0, 1080, 48, "white");
+  S.text(pb, "band text " + i, b.label, "meta", "ink.500",
+    { x: 560, y: y0 + S.vcenter(48, 20), w: 600, align: "center" });
 });
 
 SESS.forEach((s, i) => {
-  const ry = TOP + s[0] * ROW_H;
+  const ry = yOf(s[0]);
   const cx = HX[s[2]];
+  const spanH = s[1] * ROW_H;
   const range = tstr(s[0]) + "–" + tstr(s[0] + s[1]);
   const tl = S.estLines(s[3], HW - 24, 16, false);
-  const ml = S.estLines(range + " · " + s[4], HW - 24, 13, false);
-  // Opaque slot card: rules and zebra hide behind it, so a spanning session
-  // never paints over a row boundary. Texts live inside the card, and the
-  // row-level fit checks defer to it (container overflow still applies).
-  const cardH = 14 + tl * 24 + ml * 20 + 10;
-  const card = S.board(pb, "sess card " + i, cx, ry + 4, HW - 8, cardH, "white");
-  S.rect(card, "sess bar " + i, cx, ry + 10, 2, cardH - 16, s[5] ? "red.600" : "line.strong");
+  // Full-span card: height comes from the DURATION, position from the time
+  // math above. Text sits top-aligned inside its own time box; the accent
+  // bar matches the content (fitBars post-pass), not the span.
+  const card = S.board(pb, "sess card " + i, cx, ry + 4, HW - 8, spanH - 8, "white");
+  S.rect(card, "sess bar " + i, cx, ry + 10, 2, spanH - 20, s[5] ? "red.600" : "line.strong");
   S.text(card, "sess title " + i, s[3], "bodyMed", "ink.900", { x: cx + 14, y: ry + 10, w: HW - 24 });
   S.text(card, "sess meta " + i, range + " · " + s[4], "meta", s[5] ? "red.700" : "ink.500", { x: cx + 14, y: ry + 14 + tl * 24, w: HW - 24 });
 });
 
 /* ------------------------------------------------------------------ notlar */
-const notesY = TOP + NSLOT * ROW_H + 40;
+const notesY = yOf(NSLOT - 1) + ROW_H + 40;
 S.text(pb, "pn label", "PROGRAM NOTLARI", "label", "ink.500", { x: 120, y: notesY });
 const notes = [
   "Konsey oturumlarını iki başkan yönetir; konuşmacı listesi oturumdan 15 gün önce kesinleşir.",

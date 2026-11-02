@@ -133,7 +133,7 @@ python3 scripts/rhythm.py nodes.json [--rhythm 80]
 - The MCP text wraps the plugin return in a second `result` field; unwrap
   before decoding.
 - Tests, one form only: `python3 -m unittest scripts.test_penpot_scripts`
-  (70 cases, no network; the slash form without `.py` does not resolve).
+  (74 cases, no network; the slash form without `.py` does not resolve).
   A visual defect lint missed becomes a failing test, then a rule, then the
   fix — in that order. `python -m py_compile` for `scripts/*.py`,
   `node --check` for helpers/build JS — never cross-check (py_compile on a
