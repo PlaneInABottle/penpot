@@ -27,16 +27,7 @@ const out = [
   "Demir eksikliği ve anemi yönetimi",
   "Cihaz endikasyonunu zamanlamak",
 ];
-S.rows(pb, "o", 120, 444, 740, out.map((t, i) => {
-  const lines = S.estLines(t, 740, 16, false);
-  return {
-    h: S.snap(6 + lines * 26 + 4),
-    draw(yRow) {
-      S.rect(pb, "o dot " + i, 120, yRow + 6, 6, 6, "red.600");
-      S.text(pb, "o " + i, t, "body", "ink.700", { x: 140, y: yRow, w: 740 });
-    },
-  };
-}), { rule: false });
+S.bullets(pb, "o", 120, 444, 740, out, { pad: 5, rule: false });
 
 /* -------------------------------------------------------------------- müfredat */
 S.text(pb, "cur label", "MÜFREDAT", "label", "red.600", { x: 120, y: 668 });
@@ -84,15 +75,11 @@ S.text(side, "s next", "Sıradaki: 04 — Hiperkalemi yönetimi", "meta", "ink.6
 S.progress(side, "s prog", SC_X, sc, SC_W, 40); sc += 24;
 S.btn(side, "s cta", "Devam et", SC_X, sc, SC_W, 48, "primary"); sc += 68;
 S.text(side, "s inc label", "DAHİL", "label", "ink.500", { x: SC_X, y: sc }); sc += 24;
-incItems.forEach((t, i) => {
-  S.rect(side, "s inc dot " + i, SC_X, sc + 6, 6, 6, "red.600");
-  S.text(side, "s inc " + i, t, "meta", "ink.700", { x: SC_X + 16, y: sc, w: SC_W - 16 });
-  sc += 28;
-});
+sc = S.bullets(side, "s inc", SC_X, sc, SC_W, incItems, { role: "meta", pad: 4, textX: 16 });
 sc += 16;
 S.text(side, "s cert", "STE kredisi: 6 · Türk Tabipleri Birliği onaylı", "meta", "ink.500", { x: SC_X, y: sc, w: SC_W });
 const contentBottom = sc + certLines * 20 + 24;
-S.photo(side, "img-lab", SC_X, sc + certLines * 20 + 24, SC_W, 160, "Uygulamalı tedavi oturumu, Ankara");
+S.photo(side, "img-lab", SC_X, sc + certLines * 20 + 24, SC_W, 160, "12 derivasyonlu EKG · kurs materyali");
 side.resize(360, contentBottom + 160 + 12 + 20 + 24 - 412);
 const lowerY = Math.max(contentBottom + 160 + 12 + 20 + 24, mEnd + 48);
 

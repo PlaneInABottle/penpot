@@ -38,13 +38,15 @@ UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML,
 # name -> (query, slot on the page, page, board, x, y, w, h, caption)
 IMAGES = {
     "img-echo": ("https://images.pexels.com/photos/6129683/pexels-photo-6129683.jpeg", "Kurumsal", "01-ana-sayfa", "https://www.pexels.com/photo/6129683/ by RDNE Stock project"),
+    "img-hero": ("https://images.pexels.com/photos/39192342/pexels-photo-39192342.jpeg", "Kurumsal", "01-ana-sayfa", "https://www.pexels.com/photo/39192342/ by Vitaly Gariev"),
     "img-journal": ("https://images.pexels.com/photos/3860983/pexels-photo-3860983.jpeg", "Kurumsal", "01-ana-sayfa", "https://www.pexels.com/photo/3860983/ by Robert Munteanu"),
     "img-round": ("internal medicine ward round doctors", "İçerik", "15-haberler"),
     "img-cath": ("catheterization laboratory angiography", "Kongre", "06-kongre"),
     "img-hall": ("medical conference audience lecture hall", "Kongre", "06-kongre"),
     "img-desk": ("stethoscope electrocardiogram paper desk", "Akademi", "13-kilavuzlar"),
     "img-issue": ("https://images.pexels.com/photos/3860983/pexels-photo-3860983.jpeg", "Akademi", "14-dergi", "https://www.pexels.com/photo/3860983/ by Robert Munteanu"),
-    "img-lab": ("https://images.pexels.com/photos/7659573/pexels-photo-7659573.jpeg", "Akademi", "12-kurs-detay", "https://www.pexels.com/photo/7659573/ by Thirdman"),
+    "img-lab": ("https://images.pexels.com/photos/28585011/pexels-photo-28585011.jpeg", "Akademi", "12-kurs-detay", "https://www.pexels.com/photo/28585011/ by Marta Branco"),
+    "img-angio": ("https://images.pexels.com/photos/39459346/pexels-photo-39459346.jpeg", "Kurumsal", "05-grup-detay", "https://www.pexels.com/photo/39459346/ by Stéf -b."),
     "img-corridor": ("hospital corridor morning light", "Kongre", "10-konaklama"),
     "img-seminar": ("doctors small group seminar meeting", "Akademi", "11-akademi"),
     "img-team": ("two doctors reviewing images screen", "İçerik", "16-makale"),
@@ -119,29 +121,46 @@ def grade(data: bytes, w: int, h: int, quality: int = 58, limit: int = 88000) ->
         q -= 8
 
 
-MEASURE = """
+FIND_SLOT = """
+const findSlot = (root, name) => {
+  if (root.name === name) return root;
+  for (const c of (root.children || [])) {
+    const hit = findSlot(c, name);
+    if (hit) return hit;
+  }
+  return null;
+};
+"""
+
+MEASURE = FIND_SLOT + """
 const page = penpot.currentFile.pages.find(p => p.name === __PAGE__);
 if (!page) throw new Error("page not found: " + __PAGE__);
 const board = page.root.children.find(s => s.name === __BOARD__);
 if (!board) throw new Error("board not found: " + __BOARD__);
-const slot = board.children.find(s => s.name === __NAME__);
+const slot = findSlot(board, __NAME__);
 if (!slot) throw new Error("slot not found: " + __NAME__);
 return JSON.stringify({ w: slot.width, h: slot.height });
 """
 
-PLACE = """
+PLACE = FIND_SLOT + """
 const page = penpot.currentFile.pages.find(p => p.name === __PAGE__);
 if (!page) throw new Error("page not found: " + __PAGE__);
 if (penpot.currentPage.id !== page.id) throw new Error("page not active: " + __PAGE__);
 const board = page.root.children.find(s => s.name === __BOARD__);
 if (!board) throw new Error("board not found: " + __BOARD__);
-const existing = board.children.find(s => s.name === __NAME__);
+const collect = (root, name, out) => {
+  if (root.name === name) out.push(root.id);
+  (root.children || []).forEach(c => collect(c, name, out));
+  return out;
+};
+const existing = findSlot(board, __NAME__);
 if (!existing) throw new Error("slot not found: " + __NAME__);
+const host = existing.parent;
 const x = existing.x, y = existing.y, w = existing.width, h = existing.height;
 // ids, not object identity: the bridge may hand back a different wrapper for the same
 // shape, so `s !== shape` is true even for the shape just created. Collect the ids to
 // drop BEFORE placing, then remove by id afterwards.
-const doomed = (board.children || []).filter(s => s.name === __NAME__).map(s => s.id);
+const doomed = collect(board, __NAME__, []);
 const raw = atob(__B64__);
 const bytes = new Uint8Array(raw.length);
 for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
@@ -149,15 +168,21 @@ const media = await penpot.uploadMediaData(__NAME__, bytes, "image/jpeg");
 const shape = penpot.createRectangle();
 shape.name = __NAME__;
 shape.resize(w, h);
-board.appendChild(shape);
+host.appendChild(shape);
 shape.x = x;
 shape.y = y;
 shape.fills = [{ fillOpacity: 1, fillImage: media }];
 shape.borderRadius = 8;
 // remove by id (see above): everything that had this name before the place, i.e. the
 // placeholder slot and any older duplicate. The fresh photo has a new id and survives.
-(board.children || []).filter(s => doomed.indexOf(s.id) >= 0).forEach(s => s.remove());
-const left = (board.children || []).filter(s => s.name === __NAME__).length;
+const drop = (root) => {
+  (root.children || []).slice().forEach(c => {
+    if (doomed.indexOf(c.id) >= 0) c.remove(); else drop(c);
+  });
+};
+drop(board);
+const left = collect(board, __NAME__, []).length;
+if (left !== 1) throw new Error("expected exactly 1 placed shape, found " + left);
 return JSON.stringify({ w: shape.width, h: shape.height, x: shape.x, y: shape.y, left: left });
 """
 
@@ -220,13 +245,23 @@ def main(argv: list[str]) -> int:
                 .replace("__BOARD__", json.dumps(board))
                 .replace("__NAME__", json.dumps(name))
                 .replace("__B64__", json.dumps(base64.b64encode(data).decode())))
-        try:
-            res = payload(call_execute_code(url, code))
-            if not isinstance(res, dict) or res.get("left") != 1:
-                fail(f"photo verify failed on {name}: {res} (expected exactly 1 shape)")
-        except McpError as exc:
-            print(f"{name}: ERROR {exc}", file=sys.stderr)
-            return 1
+        # A shared plugin has one active page, and another session can switch
+        # it between our open and our write ("Cannot modify a page that is not
+        # currently active"). That is a lost race, not a bad photo: re-open and
+        # place once more before calling it an error.
+        for attempt in (1, 2):
+            try:
+                res = payload(call_execute_code(url, code))
+                if not isinstance(res, dict) or res.get("left") != 1:
+                    fail(f"photo verify failed on {name}: {res} (expected exactly 1 shape)")
+                break
+            except McpError as exc:
+                if attempt == 1 and ("not currently active" in str(exc) or "page not active" in str(exc)):
+                    call_execute_code(url, f'const p=penpot.currentFile.pages.find(x=>x.name==={json.dumps(page)}); penpot.openPage(p); return "ok";')
+                    time.sleep(1.5)
+                    continue
+                print(f"{name}: ERROR {exc}", file=sys.stderr)
+                return 1
         provenance[f"{name}@{board}"] = {"board": board, "page": page, "source": src, "credit": credit}
         provenance[name] = provenance[f"{name}@{board}"]
         prov_path.write_text(json.dumps(provenance, indent=2, ensure_ascii=False) + "\n")

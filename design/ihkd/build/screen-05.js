@@ -23,17 +23,11 @@ S.text(pb, "g lede",
 
 /* ------------------------------------------------------------ üyelik koşulları */
 S.text(pb, "join label", "ÜYELİK KOŞULLARI", "label", "red.700", { x: 120, y: 500 });
-S.rows(pb, "join", 120, 540, 700, [
+S.bullets(pb, "join", 120, 540, 700, [
   "Dernek üyesi olmak (aidat güncel)",
   "Kardiyoloji veya iç hastalıkları uzmanlığı",
   "Yılda en az bir toplantıya katılım",
-].map((c, i) => ({
-  h: 40,
-  draw(yRow) {
-    S.rect(pb, "join dot " + i, 120, yRow + 6, 6, 6, "red.600");
-    S.text(pb, "join text " + i, c, "body", "ink.700", { x: 144, y: yRow, w: 700 });
-  },
-})), { rule: "line.soft" });
+], { pad: 6, textX: 24, rule: "line.soft" });
 
 /* ------------------------------------------------------------------ künye */
 const facts = S.board(pb, "facts", 940, 348, 380, 320, "surface.alt");
@@ -101,7 +95,7 @@ y = S.rows(pb, "pub", 120, y, 1200, pubs.map((p, i) => ({
   },
 })), { rule: "line.soft" });
 
-S.photo(pb, "img-cath", 120, y + 48, 1200, 300, "Kateter laboratuvarı, Ankara");
+S.photo(pb, "img-angio", 120, y + 48, 1200, 300, "Kateter laboratuvarı, Ankara");
 const fy05 = S.snap(y + 48 + 300 + 48);
 S.footer(pb, fy05);
 pb.resize(1440, fy05 + 320);

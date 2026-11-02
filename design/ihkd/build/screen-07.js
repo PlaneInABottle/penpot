@@ -83,12 +83,19 @@ const tstr = (s) => {
 // İçerik ölçümü: başlık satırları + aralık + meta satırları. Süre etiketi
 // metanın parçasıdır ('09:00–10:00 · 60 dk · Konuşmacı').
 const metaOf = (s) => tstr(s[0]) + "–" + tstr(s[0] + s[1]) + " · " + (s[1] * 30) + " dk · " + s[4];
-const contentH = (s) => S.estLines(s[3], HW - 24, 16, false) * 24 + 10
-  + S.estLines(metaOf(s), HW - 24, 13, false) * 20;
+/* A card is its content and nothing else: symmetric 14px pad, title over meta
+   at one fixed 10px joint. Equalising the ROW never stretches a card — the
+   tallest card of the row sets the pitch, a short one stays short, so no card
+   carries 50px of white under its meta and the bottom pad never shrinks to
+   6px (2026-11-02: "Böbrek ve kalp", "Eko", "Aritmi"). */
+const CARD_PAD = 14, CARD_JOINT = 10, TLH = 24, MLH = 20;
+const up4 = (v) => Math.ceil(v / 4) * 4;
+const cardH = (s) => up4(CARD_PAD + S.estLines(s[3], HW - 24, 16, false) * TLH + CARD_JOINT
+  + S.estLines(metaOf(s), HW - 24, 13, false) * MLH + CARD_PAD);
 const bySlot = {};
 SESS.forEach((s, i) => { (bySlot[s[0]] = bySlot[s[0]] || []).push(i); });
 const ROWS = [0, 1, 2, 4, 5, 8, 9, 10, 11, 13, 14, 15];
-const rowH = (slot) => S.snap(Math.max(...bySlot[slot].map((i) => contentH(SESS[i]))) + 22);
+const rowH = (slot) => up4(Math.max(...bySlot[slot].map((i) => cardH(SESS[i]))) + 8);
 // Agenda model: one row per START slot — no empty rows, no time math. Row
 // height = tallest content in that row + padding (space-between: title top,
 // meta bottom-anchored, so bottoms align with < 1 line of slack). A 30-min
@@ -106,19 +113,19 @@ S.text(pb, "th time", "SAAT", "label", "ink.500", { x: 120, y: 448 });
 HALLS.forEach((h, i) => S.text(pb, "th hall " + i, h, "label", "ink.500", { x: HX[i], y: 448 }));
 S.rule(pb, "th rule", 120, 472, 1200, "line.strong", 1);
 
-const drawRow = (slot, yRow, hRow) => {
-  const cardH = hRow - 8;
+const drawRow = (slot, yRow) => {
   S.text(pb, "row time " + slot, tstr(slot), "data", "ink.500", { x: 120, y: yRow + 4 });
   bySlot[slot].forEach((i) => {
     const s = SESS[i];
     const cx = HX[s[2]];
+    const ch = cardH(s);
+    const top = yRow + 4;
     const tl = S.estLines(s[3], HW - 24, 16, false);
-    const ml = S.estLines(metaOf(s), HW - 24, 13, false);
-    const card = S.board(pb, "sess card " + i, cx, yRow + 4, HW - 8, cardH, "white");
-    S.rect(card, "sess bar " + i, cx, yRow + 14, 2, cardH - 20, s[5] ? "red.600" : "line.strong");
-    S.text(card, "sess title " + i, s[3], "bodyMed", "ink.900", { x: cx + 14, y: yRow + 14, w: HW - 24 });
+    const card = S.board(pb, "sess card " + i, cx, top, HW - 8, ch, "white");
+    S.rect(card, "sess bar " + i, cx, top + CARD_PAD, 2, ch - 2 * CARD_PAD, s[5] ? "red.600" : "line.strong");
+    S.text(card, "sess title " + i, s[3], "bodyMed", "ink.900", { x: cx + 14, y: top + CARD_PAD, w: HW - 24 });
     S.text(card, "sess meta " + i, metaOf(s), "meta", s[5] ? "red.700" : "ink.500",
-      { x: cx + 14, y: yRow + 4 + cardH - 12 - ml * 20, w: HW - 24 });
+      { x: cx + 14, y: top + CARD_PAD + tl * TLH + CARD_JOINT, w: HW - 24 });
   });
 };
 
@@ -132,15 +139,15 @@ const band = (label, yBand) => {
 let ry = TOP;
 const GROUPS = [[0, 1, 2, 4, 5], [8, 9, 10, 11], [13, 14, 15]];
 ry = S.rows(pb, "ag0", 120, ry, 1200, GROUPS[0].map((slot) => ({
-  h: rowH(slot), draw(yRow) { drawRow(slot, yRow, rowH(slot)); },
+  h: rowH(slot), draw(yRow) { drawRow(slot, yRow); },
 })), {});
 ry = band(BANDS[0].label, ry);
 ry = S.rows(pb, "ag1", 120, ry, 1200, GROUPS[1].map((slot) => ({
-  h: rowH(slot), draw(yRow) { drawRow(slot, yRow, rowH(slot)); },
+  h: rowH(slot), draw(yRow) { drawRow(slot, yRow); },
 })), {});
 ry = band(BANDS[1].label, ry);
 ry = S.rows(pb, "ag2", 120, ry, 1200, GROUPS[2].map((slot) => ({
-  h: rowH(slot), draw(yRow) { drawRow(slot, yRow, rowH(slot)); },
+  h: rowH(slot), draw(yRow) { drawRow(slot, yRow); },
 })), { trailing: true });
 /* ------------------------------------------------------------------ notlar */
 const notesY = ry + 40;

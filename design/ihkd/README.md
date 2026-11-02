@@ -101,53 +101,59 @@ above are superseded.
 
 | board | PNG bytes (current `design/ihkd/shots/`) |
 |---|---|
-| 01-ana-sayfa | 716250 |
+| 01-ana-sayfa | 681682 |
 | 02-dernek | 258613 |
 | 03-yonetim | 232268 |
 | 04-calisma-gruplari | 238005 |
-| 05-grup-detay | 519520 |
+| 05-grup-detay | 583029 |
 | 06-kongre | 991272 |
-| 07-program | 283783 |
+| 07-program | 292390 |
 | 08-bildiri | 272425 |
 | 09-kayit | 171843 |
 | 10-konaklama | 716034 |
-| 11-akademi | 422030 |
-| 12-kurs-detay | 251516 |
+| 11-akademi | 211899 |
+| 12-kurs-detay | 255395 |
 | 13-kilavuzlar | 384960 |
 | 14-dergi | 331920 |
-| 15-haberler | 424807 |
+| 15-haberler | 177450 |
 | 16-makale | 578358 |
 | 17-takvim | 143214 |
 | 18-uyelik | 203774 |
-| 19-giris | 150212 |
+| 19-giris | 69866 |
 | 20-panel | 142864 |
 
 ## Photo provenance (`design/ihkd/media/provenance.json` — every placed photo covered)
 
 | image | board | source |
 |---|---|---|
-| img-echo | 01-ana-sayfa | https://www.pexels.com/photo/6129683/ by RDNE Stock project |
+| img-hero | 01-ana-sayfa | https://www.pexels.com/photo/39192342/ by Vitaly Gariev |
 | img-journal | 01-ana-sayfa | https://www.pexels.com/photo/3860983/ by Robert Munteanu |
-| img-cath | 05-grup-detay · 06-kongre (same source) | https://www.pexels.com/photo/28583897/ by محمد عزام الشيخ يوسف |
+| img-angio | 05-grup-detay | https://www.pexels.com/photo/39459346/ by Stéf -b. |
+| img-cath | 06-kongre | https://www.pexels.com/photo/28583897/ by محمد عزام الشيخ يوسف |
 | img-hall | 06-kongre | https://www.pexels.com/photo/9275222/ by Atlantic Ambience |
 | img-corridor | 10-konaklama | https://www.pexels.com/photo/37770089/ by Svet Svet |
 | img-venue | 10-konaklama | https://www.pexels.com/photo/35877127/ by Mark Stebnicki |
 | img-seminar | 11-akademi | https://www.pexels.com/photo/1170979/ by EVG Kowalievska |
-| img-lab | 12-kurs-detay | https://www.pexels.com/photo/7659573/ by Thirdman |
+| img-lab | 12-kurs-detay | https://www.pexels.com/photo/28585011/ by Marta Branco |
 | img-desk | 13-kilavuzlar | https://www.pexels.com/photo/35044388/ by Marta Branco |
 | img-issue | 14-dergi | https://www.pexels.com/photo/3860983/ by Robert Munteanu |
 | img-round | 15-haberler | https://www.pexels.com/photo/6129043/ by RDNE Stock project |
 | img-team | 16-makale | https://www.pexels.com/photo/20370745/ by Michael Obiero |
 | img-auth | 19-giris | https://www.pexels.com/photo/8460227/ by Los Muertos Crew |
 
-Live check: 14 placed `img-*` shapes (12 boards; 01 places two, 06 places two,
-10 places two) — each name has a base and a `@board` provenance entry. No gaps.
+Live check: 14 placed `img-*` shapes on 11 boards (01, 06 and 10 place two) — each
+name has a base and a `@board` provenance entry. No gaps. 2026-11-02: `img-hero`,
+`img-angio` and `img-lab` were replaced for heart-specific subjects (brief §6);
+`img-echo` and `img-cath@05` are gone with their slots.
 
 ## Flows (live-verified this milestone: full rebuild, then 8 re-links, 0 errors)
 
-- `keşif` + `kayıt` (Kurumsal, both start 01-ana-sayfa): `hero cta`
-  (“Kongreye kayıt ol”) → 04-calisma-gruplari; `hero cta 2` (“Derneği tanı”) →
-  02-dernek; `board all` (“Tüm kurullar”) → 03-yonetim.
+- `keşif` + `kayıt` (Kurumsal, both start 01-ana-sayfa): `hero ghost`
+  (“Derneği tanı”) → 02-dernek; `board all` (“Tüm kurullar”) → 03-yonetim.
+  The hero button “Üye ol” is the membership journey (cross-page, unwired by
+  design — the API stores a hollow destination proxy for it). 2026-11-02:
+  verified live, 7 links, 0 errors, 1 interaction on each of 01, 02, 09, 11,
+  15, 19, 20.
 - `kayıt` (Kongre, start 09-kayit): `k cta` (“Kaydı tamamla”) → 10-konaklama.
 - `kurs` (Akademi, start 11-akademi): `f cta` (“Devam et”) → 12-kurs-detay.
 - `oku` (İçerik, start 15-haberler): `f cta` (“Haberi oku”) → 16-makale.

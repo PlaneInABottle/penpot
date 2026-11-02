@@ -501,6 +501,32 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
                         add("high", f"text {t['name']} crosses rule {r['name']} (ink {ix:.0f}-{ir:.0f}px over line x={rx:.0f})")
                         break
 
+        # 3b. column band: a row rule's LENGTH is the band its texts must stay
+        # inside. The container checks above need a box; a row separated only
+        # by a hairline has none, so a title that outgrows the row paints past
+        # the column edge into the gutter or an arrow and every box-based rule
+        # reads clean (İHKD 01: journal meta ended 12px past its 300px band,
+        # the group rows sat 21px from their box edge with no band at all).
+        # A link underline ("<name> under") marks a text span, not a column.
+        bands = [n for n in long_rules
+                 if (n["h"] or 0) <= 2 and not n["name"].endswith(" under")]
+        for t in inked:
+            if t["id"] in entered:
+                continue
+            ix, iy, ir, ib = ink_box(t)
+            for r in bands:
+                if r.get("parentId") != t.get("parentId"):
+                    continue
+                if not (-tol <= ix - r["x"] <= 60):
+                    continue
+                if not (0 < r["y"] - ib <= 140):
+                    continue
+                over = ir - (r["x"] + r["w"])
+                if over > tol:
+                    add("high", f"text {t['name']} runs {over:.0f}px past its "
+                                f"{r['w']:.0f}px column band ({r['name']})")
+                    break
+
         # 4. bar vs content: a thin saturated vertical bar is an accent that
         # belongs to the text column beside it, so its height must match the
         # column's ink span within fit_bar_delta. Same-parent pairing only —
@@ -588,9 +614,57 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
                      for t in desc]
             trailing = (c["y"] + c["h"]) - max(bottoms)
             if trailing > dead_med and trailing > 1.5 * max(lines or [0]):
+                # row-equalized cards are exempt from the medium: bottoms
+                # align with a sibling card and content is top-anchored, so
+                # the void is the grid's — but past dead_high the row needs
+                # regrouping, exemption or not
+                sibs = [s for s in surfaces
+                        if s["id"] != c["id"] and s.get("parentId") == c.get("parentId")
+                        and abs((s["y"] + s["h"]) - (c["y"] + c["h"])) <= 4]
+                top_anchored = min(ink_box(t)[1] for t in desc) - c["y"] <= 24
+                if sibs and top_anchored and trailing <= dead_high:
+                    continue
                 level = "high" if trailing > dead_high else "medium"
                 add(level, f"dead space in {c['name']}: {trailing:.0f}px below the last ink "
                            f"(content ends, card continues)")
+
+        # 8. intra-card gap: two texts stacked in one column of one card must
+        # read as one block. A title pushed up and a meta pushed down — a gap
+        # over 1.5x the line height — is MEDIUM. A photo or rule between them
+        # breaks the chain: the gap belongs to the divider, not the texts.
+        cardlike = [n for n in inside
+                    if n["type"] in ("rectangle", "board") and n["id"] != board["id"]
+                    and (n["w"] or 0) >= 24 and (n["h"] or 0) >= 24
+                    and (n.get("fill") or n.get("img"))]
+        for c in cardlike:
+            kids = sorted([t for t in inked if t.get("parentId") == c["id"]],
+                          key=lambda t: ink_box(t)[1])
+            for a, b in zip(kids, kids[1:]):
+                ax0, ay0, ax1, ay1 = ink_box(a)
+                bx0, by0, bx1, by1 = ink_box(b)
+                if by0 < ay1 - tol:
+                    continue
+                run = min(ax1, bx1) - max(ax0, bx0)
+                if run <= 0.5 * min(ax1 - ax0, bx1 - bx0):
+                    continue
+                gap = by0 - ay1
+                mid = (ay1 + by0) / 2
+                divs = [n for n in inside
+                        if n["id"] not in (a["id"], b["id"], c["id"])
+                        and n["type"] in ("rectangle", "board") and (n.get("fill") or n.get("img"))
+                        and (n["h"] or 0) > 8 and n["y"] <= mid <= n["y"] + (n["h"] or 0)
+                        and min(ax1, bx1, n["x"] + (n["w"] or 0)) - max(ax0, bx0, n["x"]) > 8]
+                if divs:
+                    continue
+                line = max(a["fontSize"] * (line_height_multiplier(a.get("lineHeight")) or 1.5),
+                           b["fontSize"] * (line_height_multiplier(b.get("lineHeight")) or 1.5))
+                trail = (c["y"] + (c["h"] or 0)) - by1
+                if b == kids[-1] and gap > 10 * line and trail < 64:
+                    continue  # docked footer: an absurd gap above a bottom-pinned
+                    # last line is a pinned footer, not drifting copy
+                if gap > 1.5 * line:
+                    add("medium", f"intra-card gap in {c['name']}: {a['name']} / {b['name']} "
+                                   f"({gap:.0f}px between stacked texts)")
 
         # 7. empty corridor: a horizontal strip with no content spanning most
         # of the board reads as a missing row, not air — but only inside a

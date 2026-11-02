@@ -297,6 +297,37 @@ checks; build it right the first time instead.
   affected board: anything much past one rhythm step is a finding. The rhythm
   `TOP-VOID` line guards exactly this joint.
 
+## Defects the eye caught first (2026-11-02, İHKD)
+
+Five user-reported defects that every gate had passed; each became a rule above the fix.
+
+- **A photo's subject must name the product's field.** Cardiology is a heart-specific
+  frame (auscultation, echo/cath lab, 12-lead trace, heart model), not a plausible
+  clinical scene: a doctor at a wall monitor read as stock filling. The accepted frame's
+  pinned URL lives in the media table, so a rebuild reimports it, and the caption never
+  has to hide the mismatch.
+- **The column band, not the box, is the fit container.** A row divided only by a hairline
+  has no box, so a title can leave its column with every container check green. lint's
+  `column band` rule measures ink against the rule's own length (it found +12px and +25px
+  on 01); the build derives the title box from the band (band − inset − arrow gutter) and
+  the row height from the measured line count.
+- **One `bullets()` helper, dots on the cap centre.** A hand-placed dot at `row + 6` sits
+  2-4px high on every list, because the ink is centred in its line box: dot centre is
+  `lineBox / 2`, and the dot opts out of the 4px snap (`raw`). The separator belongs to
+  the block's bottom edge, which is what makes the air above and below it match.
+- **Cards are their content; equalising a row never stretches a card.** Content-sized card,
+  symmetric pad, row pitch = tallest + 8, and a post-fit `fitCards` pass that re-settles
+  the box on measured ink — a conservative estimate had left 20-50px of white under one
+  meta. Leftover air then falls outside the card, where it is the schedule's rhythm.
+- **Two neutral layers per screen.** `paper` is the ground, `white` the card surface, and
+  `surface.alt` only an inset/side panel (künye, progress, plan). A card built in
+  `surface.alt` while its sibling screens use `white` is an inconsistency to fix, not a
+  variation to explain.
+- **A shared plugin has one active page.** When another session switches pages mid-build,
+  the rebuilt texts are never measured (every `textBounds` null, fit never quiet) — reopen
+  via a page toggle (open another page, come back) to force layout, then fit; derive card
+  and bar heights from ink in a post-pass instead of trusting the pre-commit estimate.
+
 ## Verification protocol
 
 - **Lint before eyes.** A new or rebuilt component/screen is not opened

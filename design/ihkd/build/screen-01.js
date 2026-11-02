@@ -9,47 +9,36 @@
  * Vertical rhythm: 96 between blocks, 128 from a section rule to its first row.
  */
 const S = IK;
-const pb = S.start("Kurumsal", "01-ana-sayfa", 3896);
+const pb = S.start("Kurumsal", "01-ana-sayfa", 3952);
 
 /* --------------------------------------------------------- masthead + nav */
-S.masthead(pb, null);
+/* Home converts once, in the hero: the masthead carries a quiet ghost action. */
+S.masthead(pb, null, { cta: "ghost" });
 
 /* ------------------------------------------------------------------ hero */
-/* Grid-derived: left column w 520, right column x = X+640 w = (CW-80)/2, both inside X..X+CW. */
+/* Candidate A (chosen): proof strip docked to the hero. Left message column
+   (top-anchored), right full-height photo, dark proof strip as the base.
+   Single red action on the board: hero "Üye ol". */
 const GX = S.X, GW = S.CW;
 S.text(pb, "hero label", "1998'DEN BERİ · ANKARA", "label", "ink.500", { x: GX, y: 156 });
-S.text(pb, "hero title", "Hastanın hekimi.", "display", "ink.900", { x: GX, y: 188, w: 760 });
+S.text(pb, "hero title", "Hastanın hekimi.", "display", "ink.900", { x: GX, y: 188, w: 560 });
 S.text(pb, "hero lede",
   "1998'den beri iç hastalıkları hekimlerinin camiası: kılavuz, kongre, akademi tek adreste.",
-  "lead", "ink.600", { x: GX, y: 292, w: 520 });
-S.btn(pb, "hero cta", "Kongreye kayıt ol", GX, 390, 236, 52, "primary");
-S.link(pb, "hero cta 2", "Derneği tanı", 388, 404, "ink.900");
-S.photo(pb, "img-echo", GX + 640, 156, (GW - 80) / 2, 384);
+  "lead", "ink.600", { x: GX, y: 368, w: 520 });
+S.btn(pb, "hero cta", "Üye ol", GX, 470, 236, 52, "primary");
+S.link(pb, "hero ghost", "Derneği tanı", 380, 482, "ink.900");
+S.photo(pb, "img-hero", GX + 620, 156, 580, 560, null);
 
-/* ------------------------------------------- hero congress note: white card, not a band */
-const heroBand = S.board(pb, "hero band", GX, 564, GW, 80, "white");
-S.stroke(heroBand, "line.strong", 1);
-S.ecg(heroBand, "hero band ecg", 144, 580, 400, 40, "red.600");
-S.text(heroBand, "hero band label", "12. ULUSAL KONGRE", "label", "ink.500", { x: 580, y: 584 });
-S.text(heroBand, "hero band date", "22–25 Nisan 2027 · Antalya Kongre Merkezi", "body", "ink.900", { x: 580, y: 604, w: 420 });
-S.link(heroBand, "hero band cta", "Kayıt ol →", 1200, 600, "red.700");
-
-/* ------------------------------------------------------------------ stats */
-S.rule(pb, "stats top", GX, 664, GW, "ink.900", 1);
-const stats = [
-  ["6.847", "üye"],
-  ["41", "il"],
-  ["12", "çalışma grubu"],
-  ["10", "kılavuz"],
-];
-stats.forEach((s, i) => {
-  S.stat(pb, "stat " + i, s[0], s[1], GX + i * (GW / 4) + (i ? 24 : 0), 696, 240);
-  if (i) S.vrule(pb, "stat div " + i, GX + i * (GW / 4), 696, 76, "line.soft");
+/* proof strip: the numbers are part of the hero, not a section below it */
+const proof = S.board(pb, "hero proof", 0, 780, 1440, 104, "ink.900");
+const proofStats = [["6.847", "üye"], ["41", "il"], ["12", "çalışma grubu"], ["10", "kılavuz"]];
+proofStats.forEach((s, i) => {
+  S.text(proof, "proof v " + i, s[0], "dataLg", "white", { x: 120 + i * 300, y: 806, w: 260 });
+  S.text(proof, "proof l " + i, s[1], "meta", "white", { x: 120 + i * 300, y: 842, w: 260 });
 });
-S.rule(pb, "stats bottom", GX, 804, GW, "ink.900", 1);
 
 /* ---------------------------------------------------------------- gündem */
-let y = S.head(pb, 120, 876, "GÜNDEM", "Bu hafta", { link: "Tüm haberler →", next: 124 });
+let y = S.head(pb, 120, 932, "GÜNDEM", "Bu hafta", { link: "Tüm haberler →", next: 124 });
 const news = [
   ["12 Mart 2027", "Kongre", "Program yayınlandı: 96 oturum, dört salon", "6 dk"],
   ["4 Mart 2027", "Akademi", "Kalp yetersizliği kursu için kayıtlar açıldı", "2 dk"],
@@ -66,13 +55,13 @@ news.forEach((n, i) => {
 S.text(pb, "news note", "Duyurular Pazartesi 09:00'da yayımlanır.", "meta", "ink.500", { x: 120, y: y + 16 });
 
 /* --------------------------------------------------------------- kongre */
-const bandY = 1404;
+const bandY = 1460;
 const band = S.board(pb, "kongre band", 0, bandY, 1440, 380, "red.600");
 S.text(band, "band label", "12. ULUSAL KONGRE", "label", "on.red", { x: 120, y: bandY + 56 });
 S.text(band, "band title", "22–25 Nisan 2027", "h2", "on.red", { x: 120, y: bandY + 96, w: 720 });
 S.text(band, "band venue", "Antalya Kongre Merkezi, Belek · 96 oturum · 214 konuşmacı", "body", "on.red", { x: 120, y: bandY + 176, w: 560, opacity: 0.9 });
 S.btn(band, "band cta", "Kayıt ol", 120, bandY + 268, 168, 52, "onred");
-S.link(band, "band cta 2", "Programı gör", 312, bandY + 284, "on.red");
+S.link(band, "band cta 2", "Programı gör", 312, bandY + 218, "on.red");
 
 const counter = S.board(band, "countdown block", 880, bandY + 56, 440, 192, "red.700");
 S.text(counter, "cd label", "KONGREYE KALAN", "label", "on.red", { x: 912, y: bandY + 88, opacity: 0.55 });
@@ -81,7 +70,7 @@ S.text(counter, "cd unit", "GÜN", "label", "on.red", { x: 912, y: bandY + 164 }
 S.text(counter, "cd note", "Erken kayıt 31 Ocak 2027'de kapanıyor.", "meta", "on.red", { x: 912, y: bandY + 198, w: 376, opacity: 0.65 });
 
 /* --------------------------------------------------- çalışma grupları */
-y = S.head(pb, 120, 1880, "ÇALIŞMA GRUPLARI", "On iki grup, on iki soru.", { next: 128 });
+y = S.head(pb, 120, 1936, "ÇALIŞMA GRUPLARI", "On iki grup, on iki soru.", { next: 128 });
 const groups = [
   ["01", "Kardiyovasküler görüntüleme", "412 üye · Doç. Dr. Elif Karaca"],
   ["02", "Kalp yetersizliği", "508 üye · Prof. Dr. Murat Şen"],
@@ -90,19 +79,39 @@ const groups = [
   ["05", "Hipertansiyon", "341 üye · Prof. Dr. Sema Yıldız"],
   ["06", "Geriatrik kardiyoloji", "198 üye · Doç. Dr. Deniz Arslan"],
 ];
-groups.forEach((g, i) => {
-  const gx = 120 + (i % 2) * 620;
-  const gy = y + Math.floor(i / 2) * 96;
-  S.text(pb, "group idx " + i, g[0], "data", "ink.500", { x: gx, y: gy + 34 });
-  S.text(pb, "group name " + i, g[1], "h3", "ink.900", { x: gx + 48, y: gy + 20, w: 400 });
-  S.text(pb, "group meta " + i, g[2], "meta", "ink.500", { x: gx + 48, y: gy + 60, w: 400 });
-  S.text(pb, "group arrow " + i, "→", "nav", "ink.500", { x: gx + 540, y: gy + 28 });
-  S.rule(pb, "group rule " + i, gx, gy + 88, 560, "line.soft");
+/* Two columns, one band per visual row: the title box is derived from the
+   column band (band − inset − arrow gutter), never a literal 400 that leaves
+   21px of slack; the row height comes from the measured title lines, so a
+   longer name wraps inside its column and the rule rides down instead of
+   cutting the text (2026-11-02: title box ended 21px from its own edge). */
+const GBAND = 560, GCOL = 620, GINSET = 48, GARROW = 40, TLH = 36, MLH = 20;
+const GTITLE = GBAND - GINSET - GARROW;
+const gPitch = [];
+for (let r = 0; r < groups.length / 2; r += 1) {
+  const pair = [groups[r * 2], groups[r * 2 + 1]];
+  const lines = Math.max(...pair.map((g) => S.estLines(g[1], GTITLE, 30, false)));
+  if (lines > 2) throw new Error("group name needs " + lines + " lines in a " + GTITLE + "px column");
+  gPitch.push(18 + lines * TLH + 6 + MLH + 16);
+}
+const groupColumn = (c) => gPitch.map((h, r) => {
+  const i = r * 2 + c, g = groups[i], gx = 120 + c * GCOL;
+  return {
+    h,
+    draw(yRow) {
+      S.text(pb, "group idx " + i, g[0], "data", "ink.500", { x: gx, y: yRow + 34 });
+      S.text(pb, "group name " + i, g[1], "h3", "ink.900", { x: gx + GINSET, y: yRow + 18, w: GTITLE });
+      S.text(pb, "group meta " + i, g[2], "meta", "ink.500", { x: gx + GINSET, y: yRow + 18 + S.estLines(g[1], GTITLE, 30, false) * TLH + 6, w: GTITLE });
+      S.text(pb, "group arrow " + i, "→", "nav", "ink.500", { x: gx + GBAND - GARROW + 8, y: yRow + 26 });
+    },
+  };
 });
-S.text(pb, "groups all", "12 çalışma grubunun tümü →", "nav", "red.600", { x: 120, y: y + 312 });
+const gTop = y;
+S.rows(pb, "group a", 120, gTop, GBAND, groupColumn(0), { rule: "line.soft" });
+y = S.rows(pb, "group b", 120 + GCOL, gTop, GBAND, groupColumn(1), { rule: "line.soft" });
+S.text(pb, "groups all", "12 çalışma grubunun tümü →", "nav", "red.600", { x: 120, y: y + 24 });
 
 /* -------------------------------------------------------------- akademi */
-y = S.head(pb, 120, 2444, "AKADEMİ", "Kurs, kılavuz, STE", { next: 120 });
+y = S.head(pb, 120, 2500, "AKADEMİ", "Kurs, kılavuz, STE", { next: 120 });
 const courses = [
   ["Kalp yetersizliğinde güncel tedavi", "8 modül · 6 STE · 4s 20dk"],
   ["Ekokardiyografi: temelden ileriye", "12 modül · 9 STE · 7s 05dk"],
@@ -118,19 +127,23 @@ courses.forEach((c, i) => {
 S.text(pb, "akademi note", "Kurslar üyeler için ücretsiz; STE kredisi kurs bitiminde yüklenir.", "meta", "ink.500", { x: 120, y: y + 16 });
 
 /* ---------------------------------------------------------------- yayın */
-y = S.head(pb, 120, 2986, "YAYIN", "Dergi ve kılavuz", { next: 128 });
+y = S.head(pb, 120, 3042, "YAYIN", "Dergi ve kılavuz", { next: 128 });
 S.photo(pb, "img-journal", 120, y, 300, 380, "Kardiyovasküler Klinik, cilt 12");
 S.text(pb, "journal title", "Kardiyovasküler Klinik", "h3", "ink.900", { x: 460, y: y });
-S.text(pb, "journal meta", "Cilt 12 · Sayı 1 · Mart 2027 · TR Dizin", "data", "ink.500", { x: 460, y: y + 40, w: 320 });
+/* Journal column band derived from the grid: x 460 to the divider at 800,
+   8px gutter. The meta and the toc rules share it — a 320px box under a
+   300px rule ran 12px past the band. */
+const JX = 460, JRULE = 800 - 8 - JX;
+S.text(pb, "journal meta", "Cilt 12 · Sayı 1 · Mart 2027 · TR Dizin", "data", "ink.500", { x: JX, y: y + 40, w: JRULE });
 const toc = [
   ["12", "STE olmayan hastada BKA: 2027 uzlaşısı"],
   ["28", "KKY'de SGLT2 inhibitörleri: gerçek yaşam verisi"],
   ["41", "Genç sporcularda EKG taramasının maliyeti"],
 ];
 toc.forEach((t, i) => {
-  S.text(pb, "toc page " + i, "s. " + t[0], "data", "ink.500", { x: 460, y: y + 92 + i * 78 });
-  S.text(pb, "toc title " + i, t[1], "body", "ink.700", { x: 508, y: y + 92 + i * 78 - 3, w: 280 });
-  S.rule(pb, "toc rule " + i, 460, y + 166 + i * 78, 300, "line.soft");
+  S.text(pb, "toc page " + i, "s. " + t[0], "data", "ink.500", { x: JX, y: y + 92 + i * 78 });
+  S.text(pb, "toc title " + i, t[1], "body", "ink.700", { x: JX + 48, y: y + 92 + i * 78 - 3, w: JRULE - 48 });
+  S.rule(pb, "toc rule " + i, JX, y + 166 + i * 78, JRULE, "line.soft");
 });
 S.link(pb, "journal cta", "Sayıyı oku", 460, y + 340, "red.600");
 
@@ -142,6 +155,6 @@ S.text(pb, "guide body", "Ev ölçümü, ofis dışı tansiyon ve tedavi eşikle
 S.link(pb, "guide cta", "Kılavuzu indir", 840, y + 296, "ink.900");
 
 /* --------------------------------------------------------------- footer */
-S.footer(pb, 3576);
+S.footer(pb, 3632);
 
 return JSON.stringify(S.end("01-ana-sayfa"));

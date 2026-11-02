@@ -466,6 +466,40 @@ class FitBoundaryTest(unittest.TestCase):
         self.assertEqual(_fit_findings([_page_board(), rule, _ink_text(inkY=660, inkH=20)]), [])
 
 
+class FitColumnBandTest(unittest.TestCase):
+    """A row rule's length is the column band its texts must stay inside."""
+
+    def _band(self, w=560, name="group rule 0"):
+        return _node(id="rule", name=name, type="rectangle", parentId="pg",
+                     parent="pg", x=120, y=700, w=w, h=1, fill="#E8EBED")
+
+    def _band_findings(self, nodes):
+        return [f for f in design_lint.lint(nodes, dict(design_lint.DEFAULTS))
+                if "column band" in f["finding"]]
+
+    def test_flags_title_running_past_the_column_band(self):
+        findings = self._band_findings([_page_board(), self._band(),
+                                        _ink_text(x=140, y=640, inkW=640)])  # ink 140-780
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0]["severity"], "high")
+        self.assertIn("100px past its 560px column band", findings[0]["finding"])
+
+    def test_title_inside_the_band_stays_clean(self):
+        self.assertEqual(self._band_findings([_page_board(), self._band(),
+                                              _ink_text(x=140, y=640, inkW=500)]), [])
+
+    def test_link_underline_is_not_a_column_band(self):
+        # link() draws "<name> under" 1px; it marks the text span, not a column
+        self.assertEqual(self._band_findings([_page_board(), self._band(w=117, name="cta under"),
+                                              _ink_text(x=140, y=640, inkW=1100)]), [])
+
+    def test_a_rule_far_below_does_not_bind_the_text(self):
+        rule = self._band()
+        rule["y"] = 900
+        self.assertEqual(self._band_findings([_page_board(), rule,
+                                              _ink_text(x=140, y=640, inkW=640)]), [])
+
+
 class FitBarTest(unittest.TestCase):
     def _bar(self, fill="#E0364B"):
         return _node(id="bar", name="sess bar 0", type="rectangle", parentId="pg",
@@ -739,6 +773,54 @@ class OverlapBlindSpotTest(unittest.TestCase):
                      parent="pg", x=0, y=1200, w=1440, h=800, fill="#F4F5F6")
         findings = design_lint.lint([_page_board(), head, top, foot], dict(design_lint.DEFAULTS))
         self.assertEqual([f for f in findings if "empty corridor" in f["finding"]], [])
+
+    def test_intra_card_gap_flags_pushed_meta(self):
+        card = _node(id="card", name="sess card 0", type="board", parentId="pg",
+                     parent="pg", x=240, y=480, w=232, h=140, fill="#FFFFFF", stroke=True)
+        title = _ink_text(node_id="t", parent="card", x=254, y=490, w=204, h=26,
+                          inkX=254, inkY=492, inkW=150, inkH=20)
+        meta = _ink_text(node_id="m", parent="card", x=254, y=570, w=204, h=40,
+                         inkX=254, inkY=572, inkW=180, inkH=36)
+        findings = design_lint.lint([_page_board(), card, title, meta],
+                                    dict(design_lint.DEFAULTS))
+        self.assertTrue(any("intra-card gap" in f["finding"] and f["severity"] == "medium"
+                            for f in findings),
+                        [f["finding"] for f in findings])
+
+    def test_docked_footer_is_exempt(self):
+        card = _node(id="card", name="sidebar", type="board", parentId="pg",
+                     parent="pg", x=0, y=0, w=264, h=600, fill="#FFFFFF", stroke=True)
+        nav = _ink_text(node_id="a", parent="card", x=28, y=100, w=200, h=22,
+                        inkX=28, inkY=102, inkW=120, inkH=17)
+        out = _ink_text(node_id="b", parent="card", x=28, y=556, w=200, h=22,
+                        inkX=28, inkY=558, inkW=60, inkH=17)
+        findings = design_lint.lint([_page_board(), card, nav, out],
+                                    dict(design_lint.DEFAULTS))
+        self.assertEqual([f for f in findings if "intra-card gap" in f["finding"]], [])
+
+    def test_snug_stack_stays_clean(self):
+        card = _node(id="card", name="sess card 0", type="board", parentId="pg",
+                     parent="pg", x=240, y=480, w=232, h=140, fill="#FFFFFF", stroke=True)
+        title = _ink_text(node_id="t", parent="card", x=254, y=490, w=204, h=26,
+                          inkX=254, inkY=492, inkW=150, inkH=20)
+        meta = _ink_text(node_id="m", parent="card", x=254, y=522, w=204, h=40,
+                         inkX=254, inkY=524, inkW=180, inkH=36)
+        findings = design_lint.lint([_page_board(), card, title, meta],
+                                    dict(design_lint.DEFAULTS))
+        self.assertEqual([f for f in findings if "intra-card gap" in f["finding"]], [])
+
+    def test_photo_between_texts_breaks_the_chain(self):
+        card = _node(id="card", name="side", type="board", parentId="pg",
+                     parent="pg", x=960, y=412, w=360, h=500, fill="#F4F5F6", stroke=True)
+        a = _ink_text(node_id="a", parent="card", x=992, y=700, w=200, h=20,
+                      inkX=992, inkY=702, inkW=120, inkH=16)
+        photo = _node(id="p", name="img", type="rectangle", parentId="card",
+                      parent="card", x=992, y=730, w=200, h=100, fill=None, img=True)
+        b = _ink_text(node_id="b", parent="card", x=992, y=850, w=200, h=20,
+                      inkX=992, inkY=852, inkW=120, inkH=16)
+        findings = design_lint.lint([_page_board(), card, a, photo, b],
+                                    dict(design_lint.DEFAULTS))
+        self.assertEqual([f for f in findings if "intra-card gap" in f["finding"]], [])
 
     def test_bridged_gap_stays_clean(self):
         head = _node(id="h", name="head", type="rectangle", parentId="pg",

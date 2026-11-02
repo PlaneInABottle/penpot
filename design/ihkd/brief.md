@@ -186,10 +186,9 @@ Card: 24px padding (32 for feature cards), 1px border, no shadow.
 Copy below is final Turkish; build it verbatim.
 
 ### 01 · Ana sayfa
-- Nav: İHKD + `Dernek · Çalışma grupları · Kongre · Akademi · Yayın · Haberler` + `Üye girişi` + `Üye ol`.
-- Hero (paper, grid-derived 2 columns): kicker `1998'DEN BERİ · ANKARA` (ink.500), display `Hastanın hekimi.`, lede "1998'den beri iç hastalıkları hekimlerinin camiası: kılavuz, kongre, akademi tek adreste.", buttons `Kongreye kayıt ol` + `Derneği tanı`; right: image 560×384 inside the grid (no bleed, no caption) — wall-mounted 12-lead ECG monitor, nurse from behind, no face at camera.
-- Congress note: white card with red ECG trace + `12. ULUSAL KONGRE` + date/venue + `Kayıt ol →`. The page's single red field is the congress band below.
-- Stat row: 4 mono figures at 44px (`stat`) — 6.847 üye · 41 il · 12 çalışma grubu · 10 kılavuz — labels 13px `ink.600`.
+- Nav: İHKD + `Dernek · Çalışma grupları · Kongre · Akademi · Yayın · Haberler` + `Üye girişi` + ghost `Üye ol` (tek doygun primary hero'dadır).
+- Hero (seçim A, 2026-11-02): kicker `1998'DEN BERİ · ANKARA`, display `Hastanın hekimi.`, lede (tek adreste), primary `Üye ol` + ghost `Derneği tanı`; sağda tam yükseklik fotoğraf (Thirdman 7659869, yüz yok, muayene anı); alt kenara oturan ink proof şeridi (6.847 üye · 41 il · 12 grup · 10 kılavuz). ECG hero'da yok — imza program/takvim bağlamında kalır.
+- Congress note YOK (seam kalktı); istatistik satırı hero şeridinde.
 - `Gündem` — 3 rows (date, category, title) + `Tüm haberler`.
 - Congress band: red `#C4122F`, `12. ULUSAL KONGRE`, `22–25 Nisan 2027`, `Antalya`, `147` countdown, `Kayıt ol`.
 - `Çalışma grupları` — 6 rows + `12 çalışma grubunun tümü →`. No `NN / 06` counters: ghost numerals already carry the order.
@@ -262,11 +261,18 @@ Ink sidebar 260: member name, `İHKD-24817`, nav, `Çıkış`. Header `İyi gün
 Thirteen placements of twelve photographs, one cool grade (light desaturation, contrast lift, neutral shadows) so they
 read as one set. Captions are 13px `meta`, sentence case, no uppercase.
 
+**Subject rule (2026-11-02, user-reported):** the frame must show the product's own
+field — a heart/cardiology reading (auscultation, echo or cath lab, 12-lead trace, heart
+model), not a generic clinical scene that only *could* happen in a hospital. A plausible
+consultation still reads as stock filling; the hero's role is "the physician at the
+patient's chest", not "healthcare".
+
 | image | subject | used on |
 |---|---|---|
-| `img-echo` | wall-mounted 12-lead ECG monitor, nurse from behind (no face at camera) | 01 |
+| `img-hero` | stethoscope bell on a bare chest, hand in frame, no face, cool teal room — the heart is being heard | 01 |
 | `img-journal` | open book, small body-text texture, no masthead | 01 |
-| `img-cath` | catheterisation laboratory | 05, 06 |
+| `img-angio` | catheterisation / angio suite: ECG-trace monitor, angio screen, masked team | 05 |
+| `img-cath` | catheterisation laboratory | 06 |
 | `img-hall` | conference hall from the back | 06 |
 | `img-corridor` | hospital corridor, morning light | 10 |
 | `img-venue` | convention centre exterior | 10 |
@@ -276,9 +282,17 @@ read as one set. Captions are 13px `meta`, sentence case, no uppercase.
 | `img-team` | congress programme workshop | 16 |
 | `img-auth` | cardiology monitor, hospital equipment | 19 |
 | `img-issue` | open book, small body-text texture (same source as `img-journal`) | 14 |
-| `img-lab` | blood-pressure measurement, clinical supervision | 12 |
+| `img-lab` | 12-lead ECG paper with limb/precordial electrodes, closeup | 12 |
 
-Provenance (Pexels URL + photographer) is recorded in `README.md`.
+Provenance (Pexels URL + photographer) is recorded in `media/provenance.json`; the pinned
+URL in `tools/media.py` is the single source, so a rebuild reimports the accepted frame.
+
+**Surface rule (2026-11-02).** Two neutral layers per screen: `paper` is the ground,
+`white` is a card or content surface. `surface.alt` is an inset/secondary panel only
+(05 künye, 12 progress, 10 plan). Same logical kind = same surface: 07's schedule cards are
+`white`, a right-docked info panel is `surface.alt`. Counted on 2026-11-02: 05 künye
+(alt), 12 progress (alt), 07 calendar cards (white) are consistent; 13 `pocket` cards and
+20 `ecg card` still use `surface.alt` for cards — open, listed in the report.
 
 ## 7. Definition of done
 
@@ -288,3 +302,37 @@ Provenance (Pexels URL + photographer) is recorded in `README.md`.
 4. `export_board.py` → look at the render at 1:1 in four places.
 5. Prototype: flows exist, per-board interaction count non-zero.
 6. Independent reviewer has seen the render and crops.
+
+## M5 · 01 hero critique (from 1:1 tiles, 2026-11-02)
+
+Tile-01 (0-900) + region crops read at 1:1. The hero fails the hero contract:
+
+1. Sağ sütun ölü: 560×384 gri mat — `img-echo` slotu hiç doldurulmamış. Hero'nun yarısı yok; başlık-görsel ilişkisi kurulamamış.
+2. Görselin rolü yok: spec'teki kare (duvar tipi EKG monitörü + arkadan hemşire) klinik gözetim fotoğrafı; "Hastanın hekimi" mesajını göstermiyor, kanıtlamıyor, ruh vermiyor — stok doldurma.
+3. Kanıt hero'da değil: istatistik satırı (6.847/41/12/10) kongre bandının altında, ilk viewportun sınırında; hook (başlık) + kanıt + eylem üçlüsü ilk 900px'te bir arada değil.
+4. CTA enflasyonu: masthead "Üye ol" + hero "Kongreye kayıt ol" + bant "Kayıt ol" = 3 primary (`ux_gate` FAIL). Baskın tek eylem yok.
+5. Sol blok gevşek: display başlık → lede → CTA arası ritim sağdaki ölü griyle birlikte "iki yarım sayfa" okunuyor.
+6. İki kırmızı jest çarpışıyor: ECG çizgili beyaz kart + tam kırmızı kongre bandı (seam).
+
+Karar: hero sıfırdan kurulacak (3 aday, scratch'ta karşılaştırma, puanlama, tek seçim).
+
+## M5 · 01 hero adayları (scratch, 2026-11-02)
+
+Renderlar: `design/ihkd/shots/hero-candidates/cand-{a,b,c}*.png` (fotoğrafsız gri slot + art notu; mekanizma karşılaştırması).
+
+| eksen | A split+kanıt | B kongre-first | C veri-duvarı |
+|---|---|---|---|
+| hiyerarşi | 4 (başlık baskın; slot zayıflatıyor) | 5 | 4 |
+| hikâye | 4 (hook+kanıt tek viewportta) | 3 (dernek yok) | 3 (slogan geç, iş belirsiz) |
+| ilk-5-sn | 4 | 4 | 3 |
+| sığma | 5 | 4 (tarih fotoğrafa taşıyor, düzeltilmeli) | 5 |
+| tutarlılık | 4 (klinik izleyici dili) | 3 (yön sapması) | 4 |
+| erişilebilirlik | 4 | 4 | 4 |
+| TOPLAM | **25** | 23 | 23 |
+
+Art-direction notları:
+- A: görsel KANITLAR — soğuk ışıkta gerçek klinik an, yüz yok/arkadan, kadrajda ekipman + el detayı; tam yükseklik sağ kolon. Reddeder: kongreyi hero'ya sokmayı.
+- B: görsel GÖSTERİR — kongre salonu arkadan, kalabalık silueti, sıcak ışık. Reddeder: dernek kimliğini ilk cümlede vermeyi.
+- C: görsel YOK — sayının kendisi görsel (ECG imza çizgisi grafik öğe). Reddeder: fotoğrafla duygu taşımayı.
+
+SEÇİM: **A**. Gerekçe: sitenin işi dernek (kongre mevsimsel); hook+kanıt+eylem tek viewportta; kanıt şeridi hero'nun parçası olunca eski ECG-seam kartı ve bağımsız istatistik satırı düşer. B reddedildi (dernek hikâyesi yok; ayrıca tarih metni slota taşıyor). C reddedildi (ilk 5 saniyede iş belirsiz; sayı duvarı soğuk açılış).

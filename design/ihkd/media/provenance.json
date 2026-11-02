@@ -1,10 +1,4 @@
 {
-  "img-echo": {
-    "board": "01-ana-sayfa",
-    "page": "Kurumsal",
-    "source": "https://images.pexels.com/photos/6129683/pexels-photo-6129683.jpeg",
-    "credit": "https://www.pexels.com/photo/6129683/ by RDNE Stock project"
-  },
   "img-journal": {
     "board": "01-ana-sayfa",
     "page": "Kurumsal",
@@ -74,26 +68,14 @@
   "img-lab": {
     "board": "12-kurs-detay",
     "page": "Akademi",
-    "source": "https://images.pexels.com/photos/7659573/pexels-photo-7659573.jpeg",
-    "credit": "https://www.pexels.com/photo/7659573/ by Thirdman"
-  },
-  "img-cath@05-grup-detay": {
-    "board": "05-grup-detay",
-    "page": "Kurumsal",
-    "source": "https://images.pexels.com/photos/28583897/pexels-photo-28583897.jpeg",
-    "credit": "https://www.pexels.com/photo/28583897/ by محمد عزام الشيخ يوسف"
+    "source": "https://images.pexels.com/photos/28585011/pexels-photo-28585011.jpeg",
+    "credit": "https://www.pexels.com/photo/28585011/ by Marta Branco"
   },
   "img-cath@06-kongre": {
     "board": "06-kongre",
     "page": "Kongre",
     "source": "https://images.pexels.com/photos/28583897/pexels-photo-28583897.jpeg",
     "credit": "https://www.pexels.com/photo/28583897/ by محمد عزام الشيخ يوسف"
-  },
-  "img-echo@01-ana-sayfa": {
-    "board": "01-ana-sayfa",
-    "page": "Kurumsal",
-    "source": "https://images.pexels.com/photos/6129683/pexels-photo-6129683.jpeg",
-    "credit": "https://www.pexels.com/photo/6129683/ by RDNE Stock project"
   },
   "img-journal@01-ana-sayfa": {
     "board": "01-ana-sayfa",
@@ -158,7 +140,31 @@
   "img-lab@12-kurs-detay": {
     "board": "12-kurs-detay",
     "page": "Akademi",
-    "source": "https://images.pexels.com/photos/7659573/pexels-photo-7659573.jpeg",
-    "credit": "https://www.pexels.com/photo/7659573/ by Thirdman"
+    "source": "https://images.pexels.com/photos/28585011/pexels-photo-28585011.jpeg",
+    "credit": "https://www.pexels.com/photo/28585011/ by Marta Branco"
+  },
+  "img-hero@01-ana-sayfa": {
+    "board": "01-ana-sayfa",
+    "page": "Kurumsal",
+    "source": "https://images.pexels.com/photos/39192342/pexels-photo-39192342.jpeg",
+    "credit": "https://www.pexels.com/photo/39192342/ by Vitaly Gariev"
+  },
+  "img-hero": {
+    "board": "01-ana-sayfa",
+    "page": "Kurumsal",
+    "source": "https://images.pexels.com/photos/39192342/pexels-photo-39192342.jpeg",
+    "credit": "https://www.pexels.com/photo/39192342/ by Vitaly Gariev"
+  },
+  "img-angio@05-grup-detay": {
+    "board": "05-grup-detay",
+    "page": "Kurumsal",
+    "source": "https://images.pexels.com/photos/39459346/pexels-photo-39459346.jpeg",
+    "credit": "https://www.pexels.com/photo/39459346/ by Stéf -b."
+  },
+  "img-angio": {
+    "board": "05-grup-detay",
+    "page": "Kurumsal",
+    "source": "https://images.pexels.com/photos/39459346/pexels-photo-39459346.jpeg",
+    "credit": "https://www.pexels.com/photo/39459346/ by Stéf -b."
   }
 }
