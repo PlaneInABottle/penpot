@@ -125,12 +125,12 @@ S.text(pb, "cover countdown", "147 gün · erken kayıt 31 Ocak 2027'de kapanıy
   "meta", "ink.600", { x: 160, y: COVER_Y + 322, w: 600 });
 
 /* the cover figure: a three-lead strip drawn here, 25 mm/s · 10 mm/mV */
-S.text(pb, "cover figure label", "KAPAK · 12 DERİVASYON", "label", "ink.500", { x: 160, y: COVER_Y + 360 });
+S.text(pb, "cover figure label", "KAPAK · EKG KAYDI", "label", "ink.500", { x: 160, y: COVER_Y + 360 });
 coverGrid(pb, "cover ecg minor", 160, FIG_Y, 640, 220, 8, 40, "line.soft");
 coverGrid(pb, "cover ecg major", 160, FIG_Y, 640, 220, 40, 0, "line.300");
-["I", "II", "V1"].forEach((lead, i) => {
+["I", "II", "III"].forEach((lead, i) => {
   S.text(pb, "cover lead " + i, lead, "label", "ink.500", { x: 168, y: FIG_Y + 26 + i * 70 });
-  coverTrace(pb, "cover trace " + i, 200, FIG_Y + 48 + i * 70, 580, 64, 4);
+  coverTrace(pb, "cover trace " + i, 200, FIG_Y + 48 + i * 70, 580, [52, 64, 44][i], 4);
 });
 S.text(pb, "cover caption", "25 mm/s · 10 mm/mV", "meta", "ink.500",
   { x: 160, y: COVER_Y + 620 });

@@ -188,7 +188,7 @@ Copy below is final Turkish; build it verbatim.
 
 ### 01 · Ana sayfa
 - Nav: İHKD + `Dernek · Çalışma grupları · Kongre · Akademi · Yayın · Haberler` + `Üye girişi` + ghost `Üye ol` (tek doygun primary hero'dadır).
-- Hero (seçim SAYI, M7): the page opens as the society's own issue. A 1200×740 `white` cover sheet at 120,140: masthead `İHKD` (the mono wordmark at 80, `fs.80` bound; the nav keeps wordmark 22), `KARDİYOVASKÜLER KLİNİK` label + `Cilt 12 · Sayı 1 · Mart 2027` data, coverline `Hastanın hekimi.` (h2 44); congress coverline `12. ULUSAL KONGRE` (label) + `22–25 Nisan 2027 · Antalya` (h3 30) + `147 gün · erken kayıt 31 Ocak 2027'de kapanıyor · 96 oturum` (meta). The cover figure is a self-drawn three-lead strip (I/II/V1, 640×220, 8px minor / 40px major grid, `25 mm/s · 10 mm/mV`), labelled `KAPAK · 12 DERİVASYON`. `BU SAYIDA` TOC six rows — Kongre s.01 / Kılavuzlar s.12 / Akademi s.30 / Yayın s.38 / Topluluk s.44 / Haberler s.50 — each with a 13px note; one primary `Kongreye kayıt ol` + ghost `Derneği tanı`; imprint `6.847 üye · 41 il · 12 çalışma grubu · 10 kılavuz` (13px). No photo, no proof strip, no congress band: the cover carries the date, the countdown and the action.
+- Hero (seçim SAYI, M7): the page opens as the society's own issue. A 1200×740 `white` cover sheet at 120,140: masthead `İHKD` (the mono wordmark at 80, `fs.80` bound; the nav keeps wordmark 22), `KARDİYOVASKÜLER KLİNİK` label + `Cilt 12 · Sayı 1 · Mart 2027` data, coverline `Hastanın hekimi.` (h2 44); congress coverline `12. ULUSAL KONGRE` (label) + `22–25 Nisan 2027 · Antalya` (h3 30) + `147 gün · erken kayıt 31 Ocak 2027'de kapanıyor · 96 oturum` (meta). The cover figure is a self-drawn three-lead strip (I/II/III, 640×220, 8px minor / 40px major grid, `25 mm/s · 10 mm/mV`), labelled `KAPAK · EKG KAYDI`. `BU SAYIDA` TOC six rows — Kongre s.01 / Kılavuzlar s.12 / Akademi s.30 / Yayın s.38 / Topluluk s.44 / Haberler s.50 — each with a 13px note; one primary `Kongreye kayıt ol` + ghost `Derneği tanı`; imprint `6.847 üye · 41 il · 12 çalışma grubu · 10 kılavuz` (13px). No photo, no proof strip, no congress band: the cover carries the date, the countdown and the action.
 - `Gündem` starts at 992 (cover bottom 880 + the 112 rhythm); the seam is the cover's own edge, not a strip. The page resumes on `paper`.
 - `Gündem` — 3 rows (tarih, kategori, başlık, okuma süresi) + `Tüm haberler →` + yayım notu.
 - `Çalışma grupları` — 6 rows, iki kolon (576 + 48 + 576 = 1200) + `12 çalışma grubunun tümü →`; sıra numarası `data` 13px, ok kolonun sağ kenarında ve başlığın ilk satırına hizalı.
@@ -481,7 +481,8 @@ The cover sheet is 120..1320 × 740 (120/120 margins); the page resumes at 992 a
 the 112 rhythm; board height 4064. There is no `kongre band` and no `hero proof`
 strip: the date, venue, countdown, registration and the four figures live in the
 cover. The masthead is the mono wordmark at 80, so the cover carries the same mark
-as the navigation; the page's only red is the primary + the ECG trace (data). Lint 0 high;
+as the navigation; the candidate's plate label `12 DERİVASYON`/V1 was corrected in
+the build to a limb-lead record (I/II/III, `KAPAK · EKG KAYDI`). The page's only red is the primary + the ECG trace (data). Lint 0 high;
 `design_qa` and `copy_lint` clean; `ux_gate` passes the 01 items and reports only the
 mobile/state boards owned by a later milestone. Tiles + regions attested.
 
@@ -502,7 +503,7 @@ Changes are a separate round; this milestone only records the inventory.
 
 ### Hero visual contract (mobile twin)
 
-**Visual type:** our own vector three-lead ECG strip (I/II/V1, grid 8px minor / 40px
+**Visual type:** our own vector three-lead ECG strip (I/II/III, grid 8px minor / 40px
 major, `25 mm/s · 10 mm/mV`); **aspect:** 640×220 (2.91:1); **source:** the build
 (`screen-01.js` local `coverGrid`/`coverTrace`), no photo, no Pexels. Mobile twin:
 390×150, the same drawing under the coverline, one primary.

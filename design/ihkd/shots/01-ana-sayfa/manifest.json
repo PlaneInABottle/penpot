@@ -18,7 +18,7 @@
    "x1": 1440,
    "y1": 900,
    "reviewed": true,
-   "note": "Cover at 1:1: İHKD mono wordmark at 80 (same mark as the nav), journal line + issue, coverline 44, congress date 30; EKG plate 640x220 with 8/40px grid, three leads I/II/V1, labels and 25 mm/s · 10 mm/mV caption; TOC page numbers sit on the names' baselines; CTA at 760 and imprint 13 inside the sheet; sheet edges 120/1320, bottom 880; no photo."
+   "note": "Cover at 1:1: İHKD mono wordmark at 80 (same mark as the nav), journal line + issue, coverline 44, congress date 30; EKG plate 640x220 with 8/40px grid, limb leads I/II/III with distinct amplitudes, labels and 25 mm/s · 10 mm/mV; TOC page numbers sit on the names' baselines; CTA at 760 and imprint 13 inside the sheet; edges 120/1320, bottom 880; no photo."
   },
   {
    "file": "tile-02.png",
@@ -76,7 +76,7 @@
    "w": 768,
    "h": 948,
    "reviewed": true,
-   "note": "Densest window is the cover left column: mono masthead→coverline→congress→plate; the 8px plate grid and the traces stay legible at 1:1; no glyph crosses a rule or a lead."
+   "note": "Densest window is the cover left column: mono masthead→coverline→congress→plate; the 8px plate grid and the three leads stay legible at 1:1; no glyph crosses a rule or a lead."
   },
   {
    "file": "region-primary-action.png",
