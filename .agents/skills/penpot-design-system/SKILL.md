@@ -45,7 +45,7 @@ writes a file before the next starts; no artifact, no phase.
 | # | Phase | Writes | `Exit` condition |
 |---|---|---|---|
 | 1 | Intake | `brief.md` — audience, single job, content truth, constraints | answers exist or are marked unknown |
-| 2 | Direction | `brief.md` § direction · `principles.md` | 2–3 named directions, one chosen, rejects recorded |
+| 2 | Direction | `brief.md` § direction · `principles.md` | 2–3 named directions, one chosen, rejects recorded; a taste-bearing hero instead gets 4–5 finished first viewports and the user chooses (`ux-design-process` § 3) |
 | 3 | Story | `ux-spec.json` — task, hook→proof→path→action, hero contract, states, mobile, claims | `ux_gate.py` exit 0, or findings owned with a reason |
 | 4 | Foundations | `tokens.json` · Penpot set · `Components` page | `tokens_sync --check` clean; every component instanced once |
 | 5 | Screens | `build/screen-NN.js` per screen | `design-verification` definition of done |
@@ -65,10 +65,11 @@ cp -R design/_template design/<name>
 python3 scripts/tokens_sync.py --file design/<name>/tokens.json --set <set>
 ```
 
-The template ships `brief.md`, `principles.md`, a `ux-spec.json` whose placeholders fail
-`ux_gate` until answered, empty `craft-rules.json` and `copy-terms.json`, plus the
-`build/README.md` and `media/README.md` notes. Write the new `lib.js` from the four axes
-below; copying the previous project's `lib.js` is the failure this template exists to prevent.
+The template ships `brief.md`, `principles.md`, `tokens.json`, a `ux-spec.json` whose
+placeholders fail `ux_gate` until answered, empty `craft-rules.json` and `copy-terms.json`,
+plus the `build/README.md` and `media/README.md` notes. Write the new `design/<name>/build/lib.js`
+from the four axes below; copying the previous project's `lib.js` is the failure this template
+exists to prevent. `media/provenance.json` is created by the first photo import.
 
 ## Foundations and components
 

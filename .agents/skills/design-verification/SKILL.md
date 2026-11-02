@@ -29,7 +29,7 @@ Run in this order; a later gate does not excuse an earlier failure.
 | `export_board.py --board <b> --page <p>` | together with the 1:1 review | one image per board, from the board's own id |
 | `crop_board.py --board … --out …` then `--attest` | the 1:1 review itself | every tile and region `reviewed: true` with a note, attest exit 0 |
 | `ux_gate.py --spec design/<p>/ux-spec.json` | after the story is written, again on the final state | exit 0: task, one CTA, beats above the fold, states, mobile twin, claims |
-| `gate.py --pages <p1,p2> [--boards …]` | the single run that reports all of the above | lint → QA → ux per page; prints `FAIL (invalid)`, never PASS, on an unmeasured page |
+| `gate.py --pages <p1,p2> [--boards …]` | a convenience run: lint → QA → ux per page (+export/crop for `--boards`) | prints `FAIL (invalid)`, never PASS, on an unmeasured page. It is **not** the definition of done: contrast, rhythm, 1:1 attest, flows and the independent review are separate gates below |
 
 ## Definition of done
 
@@ -81,7 +81,7 @@ Anything not covered is reported as a gap, never as done.
 
 ## Change discipline
 
-- **A lint rule is earned.** It starts from a defect the eye caught and lint missed: a
+- **A lint rule is earned.** Fix the screen first, then encode the defect. It starts from a defect the eye caught and lint missed: a
   failing fixture in `test_lint_rules.py` first, then the rule, then its wrong-positive
   count on the frozen corpus (`--from-nodes`, `--rules-report`) written into `RULES`.
   HIGH means 0 wrong positives there; a rule that only produces wrong positives is retired,

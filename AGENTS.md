@@ -26,6 +26,7 @@ never repoints it.
 | build or tighten a screen | `penpot-design-system` + its `references/craft.md` |
 | prove a screen is finished | `design-verification` § Definition of done |
 | fix a failed or stale Penpot call | `penpot-mcp-operations/references/mcp-failures.md` |
+| a render shows the wrong paint or a gate passed on a bad screen | `penpot-mcp-operations` § Paint is not bind, then `design-verification` § Evidence |
 | add or change a lint rule | `design-verification` § Change discipline, then `scripts/test_lint_rules.py` |
 
 ## Runtime
@@ -73,14 +74,15 @@ All live scripts need the plugin connected. Exit codes everywhere: `0` clean, `1
 | `python3 scripts/design_lint.py --page <p> [--json out.json] [--rules design/<p>/craft-rules.json]` | before any visual review of a page |
 | `python3 scripts/design_qa.py --page <p> --lint-json lint.json` | with lint; high lint findings become fatal |
 | `python3 scripts/check_contrast.py --file design/<p>/tokens.json --pair fg:bg` | before claiming a board |
-| `python3 scripts/rhythm.py nodes.json [--rhythm 80]` | after a layout or copy move |
+| `python3 scripts/rhythm.py nodes.json` | after a layout or copy move |
 | `python3 scripts/ux_gate.py --spec design/<p>/ux-spec.json` | story, CTA, states, claims |
 | `python3 scripts/export_board.py --board <b> --page <p> --out design/<p>/shots` | one board per call |
 | `python3 scripts/crop_board.py --board <b> --page <p> --out shots/<b>/ [--regions n.json]` | the 1:1 review |
 | `python3 scripts/crop_board.py --attest shots/<b>/manifest.json` | before any "reviewed 1:1" claim |
 | `python3 scripts/gate.py --pages <p1,p2> [--boards 01,05]` | one run: lint → QA → ux per page (+export/crop) |
 | `python3 scripts/gate.py stage design/<p>/build/screen-NN.js` | the only `git add -f design/…` path |
-| `python3 scripts/penpot_exec.py --file design/<p>/build/screen-NN.js` | run one build script |
+| `python3 design/<p>/build/build.py screen-NN` | rebuild one screen: measures text, restores photos and links, prints `RESULT ok|fail nulls=N` (a project's runner; `--dry-run` is static) |
+| `python3 scripts/penpot_exec.py --file design/<p>/build/screen-NN.js` | run a snippet or a build script without a runner |
 | `python3 scripts/patch_file.py <file> --old-file a.txt --new-file b.txt` | edit a build script |
 | `python3 scripts/import_media.py --only <slot> --board <b> --page <p> --force` | place a provenance photo |
 | `python3 scripts/docs_check.py [--json]` | after editing this file or any skill |
@@ -95,7 +97,8 @@ prints `FAIL (invalid)`, never PASS.
 
 - **One plugin, one writer.** Every MCP call holds a `flock` in `~/.cache/penpot-mcp/`; a
   second writer waits and exits 2 (`plugin busy: held by pid=…`). One owner per live page and
-  per `lib.js`; parallel agents split by board, never by session.
+  per `lib.js`; parallel agents split by board, never by session. The OS releases a `flock`
+  when its process dies, so never delete a lock file by hand: wait, or find the holder.
 - `design/*/` is gitignored: stage a design only with an explicit `git add -f <path>` list (or
   `gate.py stage`), and verify with `git ls-files design/` — `git status` looks empty otherwise.
 - In zsh, separate output sections with `---`, never `echo ===` (it misparses).

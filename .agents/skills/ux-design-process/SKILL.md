@@ -38,7 +38,7 @@ and accent fills stay under the declared ratio.
 
 **Taste is the user's; the rest is the maker's.** On a taste-bearing surface (hero, cover,
 brand opening) present 4–5 finished first viewports and let the user choose. Everywhere else
-explore 2–3 directions, decide, record. Choosing among built candidates is expected;
+explore 2–3 directions, decide, record. If the user has not chosen, keep the live page on its current hero and carry on with everything that does not depend on it; never pick for them. Choosing among built candidates is expected;
 specifying design is not.
 
 In Penpot: build the candidates on the scratch page, same copy, each with a name, a "refuses"
@@ -79,10 +79,8 @@ content-fill ratio ≥ 0.6.
 ## 5. Rhythm, then eyes
 
 One spacing scale per project, one declared section rhythm in px, one "breather" rule per
-section (what separates, what groups). `rhythm.py` reads the lint geometry: gaps cluster at
-the rhythm and anything past 2× carries a written reason. Margin symmetry is checked at 1:1
-on the hero, never at page scale. This skill sets the numbers; the mechanics and the joints
-are in `craft.md`.
+section (what separates, what groups). This skill sets the numbers; the audit (`rhythm.py`),
+the joints and margin symmetry are in `craft.md`.
 
 ## 6. State matrix and mobile
 

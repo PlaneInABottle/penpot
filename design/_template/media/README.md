@@ -1,6 +1,6 @@
 # media
 
-`provenance.json` is the media table: the single source for photo choice. A rebuild
+`provenance.json` (created by the first photo import) is the media table: the single source for photo choice. A rebuild
 re-imports from it, so a one-off inline import regresses on the next run — persist the
 winning query or pinned URL the moment a photo is accepted.
 
