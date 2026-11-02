@@ -49,6 +49,22 @@ declared ratio.
   a sentence, record the rejected two with a reason. No screen starts from a
   single uncompared hero.
 
+### Concept before composition
+
+Run this before any hero layout. (a) A candidate is a different
+domain-native **object**, named by the sentence "this page is a ___" — a
+journal cover, a clinical algorithm, an anatomy plate, a map, a poster.
+Layout or composition variations of one object are one candidate, never
+three. (b) Candidates share no part: no common image, proof block, band, or
+"headline+lede+CTA on the left" arrangement. (c) List five references or
+analogies from outside the category before drawing (a cover, a flowchart,
+an atlas plate, a poster); the object decides the grid, not the previous
+screen. (d) Shrink every candidate to 200px side by side and eliminate any
+that is not unmistakably different from the others and from the shipped
+hero; the thumbnail test is an elimination gate, not a taste note. (e) In a
+dispatch, ask for "different objects", never "different compositions" — the
+second wording produces restyled layouts and burns a round.
+
 ## 4. Content-first density
 
 Write the copy before the grid. The number a screen claims is the number it

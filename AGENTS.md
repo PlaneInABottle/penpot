@@ -64,6 +64,9 @@ docker exec penpot-penpot-postgres-1 pg_dump -U penpot penpot > ~/penpot-$(date 
 - **A stated brief is fixed:** derive the rest yourself, record what you chose.
 - **Never ask the user to specify design.** Propose two or three named
   directions (mechanism + "refuses" clause each), build only the chosen one.
+- **Hero candidates are objects, not layouts.** A dispatch asks for different
+  "this page is a ___" objects (cover, algorithm, plate, map, poster), never
+  "different compositions"; layouts of one object are one candidate.
 - **No screens before a direction.** Sketch on a scratch page, one-sentence pick.
 - **A decision not in a file does not exist.** Record in
   `design/<project>/brief.md` (+ stance in `principles.md`).
