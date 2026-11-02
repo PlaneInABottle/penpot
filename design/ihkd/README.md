@@ -115,7 +115,7 @@ above are superseded.
 | 10-konaklama | 716034 |
 | 11-akademi | 211899 |
 | 12-kurs-detay | 255395 |
-| 13-kilavuzlar | 406276 |
+| 13-kilavuzlar | 384861 |
 | 14-dergi | 391425 |
 | 15-haberler | 177450 |
 | 16-makale | 630739 |
@@ -123,6 +123,10 @@ above are superseded.
 | 18-uyelik | 203774 |
 | 19-giris | 69866 |
 | 20-panel | 142738 |
+
+13 and 20 were re-exported after the underline fix (13 is 384861 bytes; 20 is
+unchanged). The other rows are the pre-fix snapshot; their boards were rebuilt
+for the same link fix, so re-export them when their next visual review runs.
 
 ## Photo provenance (`design/ihkd/media/provenance.json` — every placed photo covered)
 
