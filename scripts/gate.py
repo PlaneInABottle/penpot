@@ -13,7 +13,10 @@ in --boards; `01` resolves through design/<project>/build/build.py's SCREENS map
 so the page comes from the same table the build uses.
 
 One summary table, one total, one exit code: 0 every step passed, 1 findings,
-2 environment/transport (a step's own exit code 2 maps here). Exit 2 also covers
+2 environment/transport (a step's own exit code 2 maps here). The lint's own
+counts are echoed per page: `medium` there are reported but never gate, and
+`acknowledged` ones carry a recorded design reason (craft-rules.json), so only
+the unexplained medium count is worth reading. Exit 2 also covers
 an INVALID step: design_lint reports a page whose texts were never measured
 (textBounds unavailable — the page is not open), and a gate that printed PASS
 there would pass a page nobody looked at.
@@ -205,6 +208,12 @@ def gate(pages: list[str], boards: list[str], project: pathlib.Path, timeout: fl
         print(f"{step['step']:<36}{step['code']:>5}{step['seconds']:>10.2f}"
               + ("  INVALID" if step.get("invalid") else ""))
     print(f"{'total':<36}{'':>5}{total:>10.2f}")
+    for step in steps:
+        if not step["step"].startswith("design_lint"):
+            continue
+        for line in step["output"].splitlines():
+            if line.startswith("page: "):
+                print(f"  {line}")
 
     failing = [s for s in steps if s["code"] != 0]
     for step in failing:

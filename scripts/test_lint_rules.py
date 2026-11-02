@@ -13,6 +13,7 @@ import contextlib
 import io
 import json
 import pathlib
+import re
 import sys
 import tempfile
 import unittest
@@ -56,9 +57,42 @@ def _text(node_id, parent="pg", x=120, y=100, w=400, h=22, size=16,
                  text=text, inkX=ink_x, inkY=ink_y, inkW=ink_w, inkH=ink_h)
 
 
-def _findings(nodes, needle):
-    return [f for f in design_lint.lint(nodes, dict(design_lint.DEFAULTS))
-            if needle in f["finding"]]
+def _findings(nodes, needle, rules=None):
+    rules = dict(rules or design_lint.DEFAULTS)
+    return [f for f in design_lint.lint(nodes, rules) if needle in f["finding"]]
+
+
+def _rules(nodes, rules=None):
+    """(rule id, severity) for every grouped finding."""
+    rules = dict(rules or design_lint.DEFAULTS)
+    return [(f["rule"], f["severity"]) for f in design_lint.lint(nodes, rules)]
+
+
+def _run_lint(nodes, argv_extra=(), rules=None, page="Mobil", include_page=True):
+    """Run design_lint.main() offline on `nodes`; returns (code, output, json doc)."""
+    out, err, doc = io.StringIO(), io.StringIO(), None
+    with tempfile.TemporaryDirectory() as tmp:
+        dump = pathlib.Path(tmp) / f"{page}.nodes.json"
+        dump.write_text(json.dumps(nodes))
+        json_out = pathlib.Path(tmp) / "lint.json"
+        argv = ["design_lint.py", "--from-nodes", str(dump), "--json", str(json_out), *argv_extra]
+        if include_page:
+            argv += ["--page", page]
+        if rules is not None:
+            rules_path = pathlib.Path(tmp) / "craft-rules.json"
+            rules_path.write_text(json.dumps(rules))
+            argv += ["--rules", str(rules_path)]
+        with mock.patch.object(sys, "argv", argv), \
+                mock.patch.object(design_lint, "load_url",
+                                  lambda: (_ for _ in ()).throw(AssertionError("plugin call"))), \
+                contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            try:
+                code = design_lint.main()
+            except SystemExit as exc:
+                code = int(exc.code or 0)
+        if json_out.exists():
+            doc = json.loads(json_out.read_text())
+    return code, out.getvalue() + err.getvalue(), doc
 
 
 class InkVsBoxTest(unittest.TestCase):
@@ -481,6 +515,285 @@ class InkUnavailableTest(unittest.TestCase):
         code, output, doc = self._run(nodes)
         self.assertEqual(code, 0, output)
         self.assertIs(doc["valid"], True)
+
+
+
+
+class RuleRegistryTest(unittest.TestCase):
+    """A rule without an evidence record is a guess: the registry must be total."""
+
+    def test_every_rule_id_in_the_source_is_registered(self):
+        source = (HERE / "design_lint.py").read_text()
+        used = set(re.findall(r'add\(\s*"([a-z_.]+)"', source))
+        self.assertTrue(used, "no add() call found — the scanner broke")
+        self.assertEqual(sorted(used - set(design_lint.RULES)), [])
+
+    def test_every_rule_records_its_evidence(self):
+        for rule_id, entry in design_lint.RULES.items():
+            self.assertTrue(str(entry.get("born_from") or "").strip(), rule_id)
+            self.assertEqual(set(entry["corpus"]), {"tp", "fp", "ok"}, rule_id)
+            for value in entry["corpus"].values():
+                self.assertIsInstance(value, int, rule_id)
+            self.assertIn(entry["severity"], {"high", "medium", "low", "retired"}, rule_id)
+
+    def test_a_high_rule_is_a_proven_defect_class(self):
+        # HIGH breaks the gate: only a class the museum can reproduce carries it.
+        museum = {"board.overflow", "fit.rule", "text.overlap", "marker.centre", "cta.float"}
+        for rule_id in museum:
+            self.assertEqual(design_lint.RULES[rule_id]["severity"], "high", rule_id)
+
+    def test_a_rule_with_only_wrong_positives_is_retired(self):
+        retired = [r for r, e in design_lint.RULES.items() if e["severity"] == "retired"]
+        self.assertEqual(retired, ["inline.baseline"])
+        self.assertGreater(design_lint.RULES["inline.baseline"]["corpus"]["fp"], 0)
+
+    def test_retired_inline_rule_no_longer_fires(self):
+        # the old rule flagged every 13/16 pair; a mixed-size row is not a defect
+        nodes = [_board(),
+                 _text("num", x=120, y=100, w=40, h=24, size=16, text="58", ink_h=19.5),
+                 _text("cap", x=190, y=104, w=80, h=20, size=13, text="MEKTUP", ink_h=17.5)]
+        self.assertNotIn("inline.baseline", {rule for rule, _ in _rules(nodes)})
+
+
+class FromNodesTest(unittest.TestCase):
+    """--from-nodes lints a frozen dump: the same snapshot decides before/after."""
+
+    def test_offline_run_needs_no_plugin(self):
+        nodes = [_board(), _text("title", size=56, y=60, line="1.1", text="Başlık"),
+                 _text("body", y=200, text="Gövde metni")]
+        code, output, doc = _run_lint(nodes)
+        self.assertEqual(code, 0, output)
+        self.assertIs(doc["valid"], True)
+        self.assertEqual(doc["page"], "Mobil")
+
+    def test_a_finding_survives_the_offline_path(self):
+        nodes = [_board(), _text("title", size=56, y=60, line="1.1", text="Başlık"),
+                 _text("body", y=200, text="Gövde metni"),
+                 _text("t", x=1200, y=400, w=200, ink_x=1200, ink_w=300)]
+        code, output, doc = _run_lint(nodes)
+        self.assertEqual(code, 1, output)
+        self.assertEqual(len([f for f in doc["findings"] if f["severity"] == "high"]), 1)
+
+    def test_page_comes_from_the_dump_name_when_omitted(self):
+        nodes = [_board(), _text("title", size=56, y=60, line="1.1", text="Başlık"),
+                 _text("body", y=200, text="Gövde metni")]
+        code, output, doc = _run_lint(nodes, include_page=False)
+        self.assertEqual(code, 0, output)
+        self.assertEqual(doc["page"], "Mobil")
+
+
+class GroupingTest(unittest.TestCase):
+    """One root cause repeated per row is one finding with a count."""
+
+    def _card(self, index, meta_y):
+        card = _node(id=f"c{index}", name=f"sess card {index}", type="board", parentId="pg",
+                     parent="pg", x=120 + 240 * index, y=100, w=232, h=200, fill="#FFFFFF", stroke=True)
+        return [card,
+                _text(f"t{index}", parent=f"c{index}", x=136 + 240 * index, y=116, w=200, h=22,
+                      size=16, text="Oturum", ink_y=116, ink_h=19.5),
+                _text(f"m{index}", parent=f"c{index}", x=136 + 240 * index, y=meta_y, w=200, h=40,
+                      size=13, text="13:00 · 30 dk", ink_y=meta_y + 1, ink_h=16.5)]
+
+    def test_same_cause_rows_merge_into_one_group(self):
+        nodes = [_board()]
+        for i, meta_y in enumerate((180, 190, 186)):
+            nodes += self._card(i, meta_y)
+        gaps = [f for f in design_lint.lint(nodes, dict(design_lint.DEFAULTS))
+                if f["rule"] == "gap.intra_card"]
+        self.assertEqual(len(gaps), 1)
+        self.assertEqual(gaps[0]["count"], 3)
+        self.assertEqual(len(gaps[0]["instances"]), 3)
+
+    def test_different_causes_stay_apart(self):
+        nodes = [_board(), *self._card(0, 180)]
+        nodes.append(_node(id="wide", name="wide card", type="board", parentId="pg", parent="pg",
+                           x=800, y=100, w=300, h=200, fill="#FFFFFF", stroke=True))
+        nodes.append(_text("wt", parent="wide", x=816, y=116, w=260, h=22, size=16,
+                           text="Başlık", ink_y=116, ink_h=19.5))
+        nodes.append(_text("wm", parent="wide", x=816, y=190, w=260, h=40, size=13,
+                           text="meta", ink_y=191, ink_h=16.5))
+        names = {f["group"] for f in design_lint.lint(nodes, dict(design_lint.DEFAULTS))
+                 if f["rule"] == "gap.intra_card"}
+        self.assertGreaterEqual(len(names), 2)
+
+
+class AcknowledgeTest(unittest.TestCase):
+    """An accepted design decision is declared with a reason and counted apart."""
+
+    def _nodes(self):
+        return [_board(),
+                _text("title", size=56, y=40, line="1.1", x=120, w=400, h=61,
+                      text="Başlık", ink_y=40, ink_h=60),
+                _node(id="card", name="form", type="board", parentId="pg", parent="pg",
+                      x=120, y=100, w=400, h=160, fill="#FFFFFF", stroke=True),
+                _text("a", parent="card", x=140, y=120, w=360, h=22, size=16,
+                      text="Birinci satır", ink_y=122, ink_h=19.5),
+                _text("b", parent="card", x=140, y=220, w=360, h=22, size=16,
+                      text="İkinci satır", ink_y=222, ink_h=19.5)]
+
+    def _rules_with(self, entry):
+        rules = dict(design_lint.DEFAULTS)
+        rules["acknowledge"] = [entry]
+        return rules
+
+    def test_a_reasoned_acknowledgement_is_counted_apart(self):
+        rules = self._rules_with({"rule": "gap.intra_card", "board": "page",
+                                  "shape-prefix": "form", "reason": "consent row break, 1:1"})
+        findings = [f for f in design_lint.lint(self._nodes(), rules)
+                    if f["rule"] == "gap.intra_card"]
+        self.assertEqual(len(findings), 1)
+        self.assertTrue(findings[0]["acknowledged"])
+        self.assertIn("consent", findings[0]["ack_reason"])
+
+    def test_an_acknowledgement_without_a_reason_is_ignored(self):
+        rules = self._rules_with({"rule": "gap.intra_card", "board": "page", "shape-prefix": "form"})
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            findings = [f for f in design_lint.lint(self._nodes(), rules)
+                        if f["rule"] == "gap.intra_card"]
+        self.assertFalse(findings[0]["acknowledged"])
+        self.assertIn("without a reason", err.getvalue())
+
+    def test_a_narrow_acknowledgement_does_not_cover_another_board(self):
+        rules = self._rules_with({"rule": "gap.intra_card", "board": "elsewhere",
+                                  "shape-prefix": "form", "reason": "looked at 1:1"})
+        findings = [f for f in design_lint.lint(self._nodes(), rules)
+                    if f["rule"] == "gap.intra_card"]
+        self.assertFalse(findings[0]["acknowledged"])
+
+    def test_acknowledged_findings_stay_in_the_output_and_the_json(self):
+        code, output, doc = _run_lint(
+            self._nodes(), rules={"min_step_ratio": 1.2,
+                                  "acknowledge": [{"rule": "gap.intra_card", "board": "page",
+                                                   "shape-prefix": "form", "reason": "consent row"}]})
+        self.assertEqual(code, 0, output)
+        self.assertIn("acknowledged: 1", output)
+        self.assertIn("consent row", output)
+        self.assertTrue(any(f["acknowledged"] for f in doc["findings"]))
+        self.assertEqual(doc["summary"]["acknowledged"], 1)
+
+
+class SeverityOutputTest(unittest.TestCase):
+    """MEDIUM is reported and never gates; LOW is hidden unless --verbose."""
+
+    def _nodes(self):
+        return [_board(),
+                _text("title", size=56, y=60, line="1.1", w=400, h=61,
+                      text="Başlık", ink_y=60, ink_h=60),
+                _text("legal", x=120, y=200, w=600, h=20, size=13,
+                      text="Meşrutiyet Cad. 24/7, 06420 Çankaya, Ankara · +90 312 425 18 40", ink_y=200, ink_h=17.5)]
+
+    def test_low_is_hidden_by_default_and_kept_in_the_json(self):
+        code, output, doc = _run_lint(self._nodes())
+        self.assertEqual(code, 0, output)
+        self.assertNotIn("small paragraph", output)
+        self.assertTrue(any(f["severity"] == "low" for f in doc["findings"]))
+        self.assertEqual(doc["summary"]["low"], 1)
+
+    def test_verbose_shows_low(self):
+        code, output, _ = _run_lint(self._nodes(), argv_extra=("--verbose",))
+        self.assertEqual(code, 0, output)
+        self.assertIn("small paragraph", output)
+
+    def test_medium_is_reported_and_does_not_break_the_gate(self):
+        # one text near the top of a 200px card: the void is a leak, not padding
+        nodes = [_board(),
+                 _text("title", size=56, y=60, line="1.1", w=400, h=61,
+                       text="Başlık", ink_y=60, ink_h=60),
+                 _node(id="c", name="card", type="board", parentId="pg", parent="pg",
+                       x=120, y=200, w=460, h=120, fill="#FFFFFF", stroke=True),
+                 _text("t", parent="c", x=140, y=220, w=200, h=22, size=16,
+                       text="Tek satır", ink_y=221, ink_h=19.5)]
+        code, output, doc = _run_lint(nodes)
+        dead = [f for f in doc["findings"] if f["rule"] == "dead_space"]
+        self.assertEqual(code, 0, output)
+        self.assertEqual(len(dead), 1)
+        self.assertEqual(dead[0]["severity"], "medium")
+        self.assertIn("dead space", output)
+
+
+class DeadSpacePaddingTest(unittest.TestCase):
+    """A void that matches the container's own entry inset is padding, not a leak."""
+
+    def _band(self, height, text_y):
+        return [_board(),
+                _node(id="c", name="band", type="board", parentId="pg", parent="pg",
+                      x=0, y=100, w=1440, h=height, fill="#E8EBED"),
+                _text("t", parent="c", x=120, y=text_y, w=400, h=22, size=16,
+                      text="Tek satır", ink_y=text_y + 1, ink_h=19.5)]
+
+    def test_symmetric_padding_is_clean(self):
+        # 70px in, 70px out: the band's own inset (the corpus' 4/4 dead-space hits)
+        findings = _findings(self._band(160, 169), "dead space")
+        self.assertEqual(findings, [])
+
+    def test_a_void_bigger_than_the_entry_inset_is_medium(self):
+        findings = _findings(self._band(100, 120), "dead space")
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0]["severity"], "medium")
+
+
+class RegressionMuseumTest(unittest.TestCase):
+    """The five eye-caught classes, reproduced by moving one coordinate.
+
+    Each class is built clean first (the mutation is the only difference), and
+    the mutant must come back HIGH under its own rule id — this is the guard for
+    "a rule change did not lose a real defect".
+    """
+
+    def test_regression_museum_overflow(self):
+        clean = [_board(), _node(id="s", name="cta", parentId="pg", parent="pg",
+                                 x=1100, y=100, w=300, h=52)]
+        mutant = [_board(), _node(id="s", name="cta", parentId="pg", parent="pg",
+                                  x=1300, y=100, w=300, h=52)]
+        self.assertNotIn("board.overflow", {r for r, _ in _rules(clean)})
+        self.assertIn(("board.overflow", "high"), _rules(mutant))
+
+    def test_regression_museum_rule_crossing(self):
+        def nodes(rule_y):
+            return [_board(),
+                    _text("meta", x=120, y=100, w=400, h=22, size=13, text="412 üye",
+                          ink_y=101, ink_h=16.5),
+                    _node(id="r", name="row rule", parentId="pg", parent="pg",
+                          x=120, y=rule_y, w=600, h=1, fill="#DDE1E4")]
+
+        self.assertNotIn("fit.rule", {r for r, _ in _rules(nodes(200))})
+        self.assertIn(("fit.rule", "high"), _rules(nodes(108)))
+
+    def test_regression_museum_collision(self):
+        def nodes(dy):
+            return [_board(),
+                    _text("a", x=120, y=100, w=400, h=22, size=16, text="Birinci başlık",
+                          ink_y=101, ink_h=19.5),
+                    _text("b", x=160, y=100 + dy, w=400, h=22, size=16, text="İkinci başlık",
+                          ink_y=101 + dy, ink_h=19.5)]
+
+        self.assertNotIn("text.overlap", {r for r, _ in _rules(nodes(60))})
+        self.assertIn(("text.overlap", "high"), _rules(nodes(4)))
+
+    def test_regression_museum_bullet_drift(self):
+        def nodes(dot_y):
+            return [_board(),
+                    _node(id="dot", name="bullets dot 0", parentId="pg", parent="pg",
+                          x=120, y=dot_y, w=6, h=6, fill="#C4122F"),
+                    _text("item", x=136, y=100, w=500, h=22, size=16, line="1.4",
+                          text="Kalp yetersizliği", ink_y=102, ink_h=19.5)]
+
+        self.assertNotIn("marker.centre", {r for r, _ in _rules(nodes(108))})
+        self.assertIn(("marker.centre", "high"), _rules(nodes(104)))
+
+    def test_regression_museum_floating_cta(self):
+        def nodes(link_y):
+            return [_board(),
+                    _node(id="btn", name="band cta", type="board", parentId="pg", parent="pg",
+                          x=120, y=400, w=168, h=52, fill="#FFFFFF", stroke=True),
+                    _text("label", parent="btn", x=120, y=416, w=168, h=23, text="Kayıt ol",
+                          name="band cta / label", ink_h=19.5),
+                    _text("link", x=312, y=link_y, w=93, h=22, text="Programı gör",
+                          name="band cta 2", ink_y=link_y + 1, ink_h=19.5)]
+
+        self.assertNotIn("cta.float", {r for r, _ in _rules(nodes(415.25))})
+        self.assertIn(("cta.float", "high"), _rules(nodes(352)))
 
 
 if __name__ == "__main__":

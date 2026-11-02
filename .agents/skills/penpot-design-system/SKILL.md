@@ -143,6 +143,11 @@ right. A 120px asymmetry survived every gate because the grid lived only in pros
 - Audit from geometry, not eyes. `design_lint.py --page <p> --json` already collects
   x/y/w/h per node; assert the grid edges from that file with a ten-line check. Eyeballing
   a page-scale render is how the 120px survived — it is not a verification method.
+- **A lint rule is earned.** It starts from a defect the eye caught and lint missed:
+  a failing fixture in `test_lint_rules.py` first, then the rule, then its wrong-positive
+  count on the frozen corpus (`--from-nodes`, `--rules-report`) written into `RULES`.
+  HIGH means 0 wrong positives there; a rule with only wrong positives is retired, and
+  a finding the eye accepts gets an `acknowledge` entry with a reason, never a silence.
 - 1:1 the margins. The four verification crops gain a fifth: left/right margin symmetry
   at the hero and at one dense section. Asymmetry hides at page scale and nowhere else.
 
@@ -264,15 +269,15 @@ checks; build it right the first time instead.
   they never are, because each size carries its own ink offset (İHKD 01 gündem: three
   offsets, all wrong). Start every box in the row at the SAME y, then nudge the small
   text as a group from a 2x crop until ink tops agree within 2px (max two rounds, keep
-  the best). The `inline mixed-size pair` lint flags exactly this pattern — clear the
-  flag instead of explaining it.
+  the best). No lint rule sees this any more (the mixed-size pair flag was retired as
+  noise) — the 1:1 row crop is the only check.
 - **One line, one box — or computed baselines.** A value+unit line faked with two
   top-aligned boxes at different sizes always drifts, because box tops are not
   baselines and nobody measures the joint. Either use a single text node, stack the
   parts vertically (value over unit label — no baseline math, looks deliberate), or
   compute both baselines from committed `textBounds` in a later call and nudge. The
-  lint rule `inline mixed-size pair` flags every top-aligned mixed-size adjacency for
-  a 1:1 baseline read; a flag is a review pointer, not a failure.
+  lint cannot judge a mixed-size row (it flagged every one, so the rule was retired);
+  read it in the 1:1 row crop.
 - **Footers dock to content, panels are sums not slabs.** A footer sits at
   last-content-bottom + section rhythm; a board ends at footer + footer height. A
   hardcoded footer y survives every layout change above it and leaves a dead canvas

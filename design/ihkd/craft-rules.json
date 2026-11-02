@@ -1,4 +1,25 @@
 {
   "_why": "The type scale's body/meta pair is 13 -> 16px (1.23). The 1.25 default assumes a prose scale; this project's 13px labels and table meta are a deliberate step. This is the only project deviation: the uppercase ceiling is a lint DEFAULT (0.35), not a rule here.",
-  "min_step_ratio": 1.2
+  "min_step_ratio": 1.2,
+  "_acknowledge": "A lint finding this project accepts on purpose. Every entry needs a reason and a 1:1 look at the board; it stays in the lint output counted apart, and only the unexplained count is watched. No entry without a reason is honoured.",
+  "acknowledge": [
+    {
+      "rule": "gap.intra_card",
+      "board": "18-uyelik",
+      "shape-prefix": "form",
+      "reason": "the KVKK consent line is its own block; the 40px break separates consent from the document rows (checked 1:1, 2026-11-02)"
+    },
+    {
+      "rule": "gap.intra_card",
+      "board": "19-giris",
+      "shape-prefix": "auth left",
+      "reason": "the brand panel anchors the photo caption to its top and the legal footer to its bottom; the 72px is the panel's spare height, not a drifting pair (checked 1:1, 2026-11-02)"
+    },
+    {
+      "rule": "dead_space",
+      "board": "20-panel",
+      "shape-prefix": "sidebar",
+      "reason": "the sign-out row is docked at the sidebar foot with a 39px pad against the 24px head pad; the extra air is the dock (checked 1:1, 2026-11-02)"
+    }
+  ]
 }

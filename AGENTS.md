@@ -126,6 +126,10 @@ python3 scripts/patch_file.py <file> --old-file a.txt --new-file b.txt   # exact
   HIGH), accent bars must match their text span (MEDIUM). Thresholds live in
   its `DEFAULTS` (uppercase ceiling 0.25 with the label-UI rationale there);
   `--rules` is a written deviation, not a silent one.
+- **A lint rule is earned, never guessed.** It starts from a defect the eye caught and
+  lint missed: failing museum fixture in `test_lint_rules.py`, then the rule, then its
+  wrong-positive count on the frozen corpus (`--from-nodes`, `--rules-report`) written
+  into `RULES`. HIGH means that count is 0; a rule with only wrong positives is retired.
 - `gate.py` runs lint → QA → `ux_gate` per page, export+crop only for `--boards`, one
   table of per-step seconds; `gate.py stage` is the only `git add -f design/…` path.
 - `build.py` holds `build/.build.lock` (stale after 5 min), polls fit 250 ms up to

@@ -9,6 +9,13 @@ this one checks craft thresholds — type scale, rhythm, accent count, alignment
 radius, shadows, overflow, placeholder copy. Thresholds are the defaults below and can be
 overridden per project with `--rules` (a flat JSON of the same keys).
 
+    design_lint.py --from-nodes /tmp/lint-corpus/Üyelik.nodes.json --rules design/ihkd/craft-rules.json
+
+`--from-nodes` lints a frozen `--dump-nodes` file and never touches the plugin:
+the before/after comparison of a rule change, the regression museum and the
+corpus triage all run offline on one snapshot, so a live edit cannot move the
+number a claim rests on.
+
 Exit codes: 0 no high findings, 1 high findings, 2 environment or transport, or a
 page whose texts have no measured ink (not the open page — findings are invalid).
 """
@@ -72,6 +79,7 @@ DEFAULTS = {
     "float_high_centre_diff": 16.0,
     "float_max_centre_diff": 120.0,
     "min_stat_size": 30.0,       # a stats-row number is display type, not body copy
+    "dead_pad_tol": 8.0,         # trailing void within this of the entry inset is padding
 }
 
 BANNED_EXACT = {"Text", "Rectangle", "Board", "Group"}
@@ -81,6 +89,176 @@ BANNED_EXACT = {"Text", "Rectangle", "Board", "Group"}
 # (`inks` / `inkW` are filtered out) and the run reports "0 high" for a page it
 # never measured. That silent false PASS is a defective lint, not a clean page.
 INK_NULL_MAX_RATIO = 0.05
+
+
+# ---- rule registry: every rule carries its evidence record ----
+# severity is the GATE level: HIGH breaks the build and is reserved for classes
+# that are proven by the museum (a fixture that fails without the rule) and
+# produced no wrong positive on the frozen 5-page corpus; MEDIUM is reported and
+# never breaks the gate; LOW is hidden from the default output (`--verbose`
+# shows it) because its live hits are declared design decisions.
+# corpus = tp / fp / ok counted by eye on design/ihkd/lint-corpus (2026-11-02,
+# 5 pages, 2 852 shapes): tp a real defect, fp a rule that fired on a clean
+# screen, ok a finding that is a recorded design decision. `--rules-report`
+# prints the table.
+# born_from names the fixture or session note the rule came from; a rule with no
+# real catch does not get one (it is retired, not kept).
+RULES: dict[str, dict] = {
+    "board.width": {
+        "severity": "medium",
+        "born_from": "fixture: boards are 1440/390 (build SCREENS)",
+        "corpus": {"tp": 0, "fp": 0, "ok": 0}},
+    "type.sizes": {
+        "severity": "high",
+        "born_from": "fixture: the 13->16->30 scale; 6 sizes is the ceiling",
+        "corpus": {"tp": 0, "fp": 0, "ok": 0}},
+    "type.display": {
+        "severity": "high",
+        "born_from": "fixture: a display only 1.5x the body has no scale drama",
+        "corpus": {"tp": 0, "fp": 0, "ok": 0}},
+    "type.dominant": {
+        "severity": "high",
+        "born_from": "session: a page opening with a 13px kicker and no display type",
+        "corpus": {"tp": 0, "fp": 0, "ok": 0}},
+    "type.steps": {
+        "severity": "medium",
+        "born_from": "fixture: 13->16 is this project's declared 1.2 step",
+        "corpus": {"tp": 0, "fp": 0, "ok": 20}},
+    "type.small_body": {
+        "severity": "low",
+        "born_from": "fixture: a 12px paragraph reads as fine print; corpus tp = 09-kayit FAQ answers",
+        "corpus": {"tp": 3, "fp": 0, "ok": 78}},
+    "type.leading": {
+        "severity": "medium",
+        "born_from": "fixture: display type set at 1.5 loses its block",
+        "corpus": {"tp": 0, "fp": 0, "ok": 0}},
+    "type.measure": {
+        "severity": "low",
+        "born_from": "fixture: a 120-char line at 16px",
+        "corpus": {"tp": 0, "fp": 0, "ok": 0}},
+    "accent.hues": {
+        "severity": "high",
+        "born_from": "fixture: one accent hue per board (İHKD red)",
+        "corpus": {"tp": 0, "fp": 0, "ok": 0}},
+    "radius.scale": {
+        "severity": "low",
+        "born_from": "fixture: radius outside the declared scale",
+        "corpus": {"tp": 0, "fp": 0, "ok": 0}},
+    "shadow.present": {
+        "severity": "medium",
+        "born_from": "fixture: a card shadow instead of a hairline",
+        "corpus": {"tp": 0, "fp": 0, "ok": 0}},
+    "board.overflow": {
+        "severity": "high",
+        "born_from": "test_penpot_scripts: shape past the frame edge",
+        "corpus": {"tp": 0, "fp": 0, "ok": 0}},
+    "type.uppercase": {
+        "severity": "medium",
+        "born_from": "fixture: tracked-caps as decoration above 35% of texts",
+        "corpus": {"tp": 0, "fp": 0, "ok": 0}},
+    "inline.baseline": {
+        "severity": "retired",
+        "born_from": "retired 2026-11-02: flagged every mixed-size row (23/23 corpus hits read clean at 1:1)",
+        "corpus": {"tp": 0, "fp": 23, "ok": 0}},
+    "text.overlap": {
+        "severity": "high",
+        "born_from": "session: İHKD 01 hero caption / red label crash",
+        "corpus": {"tp": 0, "fp": 0, "ok": 0}},
+    "text.on_control": {
+        "severity": "high",
+        "born_from": "session: DAHİL / 'Devam et' overlap on a saturated pill",
+        "corpus": {"tp": 0, "fp": 0, "ok": 0}},
+    "text.paint_over": {
+        "severity": "high",
+        "born_from": "session: hero title slid 14px under its photo on a copy edit",
+        "corpus": {"tp": 0, "fp": 0, "ok": 0}},
+    "copy.placeholder": {
+        "severity": "high",
+        "born_from": "fixture: lorem/TODO/Text left in the design",
+        "corpus": {"tp": 0, "fp": 0, "ok": 0}},
+    "text.unlaid": {
+        "severity": "high",
+        "born_from": "session: a 1x1 text box paints nothing and the exporter clips it",
+        "corpus": {"tp": 0, "fp": 0, "ok": 0}},
+    "panel.padding": {
+        "severity": "medium",
+        "born_from": "session: İHKD 04 propose card with 0px padding",
+        "corpus": {"tp": 0, "fp": 0, "ok": 0}},
+    "text.collision": {
+        "severity": "medium",
+        "born_from": "session: two texts sharing ink between cards",
+        "corpus": {"tp": 0, "fp": 0, "ok": 0}},
+    "fit.box": {
+        "severity": "high",
+        "born_from": "fixture: a 500px text box inside a 400px card",
+        "corpus": {"tp": 0, "fp": 0, "ok": 0}},
+    "fit.no_container": {
+        "severity": "medium",
+        "born_from": "fixture: a text with no enclosing slot",
+        "corpus": {"tp": 0, "fp": 0, "ok": 0}},
+    "fit.container": {
+        "severity": "high",
+        "born_from": "session: 07-program schedule meta crossing its row",
+        "corpus": {"tp": 0, "fp": 0, "ok": 0}},
+    "fit.sibling": {
+        "severity": "high",
+        "born_from": "session: ink entering the next slot of a card grid",
+        "corpus": {"tp": 0, "fp": 0, "ok": 0}},
+    "fit.rule": {
+        "severity": "high",
+        "born_from": "session: 07-program meta painting over row rules",
+        "corpus": {"tp": 0, "fp": 0, "ok": 0}},
+    "fit.band": {
+        "severity": "high",
+        "born_from": "session: İHKD 01 journal meta 12px past its 300px band",
+        "corpus": {"tp": 0, "fp": 0, "ok": 0}},
+    "fit.bar": {
+        "severity": "medium",
+        "born_from": "fixture: accent bar shorter than the column beside it",
+        "corpus": {"tp": 0, "fp": 0, "ok": 0}},
+    "surface.touch": {
+        "severity": "medium",
+        "born_from": "fixture: a photo glued to its card edge with a 0px joint",
+        "corpus": {"tp": 0, "fp": 0, "ok": 0}},
+    "dead_space": {
+        "severity": "medium",
+        "born_from": "fixture: card text stopping 80px above its own bottom edge; 3/4 live hits were symmetric padding, so the rule now exempts a void within dead_pad_tol of the entry inset",
+        "corpus": {"tp": 0, "fp": 0, "ok": 4}},
+    "gap.intra_card": {
+        "severity": "medium",
+        "born_from": "session: 20-panel aidat title/meta drifting 36px apart",
+        "corpus": {"tp": 2, "fp": 0, "ok": 2}},
+    "corridor.empty": {
+        "severity": "high",
+        "born_from": "session: a 96px strip with no content reads as a missing row",
+        "corpus": {"tp": 0, "fp": 0, "ok": 0}},
+    "gap.min": {
+        "severity": "high",
+        "born_from": "session: İHKD 01 group rows 5px apart / 1.9px bullet drop",
+        "corpus": {"tp": 0, "fp": 0, "ok": 0}},
+    "marker.centre": {
+        "severity": "high",
+        "born_from": "fixture: bullets dot 2-4px above the line's ink centre",
+        "corpus": {"tp": 0, "fp": 0, "ok": 0}},
+    "marker.rule": {
+        "severity": "medium",
+        "born_from": "fixture: list separator drifting from the marker's left edge",
+        "corpus": {"tp": 0, "fp": 0, "ok": 0}},
+    "surface.role": {
+        "severity": "medium",
+        "born_from": "session: 13-kilavuzlar alt cards beside white / 20-panel ECG card",
+        "corpus": {"tp": 0, "fp": 0, "ok": 0}},
+    "cta.float": {
+        "severity": "high",
+        "born_from": "session: 01 kongre 'Programı gör' 63px above its button",
+        "corpus": {"tp": 0, "fp": 0, "ok": 0}},
+    "stat.size": {
+        "severity": "medium",
+        "born_from": "session: 01 dark proof band ran 16px values against 13px labels",
+        "corpus": {"tp": 0, "fp": 0, "ok": 0}},
+}
+
+LOW_SEVERITIES = {"low"}
 
 
 def ink_unavailable(nodes: list[dict]) -> tuple[int, int]:
@@ -126,6 +304,17 @@ const walk = (s, parent) => {
 (page.root.children || []).forEach(s => walk(s, null));
 return JSON.stringify(out);
 """
+
+
+def rules_report() -> str:
+    """The registry as a table: id, severity, born_from, live-corpus tp/fp/ok."""
+    lines = [f"{'rule':<20}{'sev':<9}{'tp':>3}{'fp':>3}{'ok':>4}  born_from"]
+    for rule_id in sorted(RULES):
+        entry = RULES[rule_id]
+        corpus = entry["corpus"]
+        lines.append(f"{rule_id:<20}{entry['severity']:<9}{corpus['tp']:>3}{corpus['fp']:>3}"
+                     f"{corpus['ok']:>4}  {entry['born_from']}")
+    return "\n".join(lines)
 
 
 def saturation(hex_color: str) -> float:
@@ -192,6 +381,73 @@ def is_background(solid: dict, board_w: float) -> bool:
     return (solid.get("w") or 0) >= 0.8 * (board_w or 0)
 
 
+def family(name: str | None) -> str:
+    """A shape's instance family: 'sess meta 18' -> 'sess meta'.
+
+    One cause repeated per row (19 session metas, 18 footers) is one finding:
+    grouping by this key keeps the count and drops the 18 extra lines.
+    """
+    text = re.sub(r"\s+\d+$", "", str(name or "").strip())
+    return text or "?"
+
+
+def _match_ack(group: dict, acks: list[dict]) -> dict | None:
+    for entry in acks:
+        if str(entry.get("rule") or "") not in (group["rule"], "*"):
+            continue
+        board = entry.get("board")
+        if board and board not in group["boards"]:
+            continue
+        prefix = entry.get("shape-prefix")
+        if prefix and not any(str(name).startswith(prefix) for name in group["instances"]):
+            continue
+        return entry
+    return None
+
+
+def group_findings(findings: list[dict], rules: dict) -> list[dict]:
+    """Collapse same-cause findings into one entry with count + instances.
+
+    An `acknowledge` entry in the project's craft-rules.json marks a group as a
+    recorded design decision: it stays in the output and in the JSON, counted
+    apart, and only the unexplained medium count is watched.
+    """
+    raw = rules.get("acknowledge") or []
+    acks = []
+    for entry in raw:
+        if isinstance(entry, dict) and str(entry.get("reason") or "").strip():
+            acks.append(entry)
+        else:
+            print(f"warning: craft-rules acknowledge entry without a reason is ignored: {entry}",
+                  file=sys.stderr)
+    order: list[tuple] = []
+    groups: dict[tuple, dict] = {}
+    for finding in findings:
+        key = (finding["rule"], finding["group"], finding["severity"])
+        group = groups.get(key)
+        if group is None:
+            group = dict(finding)
+            group.update({"count": 0, "instances": [], "boards": []})
+            groups[key] = group
+            order.append(key)
+        group["count"] += 1
+        instance = finding.get("shape") or finding["board"]
+        if instance not in group["instances"]:
+            group["instances"].append(instance)
+        if finding["board"] not in group["boards"]:
+            group["boards"].append(finding["board"])
+    out = []
+    for key in order:
+        group = groups[key]
+        ack = _match_ack(group, acks)
+        group["acknowledged"] = bool(ack)
+        group["ack_reason"] = (ack or {}).get("reason")
+        # the first board names the group; a cross-board group keeps the list
+        group["board"] = group["boards"][0] if len(group["boards"]) == 1 else f"{len(group['boards'])} boards"
+        out.append(group)
+    return out
+
+
 def lint(nodes: list[dict], rules: dict) -> list[dict]:
     findings: list[dict] = []
     boards = [n for n in nodes if n["type"] == "board" and n["parentId"] is None]
@@ -212,18 +468,29 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
     for board in boards:
         region = board["name"]
 
-        def add(severity: str, message: str) -> None:
-            findings.append({"board": region, "severity": severity, "finding": message})
+        def add(rule_id: str, message: str, group: str | None = None,
+                level: str | None = None, shape: str | None = None) -> None:
+            entry = RULES.get(rule_id)
+            if entry is None or entry["severity"] == "retired":
+                raise KeyError(f"unregistered or retired rule: {rule_id}")
+            findings.append({
+                "rule": rule_id,
+                "board": region,
+                "severity": level or entry["severity"],
+                "finding": message,
+                "group": group or family(shape),
+                "shape": shape,
+            })
 
         inside = subtree(board["id"])
         by_id = {n["id"]: n for n in inside}
         if int(board["w"]) not in rules["board_widths"]:
-            add("medium", f"board width {board['w']} is not one of {rules['board_widths']}")
+            add("board.width", f"board width {board['w']:.0f} is not one of {rules['board_widths']} → set the frame to a declared width")
 
         texts = [n for n in inside if n["type"] == "text" and n["fontSize"]]
         sizes = sorted({n["fontSize"] for n in texts})
         if len(sizes) > rules["max_type_sizes"]:
-            add("high", f"{len(sizes)} distinct type sizes (max {rules['max_type_sizes']}): {sizes}")
+            add("type.sizes", f"{len(sizes)} distinct type sizes (max {rules['max_type_sizes']}): {sizes} → collapse to one display, one body, one meta")
         if sizes:
             chrome = rules["dominant_ignore_prefix"] or []
             pool = [n for n in texts if not any(n["name"].startswith(c) for c in chrome)] or texts
@@ -231,30 +498,36 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
             topmost = min((n for n in pool if n["fontSize"] == top_size), key=lambda n: n["y"])
             offset = topmost["y"] - board["y"]
             if offset > 900:
-                add("high", f"largest type ({topmost['fontSize']}px, {topmost['name']}) starts at y={offset:.0f} — the page opens without a dominant element")
+                add("type.dominant", f"largest type ({topmost['fontSize']}px, {topmost['name']}) starts at y={offset:.0f} — the page opens without a dominant element → move the display above y=900", shape=topmost["name"])
             counts = {size: sum(1 for n in texts if n["fontSize"] == size) for size in sizes}
             body = max(counts, key=counts.get)
             if sizes[-1] / body < rules["min_display_ratio"]:
                 add(
-                    "high",
+                    "type.display",
                     f"display {sizes[-1]}px is only {sizes[-1] / body:.2f}x the body {body}px "
-                    f"(min {rules['min_display_ratio']}x) — no scale drama",
+                    f"(min {rules['min_display_ratio']}x) — no scale drama → push the display to "
+                    f"{body * rules['min_display_ratio']:.0f}px or drop to one size",
                 )
             if len(sizes) > 1:
                 gaps = [b / a for a, b in zip(sizes, sizes[1:])]
                 if min(gaps) < rules["min_step_ratio"]:
-                    add("medium", f"type steps too close: {[round(g, 2) for g in gaps]}")
+                    add("type.steps", f"type steps too close: {[round(g, 2) for g in gaps]} → widen to ≥{rules['min_step_ratio']}× or drop the redundant size")
 
         for node in texts:
             if node["fontSize"] < rules["min_body_size"] and len(node["text"] or "") > 40:
-                add("low", f"small paragraph at {node['fontSize']}px: {node['name']}")
+                add("type.small_body",
+                    f"small paragraph at {node['fontSize']}px: {node['name']} "
+                    f"({len(node['text'] or '')} chars at {node['fontSize']:.0f}px against a "
+                    f"{rules['min_body_size']}px body) — content copy under the body size reads as "
+                    f"fine print; meta is for captions and legal",
+                    shape=node["name"])
             multiplier = line_height_multiplier(node["lineHeight"])
             if multiplier and node["fontSize"] >= 40 and multiplier > 1.25:
-                add("medium", f"{node['name']}: {node['fontSize']}px at line-height {multiplier}")
+                add("type.leading", f"{node['name']}: {node['fontSize']:.0f}px at line-height {multiplier} → display type wants 1.0-1.2", shape=node["name"])
             if node["w"] and node["fontSize"]:
                 measure = len(node["text"] or "") / max(node["w"] / (node["fontSize"] * 0.5), 0.1)
                 if 14 <= node["fontSize"] <= 20 and len(node["text"] or "") > 120 and measure > rules["max_measure_chars"]:
-                    add("low", f"{node['name']}: ~{measure:.0f} characters per line")
+                    add("type.measure", f"{node['name']}: ~{measure:.0f} characters per line (max {rules['max_measure_chars']}) → narrow the box", shape=node["name"])
 
         accents: dict[int, str] = {}
         for node in inside:
@@ -268,7 +541,7 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
             hue = round(colorsys.rgb_to_hls(red, green, blue)[0] * 12)
             accents.setdefault(hue, fill.upper())
         if len(accents) > rules["max_accents"]:
-            add("high", f"{len(accents)} saturated accent hues (max {rules['max_accents']}): {sorted(accents.values())}")
+            add("accent.hues", f"{len(accents)} saturated accent hues (max {rules['max_accents']}): {sorted(accents.values())} → keep one accent hue per board")
 
         bad_radius = {
             n["radius"] for n in inside
@@ -277,45 +550,28 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
             and abs(n["radius"] * 2 - n["h"]) > 1  # a full pill/circle is fine at any size
         }
         if bad_radius:
-            add("low", f"radius values outside the scale: {sorted(bad_radius)}")
+            add("radius.scale", f"radius values outside the scale: {sorted(bad_radius)} → use {rules['allowed_radii']}")
 
         shadows = [n["name"] for n in inside if n["shadows"]]
         if shadows:
-            add("medium", f"{len(shadows)} shape(s) with a shadow: {shadows[:3]}")
+            add("shadow.present", f"{len(shadows)} shape(s) with a shadow: {shadows[:3]} → use a hairline or the alt surface, not a shadow")
 
         bx, by = board["x"], board["y"]
         for node in inside:
             left, top = node["x"] - bx, node["y"] - by
             if left < -0.5 or top < -0.5 or left + node["w"] > board["w"] + 0.5 or top + node["h"] > board["h"] + 0.5:
-                add("high", f"{node['name']} overflows the board (x={left:.0f} y={top:.0f} w={node['w']:.0f} h={node['h']:.0f})")
+                add("board.overflow", f"{node['name']} overflows the board (x={left:.0f} y={top:.0f} w={node['w']:.0f} h={node['h']:.0f}) → move or resize it inside the {board['w']:.0f}px frame", shape=node["name"])
                 break
 
         uppercase = [n for n in texts if (n["text"] or "").strip() and (n["text"] or "") == (n["text"] or "").upper() and len((n["text"] or "").strip()) > 3]
         if texts and len(uppercase) / len(texts) > rules["max_uppercase_ratio"]:
-            add("medium", f"{len(uppercase)}/{len(texts)} text nodes are uppercase-tracked")
+            add("type.uppercase", f"{len(uppercase)}/{len(texts)} text nodes are uppercase-tracked (ceiling {rules['max_uppercase_ratio']}) → sentence-case some labels")
 
-        # a one-line value+unit faked with two top-aligned boxes at different sizes
-        # always drifts: box tops are not baselines. Flag the pattern for a 1:1
-        # baseline check instead of trusting the coordinates.
+        # retired: the inline mixed-size prompt flagged every 13/16 or 13/30 row
+        # (23/23 corpus hits read clean at 1:1), so it was a to-do list, not a
+        # defect. The class belongs to the 1:1 tile review in the gate; see
+        # RULES["inline.baseline"] for the retirement record.
         inks = [n for n in inside if n["type"] == "text" and n["inkW"] and n["inkH"] and n["inkW"] > 1]
-        inline_flags = 0
-        for i in range(len(inks)):
-            for j in range(i + 1, len(inks)):
-                a, b = inks[i], inks[j]
-                if a["fontSize"] == b["fontSize"]:
-                    continue
-                if abs(a["y"] - b["y"]) > 12:
-                    continue
-                ox = min(a["inkX"] + a["inkW"], b["inkX"] + b["inkW"]) - max(a["inkX"], b["inkX"])
-                oy = min(a["inkY"] + a["inkH"], b["inkY"] + b["inkH"]) - max(a["inkY"], b["inkY"])
-                small = min(a["inkH"], b["inkH"])
-                gap = max(a["inkX"], b["inkX"]) - min(a["inkX"] + a["inkW"], b["inkX"] + b["inkW"])
-                if oy > small * 0.5 and gap < 48:
-                    inline_flags += 1
-                    if inline_flags <= 4:
-                        add("medium", f"inline mixed-size pair {a['name']} ({a['fontSize']}px) / {b['name']} ({b['fontSize']}px): verify the shared baseline at 1:1")
-        if inline_flags > 4:
-            add("medium", f"{inline_flags - 4} more inline mixed-size pair(s) need a 1:1 baseline check")
 
         # text must not overlap text: ink rectangles come from textBounds (page-absolute)
         for i in range(len(inks)):
@@ -324,7 +580,7 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
                 ox = min(a["inkX"] + a["inkW"], b["inkX"] + b["inkW"]) - max(a["inkX"], b["inkX"])
                 oy = min(a["inkY"] + a["inkH"], b["inkY"] + b["inkH"]) - max(a["inkY"], b["inkY"])
                 if ox > 30 and oy > 12:
-                    add("high", f"text overlap {a['name']} / {b['name']} ({ox:.0f}x{oy:.0f}px)")
+                    add("text.overlap", f"text overlap {a['name']} / {b['name']} ({ox:.0f}x{oy:.0f}px) → two texts cannot share ink; reflow the row", shape=a["name"])
 
         # text ink must not paint over a sibling shape: copy edits change ink width
         # without moving boxes (hero title slid 14px under its photo), and the
@@ -374,16 +630,17 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
                         continue
                     if occupants.get(n["id"]) == [t["id"]]:
                         continue
-                    add("high", f"text {t['name']} sits on sibling control {n['name']} "
-                               f"(ink fully inside {n['w']:.0f}x{n['h']:.0f}px solid)")
+                    add("text.on_control", f"text {t['name']} sits on sibling control {n['name']} "
+                               f"(ink fully inside {n['w']:.0f}x{n['h']:.0f}px solid) → move the label "
+                               f"off the control or inside it", shape=t["name"])
                     break
-                add("high", f"text {t['name']} paints over shape {n['name']} ({ox:.0f}x{oy:.0f}px ink overlap)")
+                add("text.paint_over", f"text {t['name']} paints over shape {n['name']} ({ox:.0f}x{oy:.0f}px ink overlap) → move the text or the shape", shape=t["name"])
                 break
 
         for node in texts:
             blob = (node["text"] or "").lower()
             if any(word in blob for word in rules["banned_text"]) or (node["text"] or "").strip() in BANNED_EXACT:
-                add("high", f"placeholder copy in {node['name']}: {node['text'][:40]!r}")
+                add("copy.placeholder", f"placeholder copy in {node['name']}: {node['text'][:40]!r} → write the real copy", shape=node["name"])
 
         # a text that never laid out (1x1 box with copy) paints nothing:
         # the exporter clips to the box, so an unmeasured label is an
@@ -392,8 +649,9 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
         # artifact worth waiting out.
         for node in texts:
             if (node["w"] or 0) <= 2 and (node["h"] or 0) <= 2 and (node["text"] or "").strip():
-                add("high", f"text {node['name']} has an unlaid-out box "
-                             f"({node['w']:.0f}x{node['h']:.0f}px) — refit, then re-export")
+                add("text.unlaid", f"text {node['name']} has an unlaid-out box "
+                             f"({node['w']:.0f}x{node['h']:.0f}px) — refit, then re-export",
+                    shape=node["name"])
 
         # text must not hug a panel's stroked/surface edge: S.board children
         # use page-absolute coords, so x:120 inside a board at x:120 is zero
@@ -424,7 +682,7 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
                 )
                 if on_pill:
                     continue
-                add("medium", f"{t['name']}: ink starts {ink_l - panel['x']:.0f}px inside {panel['name']} — panel padding under {rules['min_card_padding']}px")
+                add("panel.padding", f"{t['name']}: ink starts {ink_l - panel['x']:.0f}px inside {panel['name']} — panel padding under {rules['min_card_padding']}px → inset to {rules['min_card_padding']}px or drop the panel", shape=t["name"])
 
         # two unrelated texts must never share ink: the İHKD 01 hero
         # caption/red-label crash passed every gate because text-over-shape
@@ -448,7 +706,7 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
                 ox = min(ar, bl + b["inkW"]) - max(al, bl)
                 oy = min(ab, bt + (b.get("inkH") or 0)) - max(at, bt)
                 if ox > 8 and oy > 4:
-                    add("medium", f"text {a['name']} collides with text {b['name']} ({ox:.0f}x{oy:.0f}px ink overlap)")
+                    add("text.collision", f"text {a['name']} collides with text {b['name']} ({ox:.0f}x{oy:.0f}px ink overlap) → give one of them its own line", shape=a["name"])
 
         # ---- fit family: content must sit inside the slot it was given ----
         # A text box can sit neatly inside its card while its measured ink
@@ -509,8 +767,9 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
             if parent_slot and parent_slot.get("id") != board["id"]:
                 box_over = overflow_text(parent_slot, lx, ty, rx, by)
                 if box_over:
-                    add("high", f"text {t['name']} box ({rx - lx:.0f}x{by - ty:.0f}) exceeds its "
-                                f"container {parent_slot['name']} ({', '.join(box_over)} outside)")
+                    add("fit.box", f"text {t['name']} box ({rx - lx:.0f}x{by - ty:.0f}) exceeds its "
+                                f"container {parent_slot['name']} ({', '.join(box_over)} outside) → "
+                                f"widen {parent_slot['name']} or shrink the box", shape=t["name"])
                     continue
             cands = [s for s in slots
                      if (s["id"] == t.get("parentId") or is_ancestor(s["id"], t["id"])
@@ -523,13 +782,14 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
                 if contains(fallback, lx, ty, rx, by):
                     slot = fallback
                 else:
-                    add("medium", f"text {t['name']} has no enclosing container "
-                                  f"(box {rx - lx:.0f}x{by - ty:.0f} at x={lx:.0f} y={ty:.0f})")
+                    add("fit.no_container", f"text {t['name']} has no enclosing container "
+                                  f"(box {rx - lx:.0f}x{by - ty:.0f} at x={lx:.0f} y={ty:.0f}) → "
+                                  f"wrap it in a slot or move it inside the grid", shape=t["name"])
                     continue
             ix, iy, ir, ib = ink_box(t)
             over = overflow_text(slot, ix, iy, ir, ib)
             if over:
-                add("high", f"text {t['name']} overflows its container {slot['name']} ({', '.join(over)} ink outside)")
+                add("fit.container", f"text {t['name']} overflows its container {slot['name']} ({', '.join(over)} ink outside) → widen {slot['name']} or wrap the text", shape=t["name"])
 
         # 2. boundary entry: ink that straddles a sibling container's edge has
         # entered the next slot — including the zebra/row bands a schedule
@@ -554,7 +814,7 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
                     continue
                 if contains(s, ix, iy, ir, ib):
                     continue  # owned by paints-over-shape: background or control-sit
-                add("high", f"text {t['name']} enters sibling container {s['name']} ({ox:.0f}x{oy:.0f}px ink inside)")
+                add("fit.sibling", f"text {t['name']} enters sibling container {s['name']} ({ox:.0f}x{oy:.0f}px ink inside) → keep the text inside its own slot", shape=t["name"])
                 entered.add(t["id"])
                 break
 
@@ -580,13 +840,13 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
                     ry = r["y"] + (r["h"] or 0) / 2
                     run = min(ir, r["x"] + r["w"]) - max(ix, r["x"])
                     if iy < ry - tol and ib > ry + tol and run > 8:
-                        add("high", f"text {t['name']} crosses rule {r['name']} (ink {iy:.0f}-{ib:.0f}px over line y={ry:.0f})")
+                        add("fit.rule", f"text {t['name']} crosses rule {r['name']} (ink {iy:.0f}-{ib:.0f}px over line y={ry:.0f}) → move it above or below the rule", shape=t["name"])
                         break
                 else:
                     rx = r["x"] + (r["w"] or 0) / 2
                     run = min(ib, r["y"] + r["h"]) - max(iy, r["y"])
                     if ix < rx - tol and ir > rx + tol and run > 8:
-                        add("high", f"text {t['name']} crosses rule {r['name']} (ink {ix:.0f}-{ir:.0f}px over line x={rx:.0f})")
+                        add("fit.rule", f"text {t['name']} crosses rule {r['name']} (ink {ix:.0f}-{ir:.0f}px over line x={rx:.0f}) → move it left or right of the rule", shape=t["name"])
                         break
 
         # 3b. column band: a row rule's LENGTH is the band its texts must stay
@@ -618,8 +878,9 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
                     continue
                 over = ir - (r["x"] + r["w"])
                 if over > tol:
-                    add("high", f"text {t['name']} runs {over:.0f}px past its "
-                                f"{r['w']:.0f}px column band ({r['name']})")
+                    add("fit.band", f"text {t['name']} runs {over:.0f}px past its "
+                                f"{r['w']:.0f}px column band ({r['name']}) → shorten the text or "
+                                f"widen the band to {r['w'] + over:.0f}px", shape=t["name"])
                     break
 
         # 4. bar vs content: a thin saturated vertical bar is an accent that
@@ -646,8 +907,9 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
             top = min(ink_box(n)[1] for n in mates)
             bot = max(ink_box(n)[3] for n in mates)
             if abs(bar["h"] - (bot - top)) > rules["fit_bar_delta"]:
-                add("medium", f"bar {bar['name']} h={bar['h']:.0f}px vs content span {bot - top:.0f}px "
-                              f"(Δ{abs(bar['h'] - (bot - top)):.0f}px over {rules['fit_bar_delta']:.0f}px)")
+                add("fit.bar", f"bar {bar['name']} h={bar['h']:.0f}px vs content span {bot - top:.0f}px "
+                              f"(Δ{abs(bar['h'] - (bot - top)):.0f}px over {rules['fit_bar_delta']:.0f}px) → "
+                              f"match the bar to {bot - top:.0f}px", shape=bar["name"])
 
         # 5. sibling surfaces must not touch: two same-parent rect/board
         # solids (hairlines and chips excluded by touch_min) whose facing
@@ -681,8 +943,9 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
                 if 0 <= vgap < touch_gap:
                     run = min(a["x"] + a["w"], b["x"] + b["w"]) - max(a["x"], b["x"])
                     if run >= touch_run:
-                        add("medium", f"{a['name']} touches {b['name']} "
-                                     f"({vgap:.0f}px gap, different surfaces) — a glued joint reads as a leak")
+                        add("surface.touch", f"{a['name']} touches {b['name']} "
+                                     f"({vgap:.0f}px gap, different surfaces) — a glued joint reads as a leak → "
+                                     f"separate to ≥{touch_gap:.0f}px or unify the fills", shape=a["name"])
                         continue
                 if a["x"] <= b["x"]:
                     hgap = b["x"] - (a["x"] + a["w"])
@@ -691,14 +954,16 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
                 if 0 <= hgap < touch_gap:
                     run = min(a["y"] + a["h"], b["y"] + b["h"]) - max(a["y"], b["y"])
                     if run >= touch_run:
-                        add("medium", f"{a['name']} touches {b['name']} "
-                                     f"({hgap:.0f}px gap, different surfaces) — a glued joint reads as a leak")
+                        add("surface.touch", f"{a['name']} touches {b['name']} "
+                                     f"({hgap:.0f}px gap, different surfaces) — a glued joint reads as a leak → "
+                                     f"separate to ≥{touch_gap:.0f}px or unify the fills", shape=a["name"])
 
         # 6. dead space: a card/panel whose content ends far above its own
         # bottom edge reads as a leak, not air. Trailing void (container
         # bottom minus last descendant ink bottom) beyond dead_med — and
         # beyond 1.5x the largest contained line height, so display type
-        # is not punished — is MEDIUM; beyond dead_high is HIGH.
+        # is not punished — is MEDIUM; beyond dead_high is HIGH. A void that
+        # matches the container's own entry inset is padding and stays clean.
         dead_med, dead_high = 32.0, 80.0
         for c in surfaces:
             desc = [t for t in inked if t["id"] == c["id"] or is_ancestor(c["id"], t["id"])]
@@ -718,7 +983,14 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
             lines = [(t.get("fontSize") or 0) * (line_height_multiplier(t.get("lineHeight")) or 1.5)
                      for t in desc]
             trailing = (c["y"] + c["h"]) - max(bottoms)
-            if trailing > dead_med and trailing > 1.5 * max(lines or [0]):
+            # symmetric padding is the container's inset, not dead space: a
+            # 74px band pad over an 80px entry, a 46px sheet pad over 47px, a
+            # 52px article pad over 55px all read balanced at 1:1 (corpus
+            # 2026-11-02: 3 of 4 hits). Only a void that dwarfs the entry inset
+            # is a leak.
+            lead = min(ink_box(t)[1] for t in desc) - c["y"]
+            symmetric = abs(trailing - lead) <= rules["dead_pad_tol"]
+            if trailing > dead_med and trailing > 1.5 * max(lines or [0]) and not symmetric:
                 # row-equalized cards are exempt from the medium: bottoms
                 # align with a sibling card and content is top-anchored, so
                 # the void is the grid's — but past dead_high the row needs
@@ -730,8 +1002,9 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
                 if sibs and top_anchored and trailing <= dead_high:
                     continue
                 level = "high" if trailing > dead_high else "medium"
-                add(level, f"dead space in {c['name']}: {trailing:.0f}px below the last ink "
-                           f"(content ends, card continues)")
+                add("dead_space", f"dead space in {c['name']}: {trailing:.0f}px below the last ink "
+                           f"(content ends, card continues) → trim the card to the content or push "
+                           f"the last block down", level=level, shape=c["name"])
 
         # 8. intra-card gap: two texts stacked in one column of one card must
         # read as one block. A title pushed up and a meta pushed down — a gap
@@ -787,8 +1060,10 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
                     continue  # docked footer: an absurd gap above a bottom-pinned
                     # last line is a pinned footer, not drifting copy
                 if gap > 1.5 * line:
-                    add("medium", f"intra-card gap in {c['name']}: {a['name']} / {b['name']} "
-                                   f"({gap:.0f}px between stacked texts)")
+                    add("gap.intra_card", f"intra-card gap in {c['name']}: {a['name']} / {b['name']} "
+                                   f"({gap:.0f}px between stacked texts, ceiling {1.5 * line:.0f}px) → "
+                                   f"pull the pair together or add the divider it belongs to",
+                                   shape=c["name"])
 
         # 7. empty corridor: a horizontal strip with no content spanning most
         # of the board reads as a missing row, not air — but only inside a
@@ -844,8 +1119,9 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
                        and abs(k["y"] - e2) <= 6]
             if not above or not below:
                 continue
-            add("high", f"empty corridor {e2 - e1:.0f}px (y {e1:.0f}-{e2:.0f}px): "
-                        f"no content, no divider — reads as a missing row")
+            add("corridor.empty", f"empty corridor {e2 - e1:.0f}px (y {e1:.0f}-{e2:.0f}px): "
+                        f"no content, no divider — reads as a missing row → add the row's content "
+                        f"or remove the strip")
 
         # ---- audit rules (2026-11-02): classes the eye caught, no gate owned ----
 
@@ -890,8 +1166,10 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
                 if not seps:
                     continue
                 level = "high" if visible < rules["min_gap_high_ratio"] * line else "medium"
-                add(level, f"text {top['name']} / {bot['name']} ink gap {gap:.0f}px "
-                           f"under {rules['min_gap_ratio']:.2f}x line ({line:.0f}px) — title and meta touch")
+                add("gap.min", f"text {top['name']} / {bot['name']} ink gap {gap:.0f}px "
+                           f"under {rules['min_gap_ratio']:.2f}x line ({line:.0f}px) — title and meta "
+                           f"touch → open the gap to {rules['min_gap_ratio'] * line:.0f}px or drop "
+                           f"the meta", level=level, shape=bot["name"])
 
         # 10. list marker: a bullet/dot belongs on the line's ink centre, and
         # the separator starts at the marker's left edge. A dot at row+6 sits
@@ -922,8 +1200,9 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
                 continue
             diff, mate, centre = min(mates)
             if diff > rules["marker_centre_tol"]:
-                add("high", f"list marker {dot['name']} centre {dcy:.1f}px vs "
-                            f"{mate['name']} line centre {centre:.1f}px (Δ{diff:.1f}px)")
+                add("marker.centre", f"list marker {dot['name']} centre {dcy:.1f}px vs "
+                            f"{mate['name']} line centre {centre:.1f}px (Δ{diff:.1f}px) → "
+                            f"centre the dot on the line", shape=dot["name"])
                 continue
             expected = min(dot["x"], ink_box(mate)[0])
             for r in inside:
@@ -936,8 +1215,9 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
                 if abs(r["x"] - expected) > rules["marker_rule_gap"]:
                     continue
                 if abs(r["x"] - expected) > rules["marker_rule_tol"]:
-                    add("medium", f"list separator {r['name']} starts at x={r['x']:.0f}, "
-                                  f"expected {expected:.0f} from {dot['name']}")
+                    add("marker.rule", f"list separator {r['name']} starts at x={r['x']:.0f}, "
+                                  f"expected {expected:.0f} from {dot['name']} → align the separator "
+                                  f"with the marker", shape=r["name"])
                 break
 
         # 11. surface role: cards are white, surface.alt is for insets. A grid
@@ -977,8 +1257,10 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
                 if (abs((a["w"] or 0) - (b["w"] or 0)) <= max(8, 0.08 * (a["w"] or 0))
                         and abs((a["h"] or 0) - (b["h"] or 0)) <= max(8, 0.08 * (a["h"] or 0))
                         and surface_role(a) != surface_role(b)):
-                    add("medium", f"same-size cards {a['name']} ({surface_role(a)}) and "
-                                   f"{b['name']} ({surface_role(b)}) use different surface tokens")
+                    add("surface.role", f"same-size cards {a['name']} ({surface_role(a)}) and "
+                                   f"{b['name']} ({surface_role(b)}) use different surface tokens → "
+                                   f"card surface is white; alt is for insets",
+                                   group="same-size cards", shape=a["name"])
         by_parent_cards: dict[str, list[dict]] = {}
         for c in cards:
             by_parent_cards.setdefault(c.get("parentId") or "", []).append(c)
@@ -991,18 +1273,20 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
                          if abs((a["w"] or 0) - (b["w"] or 0)) <= max(8, 0.08 * (a["w"] or 0))
                          and abs((a["h"] or 0) - (b["h"] or 0)) <= max(8, 0.08 * (a["h"] or 0))]
                 if mates:
-                    add("medium", f"{1 + len(mates)} same-size cards in {a.get('parent')} use "
+                    add("surface.role", f"{1 + len(mates)} same-size cards in {a.get('parent')} use "
                                    f"surface.alt beside a white card — card surface is white; "
-                                   f"alt is for insets")
+                                   f"alt is for insets → swap the alt cards to white",
+                                   group="alt grid", shape=a.get("parent") or a["name"])
                     break
         large_alt = [c for c in cards if surface_role(c) == "alt"
                      and (c["w"] or 0) >= rules["surface_alt_min_w"]
                      and (c["w"] or 0) < rules["surface_band_ratio"] * board["w"]]
         if large_alt and any(surface_role(c) == "white" for c in cards):
             card = large_alt[0]
-            add("medium", f"large surface.alt card {card['name']} "
+            add("surface.role", f"large surface.alt card {card['name']} "
                            f"({card['w']:.0f}x{card['h']:.0f}x) sits with white cards on the same "
-                           f"board — alt is for insets, not cards")
+                           f"board — alt is for insets, not cards → swap it to white",
+                           group="large alt card", shape=card["name"])
 
         # 12. floating sibling: a link and a button in one CTA row share a
         # centre line. The 01 kongre band put "Programı gör" 63px above the
@@ -1059,9 +1343,10 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
                 if blocked:
                     continue
                 level = "high" if diff > rules["float_high_centre_diff"] else "medium"
-                add(level, f"CTA group misaligned: {link['name']} centre {((iy0 + iy1) / 2):.0f}px "
+                add("cta.float", f"CTA group misaligned: {link['name']} centre {((iy0 + iy1) / 2):.0f}px "
                            f"vs {button['name']} centre {bcy:.0f}px (Δ{diff:.0f}px) — link and "
-                           f"button should share a centre line")
+                           f"button should share a centre line → move the link "
+                           f"{(bcy - (iy0 + iy1) / 2):+.0f}px", level=level, shape=link["name"])
 
         # 13. stat size: a stats row's number is display type, not body copy.
         # 01's dark proof band ran 16px values against 13px labels; the
@@ -1096,20 +1381,43 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
             small = [t for t in group if (t.get("fontSize") or 0) < rules["min_stat_size"]]
             if small:
                 value = min(small, key=lambda t: t["fontSize"] or 0)
-                add("medium", f"stats row in {group[0].get('parent')}: {value['name']} is "
+                add("stat.size", f"stats row in {group[0].get('parent')}: {value['name']} is "
                                f"{value['fontSize']}px under the {rules['min_stat_size']}px stat "
-                               f"minimum ({len(group)} values)")
+                               f"minimum ({len(group)} values) → set the value to "
+                               f"{rules['min_stat_size']:.0f}px or drop the stat framing",
+                               shape=value["name"])
 
-    return findings
+    return group_findings(findings, rules)
+
+
+def collect(page: str) -> list[dict]:
+    """Live geometry from the plugin (read-only; the page must be open)."""
+    try:
+        url = load_url()
+        ensure_helpers(url, write=False)
+        nodes = payload(call_execute_code(url, COLLECT.replace("__PAGE__", json.dumps(page)), write=False))
+    except McpError as exc:
+        fail(str(exc))
+    except (urllib.error.URLError, TimeoutError, OSError) as exc:
+        fail(f"{type(exc).__name__}: {exc}")
+    if not isinstance(nodes, list):
+        fail("collector returned no node list")
+    return nodes
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--page", required=True)
+    parser.add_argument("--page", help="page to lint live (required unless --from-nodes)")
+    parser.add_argument("--from-nodes", type=pathlib.Path,
+                        help="lint a frozen --dump-nodes file offline; no plugin call")
     parser.add_argument("--rules", type=pathlib.Path)
     parser.add_argument("--json", type=pathlib.Path)
     parser.add_argument("--dump-nodes", type=pathlib.Path,
                         help="write the raw geometry collector output for rhythm.py")
+    parser.add_argument("--rules-report", action="store_true",
+                        help="print the rule registry (severity, born_from, corpus counts) and exit")
+    parser.add_argument("--verbose", action="store_true",
+                        help="print low findings too (hidden by default: their live hits are design decisions)")
     args = parser.parse_args()
 
     rules = dict(DEFAULTS)
@@ -1119,16 +1427,22 @@ def main() -> int:
         except (OSError, json.JSONDecodeError) as error:
             fail(f"{args.rules}: {error}")
 
-    try:
-        url = load_url()
-        ensure_helpers(url, write=False)
-        nodes = payload(call_execute_code(url, COLLECT.replace("__PAGE__", json.dumps(args.page)), write=False))
+    if args.rules_report:
+        print(rules_report())
+        return 0
+    if not args.page and not args.from_nodes:
+        parser.error("--page or --from-nodes is required")
+
+    if args.from_nodes:
+        try:
+            nodes = json.loads(args.from_nodes.read_text())
+        except (OSError, json.JSONDecodeError) as exc:
+            fail(f"{args.from_nodes}: {exc}")
         if not isinstance(nodes, list):
-            fail("collector returned no node list")
-    except McpError as exc:
-        fail(str(exc))
-    except (urllib.error.URLError, TimeoutError, OSError) as exc:
-        fail(f"{type(exc).__name__}: {exc}")
+            fail(f"{args.from_nodes}: no node list")
+        args.page = args.page or args.from_nodes.stem.replace(".nodes", "")
+    else:
+        nodes = collect(args.page)
 
     if args.dump_nodes:
         args.dump_nodes.write_text(json.dumps(nodes, indent=1) + "\n")
@@ -1147,16 +1461,36 @@ def main() -> int:
 
     findings = lint(nodes, rules)
     high = [f for f in findings if f["severity"] == "high"]
+    medium = [f for f in findings if f["severity"] == "medium" and not f["acknowledged"]]
+    acked = [f for f in findings if f["acknowledged"]]
+    low = [f for f in findings if f["severity"] == "low"]
+    shown = [f for f in findings if f["severity"] in ("high", "medium")
+             or (args.verbose and f["severity"] == "low")]
 
-    print(f"page: {args.page}  shapes: {len(nodes)}  findings: {len(findings)} ({len(high)} high)")
-    for finding in findings:
-        print(f"  [{finding['severity']:<6}] {finding['board']}: {finding['finding']}")
-    if not findings:
+    print(f"page: {args.page}  shapes: {len(nodes)}  findings: {len(findings)} "
+          f"({len(high)} high, {len(medium)} medium, {len(acked)} acknowledged"
+          + (f", {len(low)} low" if args.verbose else "") + ")")
+    for finding in shown:
+        if finding["acknowledged"]:
+            continue
+        count = f" (×{finding['count']})" if finding["count"] > 1 else ""
+        print(f"  [{finding['severity']:<6}] {finding['board']}: {finding['finding']}{count}")
+    if not shown and not acked and not low:
         print("  clean on the mechanical checks — that proves compliance, not design")
+    elif not shown and not acked:
+        print(f"  {len(low)} low finding(s) hidden — --verbose lists them")
+    if acked:
+        print(f"  acknowledged: {len(acked)} finding group(s) with a recorded design reason")
+        for finding in acked:
+            count = f" (×{finding['count']})" if finding["count"] > 1 else ""
+            print(f"  [ack   ] {finding['board']}: {finding['rule']} — {finding['ack_reason']}{count}")
 
     if args.json:
         args.json.write_text(json.dumps(
-            {"page": args.page, "valid": True, "findings": findings}, indent=2) + "\n")
+            {"page": args.page, "valid": True,
+             "summary": {"high": len(high), "medium": len(medium),
+                         "acknowledged": len(acked), "low": len(low)},
+             "findings": findings}, indent=2) + "\n")
         print(f"wrote {args.json}")
     return 1 if high else 0
 
