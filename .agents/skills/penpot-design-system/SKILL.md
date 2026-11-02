@@ -172,6 +172,19 @@ right. A 120px asymmetry survived every gate because the grid lived only in pros
   overlaps (the text-overlap lint catches that direction). After any copy swap,
   re-run the rhythm audit on the touched boards and read the section, not just the
   edited line.
+- **One right edge per row group.** A right-aligned column must terminate at the
+  grid edge or at the next column's start. Two different right edges in one list
+  (İHKD 01 course rows: meta ended at 1180, CTA at 1320) read as misaligned even
+  though every box is internally "aligned" — the lint cannot see this, only a
+  full-width 1:1 crop can. When in doubt, left-align the data column at a fixed x
+  and keep a single right-aligned action column on the grid edge.
+- **Board children use page-absolute coords — pad them like it.** S.board children
+  position from the page origin, not the board edge, so `x:120` inside a board at
+  `x:120` is zero padding against a stroked edge (İHKD 04 propose: label, title
+  and CTA all inked at the stroke). Keep ≥16px between a text's ink left edge and
+  a stroked/surface panel edge; pills (single-label chips) and full-bleed boards
+  at x=0 are exempt by design. The lint `panel padding` medium guards this —
+  a flag after a board move means the layout shifted, not that the rule is noisy.
 - **1:1 the joint, not the element.** A crop centered on a headline proves the headline;
   the defect lives where two things meet. Frame verification crops on boundaries:
   text/photo edges, row/meta joints, panel/footer seams.
@@ -205,6 +218,13 @@ right. A 120px asymmetry survived every gate because the grid lived only in pros
   lint `--json` geometry: gaps cluster at the rhythm, and any gap beyond 2× the rhythm
   needs a reason written in the brief, not a shrug. Margin symmetry (left vs right at
   the hero) is checked at 1:1, never at page scale.
+- **The head joint gets its own audit.** A shared head helper (pageHead) hardcodes the
+  label/title/lede/rule spacing — one stale number there voids every page at once
+  (İHKD: label at y=236 under a rule at y=84 left 152px of dead air on nine pages;
+  the fix tightened the helper to label 156 / rule 352 and rode every follower up
+  80px). After any head change, read the masthead-rule→first-content gap on every
+  affected board: anything much past one rhythm step is a finding. The rhythm
+  `TOP-VOID` line guards exactly this joint.
 
 ## Verification protocol
 
