@@ -94,7 +94,9 @@ Anything not covered is reported as a gap, never as done.
   actual observed shape names, wrong-board reuse and mismatched render dimensions; assert
   pixels and preserved evidence, not just coordinates (`CropBoardTest`).
 - **Revision labels are part of review evidence.** Name the checkout and SHA of each
-  observation; a worktree's project snapshot does not describe a newer primary checkout.
+  observation; first verify the branch and both review SHAs. Inspect the immutable diff,
+  not moving working files. A newer HEAD invalidates only overlapping reviewed paths;
+  a worktree's project snapshot does not describe a newer primary checkout.
 - **Validate configuration before interpreting coverage.** Reject wrong field types rather
   than iterating them; test the actual project configuration as well as fixture defaults.
 - **A lint rule is earned.** Fix the screen first, then encode the defect. It starts from a defect the eye caught and lint missed: a

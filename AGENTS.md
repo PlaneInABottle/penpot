@@ -84,7 +84,7 @@ All live scripts need the plugin connected. Exit codes everywhere: `0` clean, `1
 | `python3 scripts/crop_board.py --attest shots/<b>/manifest.json` | before any "reviewed 1:1" claim; also fails a missing PNG |
 | `python3 scripts/gate.py --pages <p1,p2> [--boards 01,05]` | one run: lint → QA → copy per page (+ux, export/crop); prints QA advisories and never calls them clean; coverage incomplete means an unconfigured lint rule |
 | `python3 scripts/gate.py stage design/<p>/build/screen-NN.js` | the only `git add -f design/…` path |
-| `python3 design/<p>/build/build.py screen-NN` | REQUIRED project runner: page/session affinity, fit poll, photos, flows, live `photos`/`links` counts, `RESULT ok|fail nulls=N` (not shipped by the template) |
+| `python3 design/<p>/build/build.py screen-NN [screen-MM …]` | REQUIRED project runner; batch screens changed together when supported: page/session affinity, fit poll, photos, flows, live `photos`/`links` counts, `RESULT ok|fail nulls=N` (not shipped by the template) |
 | `python3 scripts/penpot_exec.py [--read] --file design/<p>/build/screen-NN.js` | run a snippet; writer by default, `--read` passes a build session and never injects helpers |
 | `python3 scripts/patch_file.py <file> --old-file a.txt --new-file b.txt` | edit a build script |
 | `python3 scripts/import_media.py --url <url> --name <slot> --page <p> --board <b> --x 0 --y 0 --w <w> --h <h>` | generic import; replace `--url <url>` with `--search "<q>"` to search; prints source/provenance, persists nothing |
@@ -106,7 +106,7 @@ check, not a script.
 
 ## Ownership and safety
 
-- For false-PASS recovery and evidence-tool changes, follow `design-verification` § Change discipline.
+- For false-PASS recovery and evidence-tool changes use `design-verification` § Change discipline; performance audits follow global `ow` measurement limits.
 - **One plugin, one writer.** Every MCP call holds a `flock` in `~/.cache/penpot-mcp/`; a
   second writer waits and exits 2 (`plugin busy: held by pid=…`). One owner per live page and
   per `lib.js`; parallel agents split by board, never by session. The OS releases a `flock`
