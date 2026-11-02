@@ -162,6 +162,9 @@ right. A 120px asymmetry survived every gate because the grid lived only in pros
   name, and delete the placeholder rect in the placing call. Before/after the import the
   board holds exactly one shape under that name. A render showing an empty mat next to
   (or under) a photo is a finding, not a style.
+- **Scope every reimport with `--only`.** A bare `--board` retargets ALL table slots
+  to that board and misfires photos across pages (İHKD: one unscoped call sprayed
+  slots; correct form is always `--only a,b --board B --page P --force`).
 - **Slots are measured, not assumed.** Read the slot's committed `width`/`height` in the
   call before the import and crop to that aspect; re-cropping to a guessed size is how a
   face ends up behind a caption. Cropping to the slot is allowed to change — cropping to
@@ -177,6 +180,14 @@ right. A 120px asymmetry survived every gate because the grid lived only in pros
   overlaps (the text-overlap lint catches that direction). After any copy swap,
   re-run the rhythm audit on the touched boards and read the section, not just the
   edited line.
+- **CTAs dock to their text column.** A button floating in the opposite column's
+  airspace reads lost no matter how even the clearance (İHKD 06: "Kayıt ol" alone
+  at x1104 while its lede lived at x120). Dock the action under its own text,
+  then ride everything below down — never park a CTA where no text leads to it.
+- **Seams are not shelves.** A leftover band between two sections gets ONE gesture,
+  not a stack: label + trace + CTA crammed into 96px read as three competing
+  lines (İHKD 01 V3). Promote the seam to a band (one red mass: white ECG + two
+  white lines + link) or delete elements until one voice remains.
 - **Dividers on cell boundaries, numbers inset uniformly.** In a stat row, float the
   dividers to exact cell boundaries and give every number the same left inset;
   dividers parked at "column minus a guess" drift with digit width and read
