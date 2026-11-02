@@ -13,7 +13,8 @@ here; they live in the skills below and are stated once.
 | `ux-design-process` | story, density, states, review of a screen | task, story arc, hero contract, review rubric |
 | `penpot-mcp-operations` | snippet, helpers, export, failed/stale bridge call | bridge contract, helpers API, failure table |
 
-Craft and art direction come from `visual-interface-design`, never from here.
+Craft and art direction come from `visual-interface-design`; option variety comes from
+`design-variety`; never from here.
 `scripts/helpers.js` is a symlink into the design-system skill's `assets/`; adding an asset
 never repoints it.
 
@@ -23,6 +24,7 @@ never repoints it.
 |---|---|
 | begin a new design project | `penpot-design-system` § Start a new project |
 | decide what a screen is for | `ux-design-process` § 1–2 |
+| produce genuinely different options (hero, brand opening) | global `design-variety` § Protocol, then `ux-design-process` § 3 |
 | build or tighten a screen | `penpot-design-system` + its `references/craft.md` |
 | prove a screen is finished | `design-verification` § Definition of done |
 | fix a failed or stale Penpot call | `penpot-mcp-operations/references/mcp-failures.md` |

@@ -4,7 +4,7 @@ description: Run the story-first UX process for a screen — one task per screen
 license: MIT
 metadata:
   author: configs
-  version: "1.1.0"
+  version: "1.2.0"
 ---
 
 # UX design process
@@ -36,31 +36,29 @@ and accent fills stay under the declared ratio.
 
 ## 3. Hero contract
 
-**Taste is the user's; the rest is the maker's.** On a taste-bearing surface (hero, cover,
-brand opening) present 4–5 finished first viewports and let the user choose. Everywhere else
-explore 2–3 directions, decide, record. If the user has not chosen, keep the live page on its current hero and carry on with everything that does not depend on it; never pick for them. Choosing among built candidates is expected;
-specifying design is not.
+On a taste-bearing surface (hero, cover, brand opening) the user chooses; the maker builds the
+choice. Run the global `design-variety` protocol for the candidate rules — objects not layouts,
+no shared parts, finished first viewports, the 1:1 defect pass, the similarity test, unranked
+presentation and parking — and use this section only for how that set is built and recorded in
+Penpot.
 
-In Penpot: build the candidates on the scratch page, same copy, each with a name, a "refuses"
-sentence and an art-direction note for its visual (role: show / prove / set mood; subject,
-framing, light, face or no face). Export and tile them, score 0–5 per axis, then hand the
-taste-bearing set to the user and decide the rest yourself. Record the choice and the rejects.
+1. Build each candidate on the scratch page from the same copy, one board per candidate. Name
+   it, write its "refuses" sentence, and add an art-direction note for its visual (role:
+   show / prove / set mood; subject, framing, light, face or no face).
+2. Export and tile the boards and review every one at 1:1 against the §7 rubric before it is
+   shown; the user-facing set stays unranked.
+3. Write a candidate section in the project `README.md`: name, "this page is a ___", carrier
+   source, one strength, one risk, no ranking.
+4. Hand the finished set to the user. Until they choose, keep the live page on its current
+   hero and continue everything that does not depend on it; never pick for them.
+5. Record the chosen candidate and the rejects in `brief.md`. Park each candidate the user
+   marks with its build script, render and revival condition; do not delete candidate boards
+   or renders unless the user asks — cleanup happens before handoff.
 
-- A candidate is a different domain-native **object**, named by "this page is a ___" — a
-  journal cover, a clinical algorithm, an anatomy plate, a map, a poster. Layout or
-  composition variations of one object are one candidate, never three.
-- Candidates share no part: no common image, proof block, band, or "headline+lede+CTA on the
-  left" arrangement. List five references from outside the category before drawing.
-- A candidate is a filled first viewport: nav, a real visual, proof and one primary, no dead
-  band. Shrink the set to 200px side by side and eliminate any that is not unmistakably
-  different from the others and from the shipped surface.
-- A hand-drawn organic figure that does not read at 1:1 is replaced by a photograph or a
-  prepared asset; no candidate is presented before its render has been read at 1:1.
-- In a dispatch, ask for "different objects", never "different compositions" — the second
-  wording produces restyled layouts and burns a round.
-
-Kept constraints: one message, one primary action, proof inside the first viewport; the
-visual carries a role, and a visual with no role ("stock filling") is cut, not kept.
+Keep the constraints: one message, one primary action, proof inside the first viewport, and a
+visual that carries a role ("stock filling" is cut). On a non-taste surface, explore two or
+three directions, decide and record; the authority and scoring table are in
+`visual-interface-design`.
 
 ## 4. Content-first density
 
