@@ -6,6 +6,9 @@
 # A project's design work is committed when it is ready, not by default
 design/*/
 !design/tokens.json
+# The new-project template is part of the workspace, not of one project
+!design/_template/
+!design/_template/**
 
 # Python and macOS noise
 __pycache__/

@@ -1,0 +1,17 @@
+{
+  "project": "<project>",
+  "defaults": {"accentMaxRatio": 0.3, "viewportH": 900},
+  "screens": [
+    {
+      "board": "<board>",
+      "page": "<page>",
+      "task": "",
+      "primaryCta": "<cta shape name>",
+      "story": {"hook": "", "proof": "", "path": "", "action": ""},
+      "states": [{"state": "default", "board": "<board>"}],
+      "mobile": "n/a: <reason>",
+      "firstViewport": ["<shape name above the fold>"],
+      "claims": [{"pattern": "<shape name pattern>", "count": 0, "label": "<what the number means>"}]
+    }
+  ]
+}
