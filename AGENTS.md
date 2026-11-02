@@ -153,7 +153,11 @@ python3 scripts/check_contrast.py --file design/<project>/tokens.json --pair fg:
   an override is a recorded deviation, not a silent one.
 - The MCP tool text wraps the plugin return value in a second `result` field; unwrap before
   decoding.
-- Tests: `python3 -m unittest scripts/test_penpot_scripts.py`, 33 cases, no network.
+- Tests: `python3 -m unittest scripts/test_penpot_scripts.py`, 42 cases, no network.
+- Check an edited script with its own toolchain before running it: `node --check`
+  for `build/*.js`, `python -m py_compile` for `scripts/*.py`. A cross-language
+  checker reports a bogus error on valid code (py_compile on a .js comment once
+  sent a clean rebuild back for inspection).
 
 ## Design file conventions
 

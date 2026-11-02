@@ -250,7 +250,16 @@ right. A 120px asymmetry survived every gate because the grid lived only in pros
 - **After a rebuild**, re-check the prototype: rebuilding deletes the shapes that carried
   interactions, so links vanish and a second `createFlow` leaves a duplicate with no pages.
   Re-wire, then verify `page.flows.length` and the per-board interaction count before
-  claiming the file is done.
+  claiming the file is done. This step is DoD item 5 — it is never scoped out of a
+  rebuild milestone; a 10-board tighten once shipped with four boards' links wiped
+  because re-link was left for "later", and only a post-hoc flows re-apply caught it.
+- **Sweep by fingerprint, not by helper name.** A helper change reaches only its callers;
+  hand-rolled copies of the same numbers do not move (pageHead tightened, but 18-uyelik
+  painted its own head with the old 236/500 and kept the 152px void; flows.js wired
+  every board except 15-haberler while its own header comment claimed it did). When a
+  repeated pattern changes, enumerate occurrences by the pattern's literals — the magic
+  numbers, the `wire(...)` entries, the board list — and diff that enumeration against
+  the helper's caller list. Anything on one list but not the other is the finding.
 - **Independent critique**: the maker's own check is not evidence. A separate reviewer opens
   the render and 2× crops (densest region, smallest text, primary action) and returns
   `region · severity · observed vs brief` findings; it does not rewrite. One round, then the
