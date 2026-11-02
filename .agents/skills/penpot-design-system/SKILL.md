@@ -194,8 +194,8 @@ checks; build it right the first time instead.
   rebuilds for slot A and re-imports only slot A silently deletes slot B (İHKD 01:
   hero rebuild restored img-echo, img-journal stayed an empty mat through green
   lint+QA — token coverage counts the placeholder's bound fill, so gates can't see
-  it). After ANY rebuild, re-import ALL slots of that board and prove each with
-  `media-audit --live` (photo placed, not merely slot present) plus a 1:1 look.
+  it). `build.py` re-imports every photo slot of the rebuilt board and fails the
+  build (exit 1) when `photos N/N` is short; still look at it 1:1.
 - **The media table is the single source for photo choice.** A one-off inline import
   (different query, pinned URL tried by hand) regresses on the next rebuild
   reimport, which re-runs the table query (İHKD 01 hero silently reverted to the
