@@ -34,6 +34,7 @@ def audit(url: str, page: str | None) -> dict:
     result = call_execute_code(
         url,
         f"return JSON.stringify(storage.H.audit({json.dumps(page) if page else 'null'}));",
+        write=False,
     )
     data = payload(result)
     if not isinstance(data, dict):
@@ -82,7 +83,7 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         url = load_url()
-        ensure_helpers(url)
+        ensure_helpers(url, write=False)
         report = audit(url, args.page)
     except McpError as exc:
         fail(str(exc))
@@ -128,6 +129,11 @@ def main(argv: list[str] | None = None) -> int:
         except (OSError, json.JSONDecodeError) as exc:
             findings.append(f"cannot read lint findings {args.lint_json}: {exc}")
         else:
+            if isinstance(lint_doc, dict) and lint_doc.get("valid") is False:
+                # The lint ran on a page it never measured; its findings — and the
+                # verdict derived from them — say nothing about this page.
+                fail("page not active: textBounds unavailable — open the page and rerun; "
+                     "findings are NOT valid")
             lint_high = lint_high_findings(lint_doc)
             if lint_high:
                 boards = sorted({f.get("board", "?") for f in lint_high})

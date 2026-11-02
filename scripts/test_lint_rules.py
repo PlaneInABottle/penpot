@@ -9,10 +9,14 @@ firing fails here instead of passing silently. No network, no Penpot.
 
 from __future__ import annotations
 
+import contextlib
+import io
 import json
 import pathlib
 import sys
+import tempfile
 import unittest
+from unittest import mock
 
 HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
@@ -406,6 +410,77 @@ class CopyLintTest(unittest.TestCase):
         self.assertGreaterEqual(len(doc["terms"]), 40)
         self.assertIn("kalp", doc["terms"])
         self.assertIn("kardiyoloji", doc["terms"])
+
+
+class InkUnavailableTest(unittest.TestCase):
+    """A page that is not open reports `textBounds: null` for every text.
+
+    The ink rules skip unmeasured text, so a lint of a background page used to
+    end with "0 high" — a clean verdict about a page it never measured.
+    """
+
+    def _run(self, nodes: list[dict], page: str = "Mobil") -> tuple[int, str, dict | None]:
+        result = {"result": {"content": [{"type": "text", "text": json.dumps(nodes)}]}}
+        out, err = io.StringIO(), io.StringIO()
+        doc = None
+        with tempfile.TemporaryDirectory() as tmp:
+            json_out = pathlib.Path(tmp) / "lint.json"
+            argv = ["design_lint.py", "--page", page, "--json", str(json_out)]
+            with mock.patch.object(sys, "argv", argv), \
+                    mock.patch.object(design_lint, "load_url", lambda: "http://local/mcp?t=x"), \
+                    mock.patch.object(design_lint, "ensure_helpers", lambda *a, **k: "1.5.0"), \
+                    mock.patch.object(design_lint, "call_execute_code", lambda *a, **k: result), \
+                    contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+                try:
+                    code = design_lint.main()
+                except SystemExit as exc:
+                    code = int(exc.code or 0)
+            if json_out.exists():
+                doc = json.loads(json_out.read_text())
+        return code, out.getvalue() + err.getvalue(), doc
+
+    def _page(self, measured: int, unmeasured: int) -> list[dict]:
+        nodes = [_board(), _text("title", size=56, y=60)]  # keeps the type scale valid
+        for i in range(measured):
+            nodes.append(_text(f"m{i}", y=140 + 30 * i))
+        for i in range(unmeasured):
+            node = _text(f"u{i}", y=800 + 30 * i)
+            node.update(inkX=None, inkY=None, inkW=None, inkH=None)
+            nodes.append(node)
+        return nodes
+
+    def test_background_page_exits_2_and_is_not_a_clean_run(self):
+        nodes = self._page(measured=2, unmeasured=4)  # 6 texts, 4 unmeasured
+        # the defect: the same page lints "clean" because ink checks skip nulls
+        self.assertEqual([f for f in design_lint.lint(nodes, dict(design_lint.DEFAULTS))
+                          if f["severity"] == "high"], [])
+        code, output, doc = self._run(nodes)
+        self.assertEqual(code, 2, output)
+        self.assertIn("page not active: textBounds unavailable", output)
+        self.assertIn("open Mobil", output)
+        self.assertIn("findings are NOT valid", output)
+        self.assertIs(doc["valid"], False)
+        self.assertEqual(doc["findings"], [])
+
+    def test_a_measured_page_stays_valid(self):
+        code, output, doc = self._run(self._page(measured=10, unmeasured=0))
+        self.assertEqual(code, 0, output)
+        self.assertIs(doc["valid"], True)
+
+    def test_five_percent_unmeasured_is_still_valid(self):
+        code, _, doc = self._run(self._page(measured=40, unmeasured=2))
+        self.assertEqual(code, 0)
+        self.assertIs(doc["valid"], True)
+
+    def test_empty_text_carries_no_ink_and_does_not_invalidate(self):
+        nodes = self._page(measured=4, unmeasured=0)
+        for i in range(6):
+            node = _text(f"e{i}", text="", y=900 + 20 * i)
+            node.update(inkX=None, inkY=None, inkW=None, inkH=None)
+            nodes.append(node)
+        code, output, doc = self._run(nodes)
+        self.assertEqual(code, 0, output)
+        self.assertIs(doc["valid"], True)
 
 
 if __name__ == "__main__":

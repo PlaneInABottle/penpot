@@ -295,6 +295,26 @@ class LintBridgeTest(unittest.TestCase):
         self.assertEqual(design_qa.lint_high_findings(None), [])
         self.assertEqual(design_qa.lint_high_findings({"page": "Kongre"}), [])
 
+    def test_an_invalid_lint_document_stops_the_qa_verdict(self):
+        """lint `valid:false` means the page was never measured; QA must not pass it."""
+        report = {"page": "Mobil", "shapes": 3, "boards": 1, "texts": 1,
+                  "tokenSets": [{"name": "ihkd", "tokens": 4, "active": True}],
+                  "components": [], "unnamed": 0, "flows": [{"name": "f"}],
+                  "interactiveShapes": 1,
+                  "tokenCoverage": {"fills": "2/2", "textSizes": "1/1", "renderMismatches": 0,
+                                    "hardColors": []}}
+        with tempfile.TemporaryDirectory() as tmp:
+            lint = pathlib.Path(tmp) / "lint.json"
+            lint.write_text(json.dumps({"page": "Mobil", "valid": False, "findings": []}))
+            with mock.patch.object(design_qa, "load_url", lambda: "u"), \
+                    mock.patch.object(design_qa, "ensure_helpers", lambda *a, **k: "1.5.0"), \
+                    mock.patch.object(design_qa, "audit", lambda url, page: report), \
+                    contextlib.redirect_stderr(io.StringIO()) as err:
+                with self.assertRaises(SystemExit) as ctx:
+                    design_qa.main(["--page", "Mobil", "--lint-json", str(lint)])
+        self.assertEqual(ctx.exception.code, 2)
+        self.assertIn("page not active: textBounds unavailable", err.getvalue())
+
 
 def _node(**over):
     base = {

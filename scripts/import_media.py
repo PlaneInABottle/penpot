@@ -162,7 +162,7 @@ def main() -> int:
         payload(call_execute_code(url, OPEN.replace("__PAGE__", json.dumps(args.page))))
         time.sleep(1.2)
         try:
-            result = payload(call_execute_code(url, code))
+            result = payload(call_execute_code(url, code, expect_page=args.page))
         except McpError as exc:
             if "413" not in str(exc):
                 raise
@@ -170,7 +170,9 @@ def main() -> int:
             data, mime = shrink(data, mime, 420, 45)
             smaller = base64.b64encode(data).decode()
             print(f"retry at {len(smaller) // 1024} KB base64", file=sys.stderr)
-            result = payload(call_execute_code(url, code.replace(json.dumps(encoded), json.dumps(smaller))))
+            result = payload(call_execute_code(
+                url, code.replace(json.dumps(encoded), json.dumps(smaller)),
+                expect_page=args.page))
     except McpError as exc:
         message = str(exc)
         if "board not found" in message or "page not found" in message:

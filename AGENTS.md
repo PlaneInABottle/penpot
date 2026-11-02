@@ -131,6 +131,13 @@ python3 scripts/patch_file.py <file> --old-file a.txt --new-file b.txt   # exact
 - `build.py` holds `build/.build.lock` (stale after 5 min), polls fit 250 ms up to
   `--fit-deadline` (20 s) on the built board, **exits 1** when it never settles, and
   reports a timed-out call against live state instead of retrying (`PENPOT_HTTP_TIMEOUT`, 240 s).
+- One plugin, one writer: every MCP call holds a `flock` in `~/.cache/penpot-mcp/`, and a
+  build holds the session lock for its run, so a second writer waits (`plugin busy: held
+  by pid=…`, exit 2) while a read only warns; `--expect-page NAME` refuses a drifted page.
+- `design_lint.py` exits 2 when over 5% of a page's texts have no `textBounds` (page not
+  measured — findings invalid), and `gate.py` then prints `FAIL (invalid)`, never PASS.
+- Firefox runs the plugin here; if a call stalls on a tab that was in the background,
+  bring Penpot to the front and rerun (no permanent fix yet).
 - `export_board.py` is the only path to an image, one board per call — the
   bulk renderer (`design/<project>/tools/render.py --all`) is unreliable past
   the MCP task limit, so export board-by-board and retry `render.py` per

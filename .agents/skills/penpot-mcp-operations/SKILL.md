@@ -18,7 +18,10 @@ observed against Penpot 2.18.5 through `execute_code`; the design process lives 
 - A browser tab with the target file must have the plugin connected. Otherwise every
   call returns `No Penpot instance connected for user token.` — stop, do not retry.
 - The MCP endpoint URL carries the user token. Read it from its file, never copy it into
-  a snippet, prompt, log or commit.
+  a snippet, prompt, log or commit. Never echo a command that contains the auth header or
+  token; verify a value read from the URL file by its length only.
+- Never assume the browser: `ps -axo comm | grep -i "firefox\|chrome\|safari"` names the
+  one running Penpot, and browser-specific advice is written for that one.
 - `execute_code` returns text; the server may wrap it as `{"result": "<json>", "log": ""}`.
   Unwrap before decoding, or you decode a string twice.
 - `export_shape` is a separate tool (`shapeId`, `format`, `mode`), not a snippet call, and
@@ -108,7 +111,7 @@ was written.
 
 ## Failures
 
-The full table of 42 observed failure modes, with the exact error strings and fixes, is in
+The full table of 45 observed failure modes, with the exact error strings and fixes, is in
 [references/mcp-failures.md](references/mcp-failures.md). Open it on the first failed call.
 The four that hit first: async commit, remove-and-recreate in one call, `easing` missing on
 animations, and a bound fill that never painted.

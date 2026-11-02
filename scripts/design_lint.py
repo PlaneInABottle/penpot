@@ -9,7 +9,8 @@ this one checks craft thresholds — type scale, rhythm, accent count, alignment
 radius, shadows, overflow, placeholder copy. Thresholds are the defaults below and can be
 overridden per project with `--rules` (a flat JSON of the same keys).
 
-Exit codes: 0 no high findings, 1 high findings, 2 environment or transport.
+Exit codes: 0 no high findings, 1 high findings, 2 environment or transport, or a
+page whose texts have no measured ink (not the open page — findings are invalid).
 """
 
 from __future__ import annotations
@@ -74,6 +75,25 @@ DEFAULTS = {
 }
 
 BANNED_EXACT = {"Text", "Rectangle", "Board", "Group"}
+
+# Above this share of unmeasured texts the page was never laid out: `textBounds`
+# is null for every text on a page that is not open, so the ink rules skip them
+# (`inks` / `inkW` are filtered out) and the run reports "0 high" for a page it
+# never measured. That silent false PASS is a defective lint, not a clean page.
+INK_NULL_MAX_RATIO = 0.05
+
+
+def ink_unavailable(nodes: list[dict]) -> tuple[int, int]:
+    """(measurable texts without ink bounds, measurable texts).
+
+    A text with no characters carries no ink by definition and is not counted;
+    a text with copy but no `textBounds` on an open page is a font problem
+    (mcp-failures row 17), which the same signal reports.
+    """
+    measurable = [n for n in nodes if n.get("type") == "text" and (n.get("text") or "").strip()]
+    missing = [n for n in measurable if n.get("inkW") is None or n.get("inkH") is None]
+    return len(missing), len(measurable)
+
 
 COLLECT = """
 const page = penpot.currentFile.pages.find(p => p.name === __PAGE__);
@@ -1101,8 +1121,8 @@ def main() -> int:
 
     try:
         url = load_url()
-        ensure_helpers(url)
-        nodes = payload(call_execute_code(url, COLLECT.replace("__PAGE__", json.dumps(args.page))))
+        ensure_helpers(url, write=False)
+        nodes = payload(call_execute_code(url, COLLECT.replace("__PAGE__", json.dumps(args.page)), write=False))
         if not isinstance(nodes, list):
             fail("collector returned no node list")
     except McpError as exc:
@@ -1114,6 +1134,17 @@ def main() -> int:
         args.dump_nodes.write_text(json.dumps(nodes, indent=1) + "\n")
         print(f"wrote {args.dump_nodes} ({len(nodes)} nodes)")
 
+    missing, measured = ink_unavailable(nodes)
+    if measured and missing / measured > INK_NULL_MAX_RATIO:
+        # Exit 2, not a finding: every ink rule was skipped, so the findings this
+        # run would print say nothing about the page.
+        message = (f"page not active: textBounds unavailable — open {args.page}; "
+                   f"findings are NOT valid ({missing}/{measured} texts unmeasured)")
+        if args.json:
+            args.json.write_text(json.dumps(
+                {"page": args.page, "valid": False, "findings": []}, indent=2) + "\n")
+        fail(message)
+
     findings = lint(nodes, rules)
     high = [f for f in findings if f["severity"] == "high"]
 
@@ -1124,7 +1155,8 @@ def main() -> int:
         print("  clean on the mechanical checks — that proves compliance, not design")
 
     if args.json:
-        args.json.write_text(json.dumps({"page": args.page, "findings": findings}, indent=2) + "\n")
+        args.json.write_text(json.dumps(
+            {"page": args.page, "valid": True, "findings": findings}, indent=2) + "\n")
         print(f"wrote {args.json}")
     return 1 if high else 0
 

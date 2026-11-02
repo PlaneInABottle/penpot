@@ -20,6 +20,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from unittest import mock
 
@@ -205,6 +206,136 @@ class TimeoutTest(unittest.TestCase):
         self.assertTrue(issubclass(penpot_exec.TaskTimeout, penpot_exec.McpError))
 
 
+class PluginLockTest(unittest.TestCase):
+    """One plugin, one writer: the lock is the gate, pgrep was not."""
+
+    URL = "http://localhost:4401/mcp?userToken=SECRET-TOKEN-1234"
+
+    def setUp(self):
+        self.tmp = pathlib.Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.tmp, True)
+        patcher = mock.patch.object(penpot_exec, "LOCK_DIR", self.tmp)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self.addCleanup(penpot_exec._HELD.clear)
+
+    def test_lock_file_is_keyed_by_host_and_a_short_hash_not_the_token(self):
+        call_lock, session_lock = penpot_exec.lock_paths(self.URL)
+        self.assertEqual(call_lock.name, f"plugin-localhost-{penpot_exec.token_tag(self.URL)}.lock")
+        self.assertEqual(session_lock.name, f"plugin-localhost-{penpot_exec.token_tag(self.URL)}.session.lock")
+        self.assertEqual(call_lock.parent, self.tmp)
+        self.assertNotIn("SECRET", str(call_lock) + str(session_lock))
+        self.assertEqual(len(penpot_exec.token_tag(self.URL)), 8)
+        other = penpot_exec.lock_paths(self.URL.replace("1234", "5678"))[0]
+        self.assertNotEqual(other, call_lock, "a different token must not share the lock")
+
+    def test_lock_is_reentrant_in_one_thread_and_counts_depth(self):
+        with penpot_exec.plugin_lock(self.URL, write=True):
+            with penpot_exec.plugin_lock(self.URL, write=True):  # ensure_helpers -> call
+                self.assertEqual(len(penpot_exec._HELD), 2)  # session + call, one fd each
+        self.assertEqual(penpot_exec._HELD, {}, "the last release must drop both locks")
+
+    def test_reader_passes_a_build_session_with_a_warning(self):
+        err = io.StringIO()
+        with mock.patch.object(penpot_exec, "_held_elsewhere", lambda path: True), \
+                mock.patch.object(penpot_exec, "_holder_text", lambda path: "pid=4242 t=7s"), \
+                contextlib.redirect_stderr(err):
+            with penpot_exec.plugin_lock(self.URL, write=False):
+                passed = True
+        self.assertTrue(passed)
+        self.assertIn("build in progress: held by pid=4242 t=7s", err.getvalue())
+        self.assertIn("PENPOT_WAIT_BUILD=1", err.getvalue())
+
+    @unittest.skipUnless(shutil.which(sys.executable), "no interpreter")
+    def test_a_second_process_is_told_plugin_busy_and_a_patient_one_waits(self):
+        holder = (
+            "import sys, time\n"
+            "sys.path.insert(0, sys.argv[1])\n"
+            "import penpot_exec\n"
+            "with penpot_exec.plugin_lock(sys.argv[2], write=True):\n"
+            "    print('held', flush=True)\n"
+            "    time.sleep(float(sys.argv[3]))\n"
+        )
+        waiter = (
+            "import sys\n"
+            "sys.path.insert(0, sys.argv[1])\n"
+            "import penpot_exec\n"
+            "try:\n"
+            "    with penpot_exec.plugin_lock(sys.argv[2], write=True):\n"
+            "        print('acquired')\n"
+            "except penpot_exec.PluginBusy as exc:\n"
+            "    print(f'busy: {exc}')\n"
+        )
+        (self.tmp / "holder.py").write_text(holder)
+        (self.tmp / "waiter.py").write_text(waiter)
+        env = dict(os.environ, PENPOT_LOCK_DIR=str(self.tmp), PENPOT_LOCK_WAIT="0.4",
+                   PENPOT_SESSION_WAIT="0.4")
+        with tempfile.TemporaryDirectory() as scripts:
+            shutil.copy(HERE / "penpot_exec.py", pathlib.Path(scripts) / "penpot_exec.py")
+            hold = subprocess.Popen(
+                [sys.executable, str(self.tmp / "holder.py"), scripts, self.URL, "1.2"],
+                stdout=subprocess.PIPE, text=True, env=env)
+            self.addCleanup(hold.stdout.close)
+            self.addCleanup(hold.kill)
+            self.assertEqual(hold.stdout.readline().strip(), "held")
+            started = time.monotonic()
+            quick = subprocess.run([sys.executable, str(self.tmp / "waiter.py"), scripts, self.URL],
+                                   capture_output=True, text=True, env=env)
+            elapsed = time.monotonic() - started
+            self.assertIn(f"plugin busy: held by pid={hold.pid}", quick.stdout)
+            self.assertIn("t=", quick.stdout)
+            self.assertLess(elapsed, 1.0, "a short wait must give up, not hang")
+
+            patient = subprocess.run(
+                [sys.executable, str(self.tmp / "waiter.py"), scripts, self.URL],
+                capture_output=True, text=True,
+                env=dict(env, PENPOT_LOCK_WAIT="10", PENPOT_SESSION_WAIT="10"))
+            self.assertIn("acquired", patient.stdout, patient.stderr)
+
+    def test_expect_page_guards_inside_the_task_and_verifies_after_it(self):
+        seen: list[str] = []
+
+        def fake_execute(url, code):
+            seen.append(code)
+            if "currentPage.name) || null" in code:
+                return _mcp_result(json.dumps({"page": "Üyelik"}))
+            return _mcp_result("{}")
+
+        with mock.patch.object(penpot_exec, "_execute", fake_execute):
+            penpot_exec.call_execute_code(self.URL, "return 1;", expect_page="Üyelik")
+        self.assertIn("page-affinity", seen[0])
+        self.assertIn(json.dumps("Üyelik"), seen[0])
+        self.assertTrue(seen[0].rstrip().endswith("return 1;"), "the guard must precede the snippet")
+        self.assertEqual(len(seen), 2, "the page must be read once before and once after")
+
+    def test_a_page_changed_during_the_task_fails_the_call(self):
+        def fake_execute(url, code):
+            if "currentPage.name) || null" in code:
+                return _mcp_result(json.dumps({"page": "Mobil"}))
+            return _mcp_result("{}")
+
+        with mock.patch.object(penpot_exec, "_execute", fake_execute):
+            with self.assertRaises(penpot_exec.PluginBusy) as ctx:
+                penpot_exec.call_execute_code(self.URL, "return 1;", expect_page="Üyelik")
+        self.assertIn("another session changed the page", str(ctx.exception))
+        self.assertIn("Mobil", str(ctx.exception))
+
+    def test_expect_page_off_sends_the_snippet_unchanged(self):
+        seen: list[str] = []
+
+        def fake_execute(url, code):
+            seen.append(code)
+            return _mcp_result("{}")
+
+        with mock.patch.object(penpot_exec, "_execute", fake_execute):
+            penpot_exec.call_execute_code(self.URL, "return 1;")
+        self.assertEqual(seen, ["return 1;"])
+
+
+def _mcp_result(text: str) -> dict:
+    return {"result": {"content": [{"type": "text", "text": text}]}}
+
+
 class GateTest(unittest.TestCase):
     def test_resolve_board_by_number_and_name(self):
         screens = {"screen-01": ("Kurumsal", "01-ana-sayfa"), "screen-19": ("Üyelik", "19-giris")}
@@ -267,6 +398,35 @@ class GateTest(unittest.TestCase):
                              "crop must not run without its render")
             self.assertIn("skipped (export exit 2)", buf.getvalue())
 
+    def test_an_invalid_lint_step_is_fail_not_pass(self):
+        """design_lint exit 2 on an unmeasured page must never read as PASS."""
+        def fake_step(label, argv, timeout):
+            if label.startswith("design_lint"):
+                return {"step": label, "code": 2, "seconds": 0.0,
+                        "output": "error: page not active: textBounds unavailable — open Mobil; "
+                                  "findings are NOT valid (7/7 texts unmeasured)",
+                        "invalid": gate.INVALID_MARKER in "page not active: textBounds unavailable"}
+            return {"step": label, "code": 0, "seconds": 0.0, "output": ""}
+
+        buf = io.StringIO()
+        with mock.patch.object(gate, "run_step", fake_step), contextlib.redirect_stdout(buf):
+            code = gate.gate(["Mobil"], [], gate.DEFAULT_PROJECT, 30)
+        text = buf.getvalue()
+        self.assertEqual(code, 2)
+        self.assertIn("gate: FAIL (invalid)", text)
+        self.assertIn("INVALID", text)
+        self.assertNotIn("gate: PASS", text)
+
+    def test_an_environment_step_still_reports_environment(self):
+        def fake_step(label, argv, timeout):
+            return {"step": label, "code": 2, "seconds": 0.0, "output": "no plugin connected"}
+
+        buf = io.StringIO()
+        with mock.patch.object(gate, "run_step", fake_step), contextlib.redirect_stdout(buf):
+            code = gate.gate(["Mobil"], [], gate.DEFAULT_PROJECT, 30)
+        self.assertEqual(code, 2)
+        self.assertIn("gate: ENVIRONMENT", buf.getvalue())
+
     def test_stage_adds_ignored_design_files_with_force(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = pathlib.Path(tmp)
@@ -299,6 +459,11 @@ class BuildTest(unittest.TestCase):
         self._lock = self.build.LOCK
         self.build.LOCK = self.tmp / ".build.lock"
         self.addCleanup(setattr, self.build, "LOCK", self._lock)
+        # build.main takes the real plugin session lock; keep the run hermetic
+        patcher = mock.patch.object(penpot_exec, "LOCK_DIR", self.tmp)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self.addCleanup(penpot_exec._HELD.clear)
 
     def test_status_probe_does_not_ship_the_library(self):
         code = self.build.status_js("Üyelik", "19-giris")

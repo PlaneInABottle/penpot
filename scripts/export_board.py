@@ -32,7 +32,9 @@ import threading
 import time
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from penpot_exec import McpError, call_execute_code, fail, load_url, parse_sse, payload, post  # noqa: E402
+from penpot_exec import (  # noqa: E402
+    McpError, call_execute_code, fail, load_url, parse_sse, payload, plugin_lock, post,
+)
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SERVICE = "penpot-exporter"
@@ -50,6 +52,12 @@ return JSON.stringify({{ id: shape.id, name: shape.name, width: shape.width, hei
 
 
 def call_tool(url: str, name: str, arguments: dict) -> dict:
+    """One tools/call under the plugin lock: the connection takes one task at a time."""
+    with plugin_lock(url, write=False):
+        return tool_call(url, name, arguments)
+
+
+def tool_call(url: str, name: str, arguments: dict) -> dict:
     status, headers, raw = post(
         url,
         {
@@ -220,7 +228,7 @@ def main() -> int:
     note: list[str] = []
     try:
         url = load_url()
-        info = payload(call_execute_code(url, code))
+        info = payload(call_execute_code(url, code, write=False))
         target = arguments.out / f"{arguments.board}.{arguments.format}"
         if arguments.format == "png":
             export_png(url, info, target, arguments.wait, arguments.poll, note)

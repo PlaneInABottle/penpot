@@ -54,7 +54,10 @@ ROOT = HERE.parents[2]
 TOOLS = HERE.parent / "tools"
 sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(TOOLS))
-from penpot_exec import McpError, TaskTimeout, call_execute_code, ensure_helpers, load_url, payload  # noqa: E402
+from penpot_exec import (  # noqa: E402
+    McpError, PluginBusy, TaskTimeout, acquire_session, call_execute_code, ensure_helpers,
+    load_url, payload, plugin_session_blocker, release_session,
+)
 from media import entries_for_board  # noqa: E402
 
 # screen -> (page, board)
@@ -146,13 +149,15 @@ def release_lock() -> None:
         pass
 
 
-def other_writers() -> list[str]:
-    """A `penpot_exec.py` left running is another writer on the shared plugin."""
-    try:
-        proc = subprocess.run(["pgrep", "-fl", "penpot_exec.py"], capture_output=True, text=True)
-    except OSError:
-        return []
-    return [line for line in (proc.stdout or "").splitlines() if line.strip()]
+def other_writers(url: str) -> list[str]:
+    """Who else holds the plugin: the session lock, not `pgrep`.
+
+    `pgrep -f penpot_exec.py` missed writers started from another checkout, as a
+    module, or as a build/import that never names the script — and it could not
+    see a session that had already ended. The lock is the writer itself.
+    """
+    blocked = plugin_session_blocker(url)
+    return [f"held by {blocked}"] if blocked else []
 
 
 CURRENT_JS = "return JSON.stringify({ page: penpot.currentPage.name });"
@@ -368,6 +373,7 @@ def restore_photos(page: str, board: str) -> int:
     proc = subprocess.run(
         [sys.executable, str(MEDIA), "--restore", "--board", board, "--page", page],
         capture_output=True, text=True, timeout=MEDIA_TIMEOUT_S,
+        env=dict(os.environ, PENPOT_SESSION_HELD="1"),  # this build owns the session
     )
     for line in (proc.stdout or "").splitlines() + (proc.stderr or "").splitlines():
         if line.strip():
@@ -505,7 +511,7 @@ def run(url: str, screen: str, fit_deadline: float) -> dict:
     require_page(url, page, f"{screen} start")
     lib = (HERE / "lib.js").read_text() + mobile_lib()
     body = (HERE / f"{screen}.js").read_text()
-    result = payload(call_execute_code(url, lib + "\n" + body))
+    result = payload(call_execute_code(url, lib + "\n" + body, expect_page=page))
     built = time.monotonic()
     require_page(url, page, f"{screen} after build")
     toggle_s = toggle_page(url, page)
@@ -652,34 +658,53 @@ def main(argv: list[str] | None = None) -> tuple[int, int]:
     if args.dry_run:
         return dry_run(names), 0
 
-    writers = other_writers()
-    if writers:
-        print("build: another penpot_exec.py is running — one writer per plugin tab:",
-              file=sys.stderr)
-        for line in writers:
-            print(f"  {line}", file=sys.stderr)
-        return 2, 0
-
+    writers = []
     try:
         url = load_url()
-        ensure_helpers(url)
+        writers = other_writers(url)
     except McpError as exc:
         print(f"build: {exc}", file=sys.stderr)
         return 2, 0
     except OSError as exc:
         print(f"build: {type(exc).__name__}: {exc}", file=sys.stderr)
         return 2, 0
+    if writers:
+        print("build: another writer holds the plugin — one writer per plugin tab:",
+              file=sys.stderr)
+        for line in writers:
+            print(f"  {line}", file=sys.stderr)
+        return 2, 0
+
+    try:
+        acquire_session(url)   # held for the whole build: other writers wait, reads pass
+    except (PluginBusy, McpError) as exc:
+        print(f"build: {exc}", file=sys.stderr)
+        return 2, 0
+
+    try:
+        ensure_helpers(url)
+    except McpError as exc:
+        print(f"build: {exc}", file=sys.stderr)
+        release_session(url)
+        return 2, 0
+    except OSError as exc:
+        print(f"build: {type(exc).__name__}: {exc}", file=sys.stderr)
+        release_session(url)
+        return 2, 0
     except SystemExit as exc:
         code = exc.code if isinstance(exc.code, int) else 2
+        release_session(url)
         return code, 0
 
     try:
         acquire_lock(names[0])
     except Locked as exc:
         print(f"build: {exc}", file=sys.stderr)
+        release_session(url)
         return 2, 0
     except OSError as exc:
         print(f"build: cannot write {LOCK}: {exc}", file=sys.stderr)
+        release_session(url)
         return 2, 0
 
     code = 0
@@ -755,6 +780,7 @@ def main(argv: list[str] | None = None) -> tuple[int, int]:
             return 2, total_nulls
     finally:
         release_lock()
+        release_session(url)
     return code, total_nulls
 
 

@@ -123,7 +123,7 @@ class Cropper:
 def export_source(url: str, board: str, page: str | None) -> tuple[bytes, dict]:
     find = "penpot.currentPage" if page is None else (
         f"penpot.currentFile.pages.find(p => p.name === {json.dumps(page)})")
-    info = payload(call_execute_code(url, FIND_BOARD.format(page=find, name=json.dumps(board))))
+    info = payload(call_execute_code(url, FIND_BOARD.format(page=find, name=json.dumps(board)), write=False))
     result = call_tool(url, "export_shape", {"shapeId": info["id"], "format": "png", "mode": "shape"})
     return image_bytes(result), info
 

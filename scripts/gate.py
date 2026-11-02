@@ -13,7 +13,10 @@ in --boards; `01` resolves through design/<project>/build/build.py's SCREENS map
 so the page comes from the same table the build uses.
 
 One summary table, one total, one exit code: 0 every step passed, 1 findings,
-2 environment/transport (a step's own exit code 2 maps here).
+2 environment/transport (a step's own exit code 2 maps here). Exit 2 also covers
+an INVALID step: design_lint reports a page whose texts were never measured
+(textBounds unavailable — the page is not open), and a gate that printed PASS
+there would pass a page nobody looked at.
 
 `stage PATH...` is the only supported way to commit design work: `design/*/` is
 gitignored, so `git status` stays quiet until `git add -f` runs. It applies -f
@@ -35,6 +38,10 @@ HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parent
 SCRIPTS = HERE
 DEFAULT_PROJECT = ROOT / "design" / "ihkd"
+# design_lint exits 2 on a page it never measured; that is not the environment
+# and must never be summarized as PASS.
+INVALID_MARKER = "page not active: textBounds unavailable"
+
 
 sys.path.insert(0, str(HERE))
 from export_board import WAIT_S as EXPORT_WAIT_S  # noqa: E402
@@ -87,7 +94,8 @@ def run_step(label: str, argv: list[str], timeout: float) -> dict:
         code, output = 2, f"{type(exc).__name__}: {exc}"
     seconds = time.monotonic() - started
     print(f"  {label:<34} exit {code}  {seconds:6.2f}s")
-    return {"step": label, "code": code, "seconds": seconds, "output": output}
+    return {"step": label, "code": code, "seconds": seconds, "output": output,
+            "invalid": INVALID_MARKER in output}
 
 
 def report(step: dict, keep: int = 12) -> None:
@@ -194,7 +202,8 @@ def gate(pages: list[str], boards: list[str], project: pathlib.Path, timeout: fl
     print()
     print(f"{'step':<36}{'exit':>5}{'seconds':>10}")
     for step in steps:
-        print(f"{step['step']:<36}{step['code']:>5}{step['seconds']:>10.2f}")
+        print(f"{step['step']:<36}{step['code']:>5}{step['seconds']:>10.2f}"
+              + ("  INVALID" if step.get("invalid") else ""))
     print(f"{'total':<36}{'':>5}{total:>10.2f}")
 
     failing = [s for s in steps if s["code"] != 0]
@@ -203,6 +212,11 @@ def gate(pages: list[str], boards: list[str], project: pathlib.Path, timeout: fl
         print(f"--- {step['step']} (exit {step['code']})")
         report(step)
 
+    invalid = [s for s in steps if s.get("invalid")]
+    if invalid:
+        print(f"gate: FAIL (invalid) — {len(invalid)} step(s) read a page that was not "
+              f"measured: open it and rerun — {total:.1f}s")
+        return 2
     if any(s["code"] == 2 for s in steps):
         print(f"gate: ENVIRONMENT ({sum(1 for s in steps if s['code'] == 2)} step(s)) — {total:.1f}s")
         return 2
