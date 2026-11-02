@@ -2,10 +2,10 @@
 """Slice a board render into verifiable 1:1 review tiles.
 
     crop_board.py --board 07-program --page Kongre --out design/ihkd/shots/07-program
-    crop_board.py --png design/ihkd/shots/07-program.png --out design/ihkd/shots/07-program
-    crop_board.py --png shot.png --out tiles/ --regions /tmp/lint-kongre.nodes.json
-    crop_board.py --png shot.png --out tiles/ --primary-action 'hero cta'
-    crop_board.py --png shot.png --out tiles/ --region '{"slug":"icons-arrows","name":"icon row","x":120,"y":900,"w":240,"h":40}'
+    crop_board.py --board 07-program --png design/ihkd/shots/07-program.png --out shots/07-program
+    crop_board.py --board 07-program --png shot.png --out tiles/ --regions /tmp/lint-kongre.nodes.json
+    crop_board.py --board 07-program --png shot.png --out tiles/ --primary-action 'hero cta' --regions nodes.json
+    crop_board.py --board 07-program --png shot.png --out tiles/ --region '{"slug":"icons-arrows","name":"icon row","x":120,"y":900,"w":240,"h":40}'
     crop_board.py --attest design/ihkd/shots/07-program/manifest.json
 
 "Looked at it 1:1" is not evidence. This script cuts the export into
@@ -17,22 +17,30 @@ is what the Definition of done runs — exit 1 until every tile is attested.
 Regions come from three sources, merged by slug (explicit wins):
 
 1. `--regions NODES.json` (repeatable): a `design_lint.py --dump-nodes`
-   list (not `--json`, which is findings, not geometry). Auto cuts the
-   smallest text, the densest text window, the primary action and an
-   icon/arrow row when one exists.
-2. `--primary-action NAME`: overrides the heuristic CTA pick, e.g. a nav
-   ghost that sits above the hero button.
+   list (not `--json`, which is findings, not geometry). Node geometry is
+   page-absolute; the matching top-level board's x/y is subtracted. Auto
+   cuts the smallest text, the densest text window, the primary action and
+   an icon/arrow row when one exists. With `--png` and no `--board`, one
+   top-level board in the node list is derived; multiple candidates are an
+   error, so pass `--board`.
+2. `--primary-action NAME`: overrides the heuristic CTA pick and requires
+   `--regions` (it resolves a node name). A nav/masthead ghost is excluded
+   from the heuristic.
 3. `--region JSON` (repeatable): one declared region, exactly
    `{"slug": "...", "name": "...", "x": 0, "y": 0, "w": 0, "h": 0}`, with
-   page-absolute coordinates and positive w/h. Reuse the slug to replace an
-   auto region; a declared region survives a rerun.
+   **board-relative** pixel coordinates (the exported PNG starts at the
+   board's top-left) and positive w/h. Manifest-declared/manual regions are
+   board-relative too. Reuse the slug to replace an auto region; a declared
+   region survives a rerun on the same board.
 
-A rerun keeps declared/manual regions and re-crops them. If the source image
-changed (sha256), every `reviewed`/`note` resets because the pixels are new;
-same source keeps attestations. Generated `tile-NN.png`/`region-*.png` files
-that the new run no longer writes are removed; other files in the output
-directory are never touched. `--attest` fails when a manifest references a
-PNG that is not on disk.
+A rerun keeps declared/manual regions only when the board name matches, and
+re-crops them. If the source image changed (sha256), every `reviewed`/`note`
+resets because the pixels are new; same source keeps attestations. Generated
+`tile-NN.png`/`region-*.png` files that the new run no longer writes are
+removed; arbitrary assets and `source.png` are never touched. `--attest`
+fails when a manifest references a PNG that is not on disk. A tile-only
+`--png` run without regions is not attestable: declare the required regions
+with `--region` or supply `--regions` before claiming 1:1.
 
 Image backend: PIL when importable, otherwise ImageMagick `magick`.
 Reviewers read only the tile PNGs, never the full render.
@@ -104,9 +112,9 @@ def _ink_region(node: dict) -> dict | None:
 def pick_regions(nodes: list[dict], primary_action: str | None = None) -> list[dict]:
     """Smallest text, densest ink window, primary action and icon/arrow row.
 
-    The CTA heuristic ignores a nav/menu ghost; `primary_action` names the real
-    control and always wins. Regions the board does not have are omitted, never
-    invented.
+    The CTA heuristic ignores nav/menu/masthead ghosts; `primary_action` names
+    the real control and always wins. Regions the board does not have are
+    omitted, never invented.
     """
     texts = [n for n in nodes if n.get("type") == "text" and n.get("inkW") and n.get("inkH")]
     out: list[dict] = []
@@ -138,7 +146,8 @@ def pick_regions(nodes: list[dict], primary_action: str | None = None) -> list[d
     else:
         ctas = [n for n in texts
                 if any(k in (n.get("name") or "").lower() for k in ("cta", "primary"))
-                and not any(k in (n.get("name") or "").lower() for k in ("nav", "menu", "header"))]
+                and not any(k in (n.get("name") or "").lower()
+                            for k in ("nav", "menu", "header", "masthead"))]
         if ctas:
             cta = min(ctas, key=lambda n: n.get("y") or 0)
             out.append({"slug": "primary-action", **_ink_region(cta)})
@@ -268,21 +277,18 @@ def load_nodes(paths: list[pathlib.Path]) -> list[dict]:
     return nodes
 
 
-def cleanup_stale(out: pathlib.Path, old: dict, keep: set[str], current_source: str) -> list[str]:
-    """Remove previously generated PNGs this run no longer writes; never other files."""
+def cleanup_stale(out: pathlib.Path, keep: set[str]) -> list[str]:
+    """Remove generated PNG names this run did not write; never other files.
+
+    The narrow `tile-NN.png` / `region-*.png` scan also catches an orphan from
+    an older manifest that the current manifest no longer records. `source.png`
+    and arbitrary user assets are not generated names and are never removed.
+    """
     removed: list[str] = []
-    for entry in list(old.get("tiles", [])) + list(old.get("regions", [])):
-        name = str(entry.get("file", ""))
-        if name and name not in keep and GENERATED.match(name):
-            path = out / name
-            if path.is_file():
-                path.unlink()
-                removed.append(name)
-    if old.get("source") == "source.png" and current_source != "source.png":
-        path = out / "source.png"
-        if path.is_file():
+    for path in sorted(out.iterdir()):
+        if path.is_file() and GENERATED.match(path.name) and path.name not in keep:
             path.unlink()
-            removed.append("source.png")
+            removed.append(path.name)
     return removed
 
 
@@ -294,7 +300,9 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--board", help="board name to export (needs the plugin bridge)")
     parser.add_argument("--page", help="page holding the board")
-    parser.add_argument("--png", type=pathlib.Path, help="use this render instead of exporting")
+    parser.add_argument("--png", type=pathlib.Path,
+                        help="use this render instead of exporting; a tile-only run without "
+                             "--regions/--region is not attestable")
     parser.add_argument("--out", type=pathlib.Path, help="tile directory to create")
     parser.add_argument("--tile", default="1440x900", help="viewport tile size WxH")
     parser.add_argument("--overlap", type=float, default=0.1)
@@ -309,6 +317,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.attest:
         return attest_manifest(args.attest)
+    if args.primary_action and not args.regions:
+        parser.error("--primary-action requires --regions NODES.json (its shape name comes "
+                     "from node geometry)")
     if not args.out:
         fail("--out is required (or use --attest MANIFEST on its own)")
     try:
@@ -336,6 +347,35 @@ def main(argv: list[str] | None = None) -> int:
     else:
         fail("--board (live export) or --png (existing render) is required")
 
+    scoped: list[dict] | None = None
+    ox = oy = 0
+    if args.regions:
+        nodes = load_nodes(args.regions)
+        top_boards = [n for n in nodes
+                      if n.get("type") == "board" and n.get("parentId") is None]
+        board_node = next((n for n in top_boards if n.get("name") == board_name), None)
+        if board_node is None:
+            if args.board:
+                fail(f"--board {board_name!r} not found in the node geometry; "
+                     f"candidates: {', '.join(sorted(n.get('name', '?') for n in top_boards))}")
+            if len(top_boards) != 1:
+                fail("cannot derive the board from node geometry: pass --board "
+                     f"({len(top_boards)} top-level boards found)")
+            board_node = top_boards[0]
+            board_name = str(board_node["name"])
+        kids: dict[str, list[dict]] = {}
+        for n in nodes:
+            if n.get("parentId"):
+                kids.setdefault(n["parentId"], []).append(n)
+        subtree = [board_node]
+        stack = list(kids.get(board_node["id"], []))
+        while stack:
+            node = stack.pop()
+            subtree.append(node)
+            stack.extend(kids.get(node["id"], []))
+        scoped = subtree
+        ox, oy = board_node["x"], board_node["y"]
+
     manifest_path = out / "manifest.json"
     old: dict = {}
     if manifest_path.is_file():
@@ -348,9 +388,10 @@ def main(argv: list[str] | None = None) -> int:
     old_regions = {str(e.get("file")): e for e in old.get("regions", [])}
     digest = source_hash(src)
     same_source = old.get("source_sha256") == digest
+    same_board = old.get("board") == board_name
 
     def keep_review(entry: dict, geometry: dict, keys: tuple[str, ...]) -> dict:
-        if (same_source and same_geometry(entry, geometry, keys)
+        if (same_source and same_board and same_geometry(entry, geometry, keys)
                 and entry.get("reviewed") and (entry.get("note") or "").strip()):
             return {"reviewed": True, "note": entry["note"]}
         return {"reviewed": False, "note": ""}
@@ -371,27 +412,7 @@ def main(argv: list[str] | None = None) -> int:
                                                 ("x0", "y0", "x1", "y1"))})
 
     regions: dict[str, dict] = {}
-    if args.regions:
-        nodes = load_nodes(args.regions)
-        board_node = next((n for n in nodes
-                           if n.get("type") == "board" and n.get("parentId") is None
-                           and n.get("name") == board_name), None)
-        scoped = nodes
-        if board_node is not None:
-            kids: dict[str, list[dict]] = {}
-            for n in nodes:
-                if n.get("parentId"):
-                    kids.setdefault(n["parentId"], []).append(n)
-            subtree = [board_node]
-            stack = list(kids.get(board_node["id"], []))
-            while stack:
-                node = stack.pop()
-                subtree.append(node)
-                stack.extend(kids.get(node["id"], []))
-            scoped = subtree
-            ox, oy = board_node["x"], board_node["y"]
-        else:
-            ox = oy = 0
+    if args.regions and scoped is not None:
         try:
             picked = pick_regions(scoped, args.primary_action)
         except ValueError as exc:
@@ -407,11 +428,15 @@ def main(argv: list[str] | None = None) -> int:
             region = parse_region(raw)
         except ValueError as exc:
             fail(str(exc))
+        # Declared regions are board-relative; the render already starts at the
+        # board origin, so board.y is not subtracted here.
         x = max(0, min(region["x"], max(img_w - 8, 0)))
         y = max(0, min(region["y"], max(img_h - 8, 0)))
         regions[region["slug"]] = {"name": region["name"], "x": x, "y": y,
                                    "w": region["w"], "h": region["h"], "origin": "declared"}
     for old_region in old.get("regions", []):
+        if old.get("board") != board_name:
+            break
         if old_region.get("origin") not in (None, "manual", "declared"):
             continue
         slug = str(old_region.get("file", "")).removeprefix("region-").removesuffix(".png")
@@ -445,7 +470,7 @@ def main(argv: list[str] | None = None) -> int:
                             "missing": [slug for slug in required if slug not in present]}
     manifest_path.write_text(json.dumps(manifest, indent=1, ensure_ascii=False) + "\n")
     keep = {e["file"] for e in manifest["tiles"] + manifest["regions"]}
-    removed = cleanup_stale(out, old, keep, src.name)
+    removed = cleanup_stale(out, keep)
 
     print(f"{board_name}: {img_w}x{img_h} -> {len(boxes)} tiles"
           + (f" + {len(manifest['regions'])} regions" if manifest["regions"] else "")

@@ -27,7 +27,7 @@ import sys
 import urllib.error
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from penpot_exec import McpError, call_execute_code, ensure_helpers, fail, load_url, payload  # noqa: E402
+from penpot_exec import McpError, call_execute_code, fail, load_url, payload  # noqa: E402
 from design_lint import COLLECT  # noqa: E402
 
 WORDS = re.compile(r"[^\W\d_]+", re.UNICODE)
@@ -157,8 +157,8 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         url = load_url()
-        ensure_helpers(url)
-        nodes = payload(call_execute_code(url, COLLECT.replace("__PAGE__", json.dumps(args.page))))
+        nodes = payload(call_execute_code(
+            url, COLLECT.replace("__PAGE__", json.dumps(args.page)), write=False))
         if not isinstance(nodes, list):
             fail("collector returned no node list")
     except McpError as exc:

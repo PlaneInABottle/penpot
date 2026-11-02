@@ -467,6 +467,56 @@ class GateTest(unittest.TestCase):
                              "crop must not run without its render")
             self.assertIn("skipped (export exit 2)", buf.getvalue())
 
+    def test_crop_uses_the_spec_primary_cta_when_nodes_exist(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = pathlib.Path(tmp) / "proj"
+            (project / "build").mkdir(parents=True)
+            (project / "build" / "build.py").write_text(
+                'SCREENS = {"screen-01": ("Kurumsal", "01-ana-sayfa")}\n')
+            (project / "ux-spec.json").write_text(json.dumps({"screens": [
+                {"board": "01-ana-sayfa", "page": "Kurumsal", "primaryCta": "hero cta"}]}))
+            seen: list[tuple[str, list[str]]] = []
+
+            def fake_step(label, argv, timeout):
+                seen.append((label, list(argv)))
+                if label.startswith("design_lint"):
+                    path = pathlib.Path(argv[argv.index("--dump-nodes") + 1])
+                    path.write_text("[]")
+                if label.startswith("export_board"):
+                    shots = project / "shots"
+                    shots.mkdir(parents=True, exist_ok=True)
+                    (shots / "01-ana-sayfa.png").write_bytes(b"png")
+                return {"step": label, "code": 0, "seconds": 0.0, "output": ""}
+
+            with mock.patch.object(gate, "run_step", fake_step), \
+                    contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(gate.gate(["Kurumsal"], ["01"], project, 30), 0)
+            crops = [argv for label, argv in seen if label.startswith("crop_board")]
+            self.assertEqual(len(crops), 1)
+            self.assertIn("--regions", crops[0])
+            index = crops[0].index("--primary-action")
+            self.assertEqual(crops[0][index + 1], "hero cta")
+
+    def test_an_unconfigured_lint_warning_is_visible_and_not_full_coverage(self):
+        def fake_step(label, argv, timeout):
+            if label.startswith("design_lint"):
+                return {"step": label, "code": 0, "seconds": 0.0,
+                        "output": "page: Mobil  shapes: 1  findings: 0 (0 high, 0 medium, "
+                                  "0 acknowledged)\nwarning: surface.role is not configured — "
+                                  "declare \"surface_white\" and \"surface_alt\" in the project "
+                                  "craft-rules.json; the rule was skipped\n"}
+            return {"step": label, "code": 0, "seconds": 0.0, "output": ""}
+
+        buf = io.StringIO()
+        with mock.patch.object(gate, "run_step", fake_step), contextlib.redirect_stdout(buf):
+            code = gate.gate(["Mobil"], [], gate.DEFAULT_PROJECT, 30)
+        text = buf.getvalue()
+        self.assertEqual(code, 0)
+        self.assertIn("surface.role is not configured", text)
+        self.assertIn("rule-coverage warning", text)
+        self.assertIn("coverage incomplete", text)
+        self.assertNotIn("gate: PASS —", text)
+
     def test_an_invalid_lint_step_is_fail_not_pass(self):
         """design_lint exit 2 on an unmeasured page must never read as PASS."""
         def fake_step(label, argv, timeout):

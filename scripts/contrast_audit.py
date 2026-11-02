@@ -9,11 +9,12 @@ listed, or a dark title that actually sits on a photo).
 
     contrast_audit.py --page Kurumsal [--min 4.5]
 
-Read-only (named page, never switches the view). Resolution is paint-order and
-board scoped: an ancestor board fill counts, a sibling card painted before the
-text counts, and a layer in another board never does. Image fills, translucent
-layers and text without a resolvable opaque background are reported as
-MANUAL/unknown, not as a fabricated solid ratio. Those items are not a pass:
+Read-only (named page, never switches the view) and does not inject helpers.
+Resolution is paint-order and board scoped: an ancestor board fill counts, a
+sibling card painted before the text counts, and a layer in another board never
+does. Shape opacity multiplies ancestor, shape and fill opacity; image,
+gradient, alpha-colour, translucent and unknown paints are reported as
+MANUAL/unknown, never as a fabricated solid ratio. Those items are not a pass:
 the printed verdict says so, and the definition of done requires an eye check.
 
 Large text (>=24px, or >=19px semibold+) is held to 3.0, everything else to
@@ -28,18 +29,30 @@ from __future__ import annotations
 import argparse
 import json
 import pathlib
+import re
 import sys
 import urllib.error
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from penpot_exec import McpError, call_execute_code, ensure_helpers, fail, load_url, payload  # noqa: E402
+from penpot_exec import McpError, call_execute_code, fail, load_url, payload  # noqa: E402
 
 COLLECT = """
 const page = penpot.currentFile.pages.find(p => p.name === __PAGE__);
 if (!page) throw new Error("page not found: " + __PAGE__);
 const out = { texts: [], layers: [] };
 let seq = 0;
-const walk = (s, boardId, boardName) => {
+const num = (value, fallback) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+const kindOf = (fill, paints) => {
+  if (paints > 1) return "unsupported";
+  if (fill.fillImage) return "image";
+  if (fill.fillColorGradient) return "gradient";
+  if (fill.fillColor) return "solid";
+  return "unsupported";
+};
+const walk = (s, boardId, boardName, ancestorOpacity) => {
   const order = seq++;
   // Scope is the TOP-LEVEL board, so a nested panel shares its ancestor's
   // background while a neighbouring board can never leak into this one.
@@ -47,13 +60,18 @@ const walk = (s, boardId, boardName) => {
     : (s.type === "board" ? s.id : "root:" + s.id);
   const bname = boardId !== null ? boardName
     : (s.type === "board" ? s.name : null);
-  const fill = (s.fills || [])[0] || null;
-  const opacity = fill && fill.fillOpacity !== undefined && fill.fillOpacity !== null
-    ? Number(fill.fillOpacity) : 1;
-  if ((s.type === "rectangle" || s.type === "board" || s.type === "ellipse")
-      && fill && opacity > 0 && (fill.fillColor || fill.fillImage)) {
+  // Penpot's shape.opacity multiplies every fill and every descendant; a
+  // collector that reads fillOpacity alone reports a fabricated solid ratio.
+  const inherited = ancestorOpacity * num(s.opacity, 1);
+  const paints = (s.fills || []).filter(f => num(f.fillOpacity, 1) > 0);
+  const fill = paints[0] || null;
+  const opacity = inherited * (fill ? num(fill.fillOpacity, 1) : 1);
+  const kind = fill ? kindOf(fill, paints.length) : null;
+  // Any non-text shape with a visible fill paints a layer; dropping an
+  // unfamiliar shape type would let a text resolve against the wrong ancestor.
+  if (s.type !== "text" && fill) {
     out.layers.push({ order, boardId: bid, board: bname, name: s.name,
-      kind: fill.fillImage ? "image" : "solid", fill: fill.fillColor || null,
+      kind, fill: fill.fillColor || null,
       opacity, x: s.x, y: s.y, w: s.width, h: s.height });
   }
   if (s.type === "text") {
@@ -63,14 +81,17 @@ const walk = (s, boardId, boardName) => {
     out.texts.push({ order, boardId: bid, board: bname, name: s.name,
       size: Number(s.fontSize) || 0, variant: String(s.fontVariantId || ""),
       fg: fill && fill.fillColor ? fill.fillColor : null,
-      fgImage: !!(fill && fill.fillImage),
+      fgKind: kind, fgPaints: paints.length,
       fgOpacity: opacity, cx, cy });
   }
-  (s.children || []).forEach(c => walk(c, bid, bname));
+  (s.children || []).forEach(c => walk(c, bid, bname, inherited));
 };
-(page.root.children || []).forEach(s => walk(s, null, null));
+(page.root.children || []).forEach(s => walk(s, null, null, 1));
 return JSON.stringify(out);
 """
+
+ALPHA_HEX = re.compile(r"^#[0-9A-Fa-f]{8}$")
+SOLID_HEX = re.compile(r"^#[0-9A-Fa-f]{6}$")
 
 
 def lum(hex_color: str) -> float:
@@ -107,14 +128,29 @@ def resolve(data: dict, min_ratio: float = 4.5, ignore: tuple[str, ...] = ()) ->
             continue
         def note(reason: str) -> None:
             manual.append({"board": board, "name": name, "reason": reason})
-        if text.get("fgImage"):
+        if text.get("fgPaints", 1) != 1:
+            note("text has multiple/unknown fills")
+            continue
+        if text.get("fgKind") == "image":
             note("text fill is an image")
+            continue
+        if text.get("fgKind") == "gradient":
+            note("text fill is a gradient")
+            continue
+        if text.get("fgKind") == "unsupported":
+            note("text fill has an unsupported paint")
             continue
         if not text.get("fg"):
             note("no solid text fill")
             continue
+        if ALPHA_HEX.match(str(text["fg"])):
+            note(f"text fill carries alpha {text['fg']!r} (unsupported compositing)")
+            continue
+        if not SOLID_HEX.match(str(text["fg"])):
+            note(f"unsupported text colour {text['fg']!r}")
+            continue
         if float(text.get("fgOpacity", 1)) < 0.99:
-            note("translucent text fill (unsupported compositing)")
+            note(f"translucent text fill (opacity {float(text.get('fgOpacity', 1)):g})")
             continue
         under = [layer for layer in by_scope.get(text.get("boardId"), [])
                  if layer.get("order", 0) < text.get("order", 0)
@@ -126,8 +162,21 @@ def resolve(data: dict, min_ratio: float = 4.5, ignore: tuple[str, ...] = ()) ->
         if top.get("kind") == "image":
             note(f"over image fill {top.get('name', '?')}")
             continue
+        if top.get("kind") == "gradient":
+            note(f"over gradient fill {top.get('name', '?')}")
+            continue
+        if top.get("kind") == "unsupported":
+            note(f"over unsupported painted layer {top.get('name', '?')}")
+            continue
+        if ALPHA_HEX.match(str(top.get("fill") or "")):
+            note(f"over alpha colour {top.get('fill')!r} (unsupported compositing)")
+            continue
+        if not SOLID_HEX.match(str(top.get("fill") or "")):
+            note(f"unsupported background colour {top.get('fill')!r}")
+            continue
         if float(top.get("opacity", 1)) < 0.99:
-            note(f"over translucent layer {top.get('name', '?')} (unsupported compositing)")
+            note(f"over translucent layer {top.get('name', '?')} "
+                 f"(opacity {float(top.get('opacity', 1)):g})")
             continue
         try:
             got = ratio(text["fg"], top["fill"])
@@ -155,8 +204,8 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         url = load_url()
-        ensure_helpers(url)
-        data = payload(call_execute_code(url, COLLECT.replace("__PAGE__", json.dumps(args.page))))
+        data = payload(call_execute_code(
+            url, COLLECT.replace("__PAGE__", json.dumps(args.page)), write=False))
         if not isinstance(data, dict) or not isinstance(data.get("texts"), list):
             fail("collector returned no text/layer report")
     except McpError as exc:

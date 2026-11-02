@@ -30,10 +30,12 @@ Waiting is bounded (PENPOT_LOCK_WAIT, 300 s); on expiry the call exits 2 with
 task and verifies it again after it.
 
 `--read` is the caller's declaration that the snippet only reads: it takes the
-per-call lock but passes a running build session instead of waiting up to 900 s,
-and it never injects helpers. Missing or mismatched helpers are an error in
-read mode, not a write under a build. This is intent, not sandbox enforcement:
-the CLI cannot prove a snippet does not write.
+per-call lock but passes a running build session instead of waiting up to 900 s.
+The CLI itself never probes or injects helpers, so a snippet that needs
+`storage.H` fails on its own. Read-only library callers use
+`ensure_helpers(..., write=False)`, which probes and then refuses to inject on a
+missing/mismatched version. This is intent, not sandbox enforcement: the CLI
+cannot prove a snippet does not write.
 
 Exit codes: 0 success, 2 environment, transport or plugin failure (one line on
 stderr, no traceback).

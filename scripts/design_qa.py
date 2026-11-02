@@ -3,7 +3,7 @@
 
     design_qa.py                        # audit the current page
     design_qa.py --page Showcase        # audit a named page (never switches the view)
-    design_qa.py --strict               # exit 1 on hard-coded fills too
+    design_qa.py --strict               # exit 1 on every advisory finding
     design_qa.py --json report.json     # write the raw audit payload
     design_qa.py --lint-json lint.json  # also fail on high findings from
                                         # `design_lint.py --json lint.json`
@@ -77,7 +77,9 @@ def lint_high_findings(doc: object) -> list[dict]:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--page")
-    ap.add_argument("--strict", action="store_true")
+    ap.add_argument("--strict", action="store_true",
+                    help="fail every advisory finding (hard-coded fills, unnamed shapes, "
+                         "missing prototype flow)")
     ap.add_argument("--json", type=pathlib.Path)
     ap.add_argument("--lint-json", type=pathlib.Path,
                     help="lint --json findings file; high findings there are fatal here")
@@ -163,7 +165,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"verdict: FAIL — {len(blocking)} blocking finding(s); advisory={len(advisory)}")
     elif advisory:
         print(f"verdict: findings (non-strict) — {len(advisory)} advisory finding(s); "
-              "hard-coded fills are not a clean fill count, pass --strict to fail them")
+              "hard-coded fills, unnamed shapes and missing flows are not a clean report, "
+              "pass --strict to fail all advisories")
     else:
         print("verdict: clean — coverage, render truth and hygiene hold")
 

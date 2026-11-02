@@ -80,22 +80,23 @@ All live scripts need the plugin connected. Exit codes everywhere: `0` clean, `1
 | `python3 scripts/rhythm.py nodes.json` | after a layout or copy move; nodes from `--dump-nodes`, findings are advisory (exit 0) |
 | `python3 scripts/ux_gate.py --spec design/<p>/ux-spec.json` | structural story contract; visual beats stay in independent review |
 | `python3 scripts/export_board.py --board <b> --page <p> --out design/<p>/shots` | one board per call |
-| `python3 scripts/crop_board.py --board <b> --page <p> --out shots/<b> [--regions n.json] [--region JSON] [--primary-action NAME]` | the 1:1 review; `--regions` is repeatable |
+| `python3 scripts/crop_board.py --board <b> --page <p> --out shots/<b> [--regions n.json] [--region JSON] [--primary-action NAME]` | the 1:1 review; `--regions` repeatable; `--region` board-relative; `--primary-action` needs `--regions` |
 | `python3 scripts/crop_board.py --attest shots/<b>/manifest.json` | before any "reviewed 1:1" claim; also fails a missing PNG |
 | `python3 scripts/gate.py --pages <p1,p2> [--boards 01,05]` | one run: lint → QA → copy per page (+ux, export/crop); prints QA advisories and never calls them clean |
 | `python3 scripts/gate.py stage design/<p>/build/screen-NN.js` | the only `git add -f design/…` path |
 | `python3 design/<p>/build/build.py screen-NN` | REQUIRED project runner: page/session affinity, fit poll, photos, flows, live `photos`/`links` counts, `RESULT ok|fail nulls=N` (not shipped by the template) |
 | `python3 scripts/penpot_exec.py [--read] --file design/<p>/build/screen-NN.js` | run a snippet; writer by default, `--read` passes a build session and never injects helpers |
 | `python3 scripts/patch_file.py <file> --old-file a.txt --new-file b.txt` | edit a build script |
-| `python3 scripts/import_media.py --url <url> --search "<q>" --name <slot> --page <p> --board <b> --x 0 --y 0 --w <w> --h <h>` | generic import (one source, `--url` or `--search`); prints source/provenance, persists nothing |
+| `python3 scripts/import_media.py (--url <url> or --search "<q>") --name <slot> --page <p> --board <b> --x 0 --y 0 --w <w> --h <h>` | generic import; prints source/provenance, persists nothing |
 | `python3 scripts/docs_check.py [--json]` | after editing this file, README, a skill or the template |
 | `python3 -m unittest scripts.test_docs_check scripts.test_penpot_scripts scripts.test_speed_tools scripts.test_lint_rules` | offline; no network, no Penpot |
 
 `--only`/`--force`/`--restore` belong to a project's `tools/media.py`, never the generic
 importer. The generic importer does not write a media table: record the accepted source URL
 and provenance in the project table before claiming a lossless rebuild. `crop_board.py
---region '{"slug":"…","name":"…","x":0,"y":0,"w":0,"h":0}'` declares one region (page-absolute,
-repeatable); `--primary-action NAME` overrides the CTA heuristic.
+--region '{"slug":"…","name":"…","x":0,"y":0,"w":0,"h":0}'` declares one board-relative region
+(repeatable); `--primary-action NAME` needs `--regions`. A `--png` tile-only run is not attestable
+until the required regions are declared.
 
 Thresholds live in `design_lint.DEFAULTS`/`RULES`, `ux_gate` and `build.py`, never in prose:
 `--rules` is a written deviation, and `--acknowledge` entries need a reason. `design_lint.py`

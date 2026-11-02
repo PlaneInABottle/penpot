@@ -25,7 +25,7 @@ Run in this order; a later gate does not excuse an earlier failure.
 | `design_lint.py --page <p> [--json] [--dump-nodes]` | before the first visual review of a new or rebuilt page | **0 high**; a medium is fixed or explained; exit 2 = page unmeasured, findings invalid |
 | `design_qa.py --page <p> --lint-json lint.json` | with lint | verdict clean and `renderMismatches: 0`; advisory fills/unnamed/no-flow are printed and are not a clean pass |
 | `check_contrast.py --file … --pair fg:bg` | before a board is claimed | every pair used on the screen passes, pairs listed |
-| `contrast_audit.py --page <p>` | before claiming a board | automatic PASS/FAIL on resolved solid pairs; image, translucent and no-background texts are MANUAL — eye-check them, never count as pass |
+| `contrast_audit.py --page <p>` | before claiming a board | automatic PASS/FAIL on resolved solid pairs; image, gradient, alpha, translucent and no-background texts are MANUAL — eye-check them, never count as pass |
 | `rhythm.py <dump-nodes file>` | after any layout or copy move | advisory only (exit 0): gaps cluster at the declared rhythm, `>2×` and `TOP-VOID` get a written reason |
 | `export_board.py --board <b> --page <p>` | together with the 1:1 review | one image per board, from the board's own id |
 | `crop_board.py --board … --out …` then `--attest` | the 1:1 review itself | every tile and region the board has is `reviewed: true` with a note; `--attest` also fails a missing PNG |
@@ -42,8 +42,9 @@ A screen is finished only when all eight hold on the **final** state:
 3. `check_contrast.py` → every listed pair passes; `contrast_audit.py` → no automatic failure
    and every MANUAL item eye-checked.
 4. 1:1 attest: tiles plus the regions the board has — smallest text, densest region, primary
-   action, icon/arrow row when present (`--primary-action`/`--region` when the heuristic
-   misses) — and margin symmetry on the hero at 1:1; `crop_board.py --attest` exit 0.
+   action, icon/arrow row when present (`--primary-action` with `--regions`, or a
+   board-relative `--region`, when the heuristic misses) — and margin symmetry on the hero
+   at 1:1; `crop_board.py --attest` exit 0.
 5. Prototype: `page.flows.length` is what you claim and the per-board interaction count is
    non-zero **after the last rebuild**.
 6. Independent review: a different model or session scores the tiles 0–5 per axis

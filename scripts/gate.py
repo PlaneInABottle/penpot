@@ -18,7 +18,9 @@ counts are echoed per page: `medium` there are reported but never gate, and
 `acknowledged` ones carry a recorded design reason (craft-rules.json), so only
 the unexplained medium count is worth reading. `design_qa` exits 0 for advisory
 findings (hard-coded fills, unnamed shapes, no flow); the gate prints those lines
-and its PASS line then says "not clean", so exit 0 never hides them. Exit 2 also covers
+and its PASS line then says "not clean", so exit 0 never hides them. A successful
+lint may still print `warning:` lines (an unconfigured rule); those are echoed too
+and the PASS line says "coverage incomplete". Exit 2 also covers
 an INVALID step: design_lint reports a page whose texts were never measured
 (textBounds unavailable — the page is not open), and a gate that printed PASS
 there would pass a page nobody looked at.
@@ -86,6 +88,24 @@ def resolve_board(token: str, screens: dict[str, tuple[str, str]]) -> tuple[str,
         if board == token:
             return page, board
     return None
+
+
+def primary_action_for(project: pathlib.Path, page: str, board: str) -> str | None:
+    """The screen's declared `primaryCta`, only when one screen matches page+board."""
+    path = project / "ux-spec.json"
+    if not path.is_file():
+        return None
+    try:
+        spec = json.loads(path.read_text())
+    except (OSError, json.JSONDecodeError):
+        return None
+    matches = [s for s in spec.get("screens", [])
+               if isinstance(s, dict) and s.get("board") == board
+               and s.get("page") in (None, page)]
+    if len(matches) != 1:
+        return None
+    cta = matches[0].get("primaryCta")
+    return cta if isinstance(cta, str) and cta.strip() else None
 
 
 def run_step(label: str, argv: list[str], timeout: float) -> dict:
@@ -201,6 +221,9 @@ def gate(pages: list[str], boards: list[str], project: pathlib.Path, timeout: fl
                                                "--out", str(shots / board)]
             if nodes.is_file():
                 crop_argv += ["--regions", str(nodes)]
+                declared = primary_action_for(project, page, board)
+                if declared:
+                    crop_argv += ["--primary-action", declared]
             steps.append(run_step(f"crop_board {board}", crop_argv, timeout))
 
     total = time.monotonic() - started
@@ -210,12 +233,16 @@ def gate(pages: list[str], boards: list[str], project: pathlib.Path, timeout: fl
         print(f"{step['step']:<36}{step['code']:>5}{step['seconds']:>10.2f}"
               + ("  INVALID" if step.get("invalid") else ""))
     print(f"{'total':<36}{'':>5}{total:>10.2f}")
+    warnings: list[str] = []
     for step in steps:
-        if not step["step"].startswith("design_lint"):
+        if not step["step"].startswith("design_lint") or step["code"] != 0:
             continue
         for line in step["output"].splitlines():
             if line.startswith("page: "):
                 print(f"  {line}")
+            elif line.startswith("warning: "):
+                warnings.append(f"{step['step']}: {line.strip()}")
+                print(f"  {step['step']}: {line.strip()}")
 
     # design_qa exits 0 for advisory findings (hard-coded fills, unnamed shapes,
     # no flow). A gate that only reads exit codes would hide them and print PASS
@@ -255,9 +282,19 @@ def gate(pages: list[str], boards: list[str], project: pathlib.Path, timeout: fl
     if failing:
         print(f"gate: FINDINGS ({len(failing)} step(s)) — {total:.1f}s")
         return 1
-    if advisory:
-        print(f"gate: PASS ({advisory_count} non-fatal QA finding(s) — not clean; "
-              f"see above) — {total:.1f}s")
+    if advisory or warnings:
+        parts = []
+        if advisory_count:
+            parts.append(f"{advisory_count} non-fatal QA finding(s)")
+        if warnings:
+            parts.append(f"{len(warnings)} rule-coverage warning(s)")
+        detail = "; ".join(parts)
+        tail = []
+        if advisory_count:
+            tail.append("not clean")
+        if warnings:
+            tail.append("coverage incomplete")
+        print(f"gate: PASS ({detail} — {', '.join(tail)}; see above) — {total:.1f}s")
         return 0
     print(f"gate: PASS — {total:.1f}s")
     return 0

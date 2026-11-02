@@ -43,13 +43,14 @@ import urllib.error
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from design_lint import COLLECT, saturation  # noqa: E402
-from penpot_exec import McpError, call_execute_code, ensure_helpers, fail, load_url, payload  # noqa: E402
+from penpot_exec import McpError, call_execute_code, fail, load_url, payload  # noqa: E402
 
 STORY_BEATS = ("hook", "proof", "path", "action")
 
 
 def fetch_nodes(url: str, page: str) -> list[dict]:
-    nodes = payload(call_execute_code(url, COLLECT.replace("__PAGE__", json.dumps(page))))
+    nodes = payload(call_execute_code(
+        url, COLLECT.replace("__PAGE__", json.dumps(page)), write=False))
     if not isinstance(nodes, list):
         raise McpError(f"collector returned no node list for page {page}")
     return nodes
@@ -191,7 +192,6 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         url = load_url()
-        ensure_helpers(url)
         wanted: dict[str, None] = {}
         for screen in spec.get("screens", []):
             wanted[screen.get("page")] = None
