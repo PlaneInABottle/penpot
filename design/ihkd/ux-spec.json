@@ -5,22 +5,23 @@
     {
       "board": "01-ana-sayfa",
       "page": "Kurumsal",
-      "task": "Ziyaretçi derneğin ne yaptığını bir bakışta anlar ve üyeliğe yönelir.",
+      "task": "Ziyaretçi derneğin ne yaptığını bir bakışta anlar ve yaklaşan kongreye kaydolur.",
       "primaryCta": "hero cta",
       "story": {
-        "hook": "hero label + hero title: klinik hekim topluluğu",
-        "proof": "hero band + istatistik satırı: sayı ve sonuç ilk viewportta",
-        "path": "kurs satırları (course cta 0-2): üç net devam yolu",
-        "action": "hero cta: tek baskın kayıt eylemi"
+        "hook": "hero label + hero title: derneğin cümlesi, tek primary eylemle",
+        "proof": "hero proof value 0-3 + kongre band: üye, il, grup, kılavuz sayıları ve kongre tarihi ilk viewportta",
+        "path": "group name 0-5, course title 0-2, journal title: çalışma grupları, akademi, yayın",
+        "action": "hero cta: kongre kaydı; sayfa member cta ile üyeliğe kapanır"
       },
       "states": [
         {"state": "default", "board": "01-ana-sayfa"},
         {"state": "empty", "board": "01-bos"}
       ],
       "mobile": {"board": "01-ana-sayfa-m", "page": "Mobil"},
-      "firstViewport": ["hero label", "hero title", "hero lede", "hero cta", "masthead cta"],
+      "firstViewport": ["hero label", "hero title", "hero lede", "hero cta", "masthead cta", "hero proof value 0"],
       "claims": [
-        {"pattern": "course cta [0-9]", "count": 3, "label": "öne çıkan kurs yolu"}
+        {"pattern": "course cta [0-9]", "count": 3, "label": "öne çıkan kurs yolu"},
+        {"pattern": "hero proof value [0-9]", "count": 4, "label": "hero kanıt şeridi"}
       ]
     },
     {

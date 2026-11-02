@@ -454,6 +454,76 @@ const IK = (function () {
     }), { rule: o.rule === undefined ? false : o.rule, bare: o.bare });
   }
 
+  /**
+   * Proof strip: the figures a page is making a claim with, at the `stat` role
+   * and divided on the section grid. Cells are whole 12-column groups, so a
+   * divider lands on a cell boundary and every figure keeps the same 12px
+   * inset on both sides of it (a divider parked at "column minus a guess"
+   * drifts with digit width and reads accidental). Height is its own rhythm —
+   * pad / value / gap / label / pad — never the neighbouring section's.
+   * `opts.bleed` paints a full-width surface behind the cells (a white strip
+   * on the paper canvas); returns the strip's bottom y.
+   */
+  function statsStrip(parent, name, x, y, w, items, opts) {
+    const o = opts || {};
+    const n = items.length;
+    const gutter = o.gutter === undefined ? 24 : o.gutter;
+    const pitch = (w + gutter) / n;
+    const cellW = pitch - gutter;
+    const pad = o.pad === undefined ? 28 : o.pad;
+    const vH = Math.round(ROLE.stat.size * ROLE.stat.lh);
+    const lH = Math.round(ROLE.meta.size * ROLE.meta.lh);
+    const gap = o.gap === undefined ? 10 : o.gap;
+    const h = pad + vH + gap + lH + pad;
+    if (o.bleed) rect(parent, name + " surface", 0, y, o.bleed, h, o.surface || "white");
+    if (o.rule !== false) rule(parent, name + " rule", x, y, w, o.rule || "line.soft");
+    items.forEach((it, i) => {
+      const cx = x + i * pitch;
+      if (i && o.divide !== false) rect(parent, name + " div " + i, cx - gutter / 2, y + pad, 1, vH + gap + lH, "line.soft");
+      text(parent, name + " value " + i, it[0], "stat", o.valueInk || "ink.900", { x: cx, y: y + pad });
+      text(parent, name + " label " + i, it[1], "meta", o.labelInk || "ink.600", { x: cx, y: y + pad + vH + gap, w: cellW });
+    });
+    return y + h;
+  }
+
+  /**
+   * One CTA group: the button and its ghost link share a single vertical
+   * centre and one fixed gap, so the link can never float above the button
+   * (İHKD 01: "Programı gör" sat 50px above "Kayıt ol"). The button sizes
+   * itself from its label; returns {w, h} so the caller can ride a cursor.
+   */
+  function ctaRow(parent, name, x, y, label, opts) {
+    const o = opts || {};
+    const h = o.h || 52;
+    const bw = o.w || Math.max(168, Math.round(label.length * 8.2) + 64);
+    const gap = o.gap === undefined ? 32 : o.gap;
+    btn(parent, name, label, x, y, bw, h, o.kind || "primary");
+    if (!o.link) return { w: bw, h: h };
+    const lh = Math.round(ROLE.nav.size * ROLE.nav.lh);
+    const lw = Math.round(o.link.length * 8.2) + 2;
+    link(parent, name + " link", o.link, x + bw + gap, y + Math.round((h - lh) / 2), o.linkInk || "red.700");
+    return { w: bw + gap + lw, h: h };
+  }
+
+  /**
+   * Section head with the order numeral on the kicker's own line, in mono at
+   * the figure size. A 44px sans numeral beside a 44px title reads as a second
+   * headline (İHKD 01, 2026-11-02); bound to its kicker it is wayfinding
+   * again, and the title can start on the page's left edge. Same rhythm as
+   * head(): title, rule, `next` below the rule.
+   */
+  function headIndex(parent, x, y, label, title, opts) {
+    const o = opts || {};
+    NUM += 1;
+    const num = o.num || ("0" + NUM).slice(-2);
+    text(parent, "head num " + num, num, "figure", "ink.400", { x: x, y: y });
+    text(parent, "head label " + label, label, "label", "ink.500", { x: x + 52, y: y + 4 });
+    if (o.link) link(parent, "head link " + label, o.link, X + CW - 40 - Math.round(o.link.length * 8.2), y + 8, "ink.900");
+    text(parent, "head title " + label, title, "h2", "ink.900", { x: x, y: y + 44, w: o.w || 760 });
+    rule(parent, "head rule " + label, x, y + (o.ruleAt || 108), CW, "line.strong", 1);
+    return y + (o.next || 148);
+  }
+
   const vcenter = (hRow, contentH) => Math.max(0, Math.round((hRow - contentH) / 2));
 
   /**
@@ -560,6 +630,7 @@ const IK = (function () {
     start, end, fit, fitBars, fitCards, report, page, rect, board, text, rule, vrule, bind, paint, stroke, corners,
     btn, link, tag, head, pageHead, stat, field, photo, sheet, masthead, footer, sidebar, crumbs,
     progress, ecg, row, rows, bullets, vcenter, snap, nrm, token, estLines,
+    statsStrip, ctaRow, headIndex,
   };
 })();
 

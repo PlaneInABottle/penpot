@@ -158,7 +158,7 @@ Card: 24px padding (32 for feature cards), 1px border, no shadow.
 
 | # | Page | Board | Primary action | Height |
 |---|---|---|---|---|
-| 01 | `Kurumsal` | `01-ana-sayfa` | Kongreye kayıt ol | 3896 |
+| 01 | `Kurumsal` | `01-ana-sayfa` | Kongreye kayıt ol | 4464 |
 | 02 | `Kurumsal` | `02-dernek` | Tüzüğü oku | 2452 |
 | 03 | `Kurumsal` | `03-yonetim` | Kurul üyesine ulaş | 2296 |
 | 04 | `Kurumsal` | `04-calisma-gruplari` | Grup seç | 2088 |
@@ -187,14 +187,17 @@ Copy below is final Turkish; build it verbatim.
 
 ### 01 · Ana sayfa
 - Nav: İHKD + `Dernek · Çalışma grupları · Kongre · Akademi · Yayın · Haberler` + `Üye girişi` + ghost `Üye ol` (tek doygun primary hero'dadır).
-- Hero (seçim A, 2026-11-02): kicker `1998'DEN BERİ · ANKARA`, display `Hastanın hekimi.`, lede (tek adreste), primary `Üye ol` + ghost `Derneği tanı`; sağda tam yükseklik fotoğraf (Thirdman 7659869, yüz yok, muayene anı); alt kenara oturan ink proof şeridi (6.847 üye · 41 il · 12 grup · 10 kılavuz). ECG hero'da yok — imza program/takvim bağlamında kalır.
-- Congress note YOK (seam kalktı); istatistik satırı hero şeridinde.
-- `Gündem` — 3 rows (date, category, title) + `Tüm haberler`.
-- Congress band: red `#C4122F`, `12. ULUSAL KONGRE`, `22–25 Nisan 2027`, `Antalya`, `147` countdown, `Kayıt ol`.
-- `Çalışma grupları` — 6 rows + `12 çalışma grubunun tümü →`. No `NN / 06` counters: ghost numerals already carry the order.
-- `Akademi` — 3 course rows. Right-aligned meta column ends at the grid edge; single action column.
-- `Yayın` — journal card (open-pages texture, no masthead) + TOC + guideline card side by side.
-- Footer white.
+- Hero (seçim A, M6): kicker `1998'DEN BERİ · ANKARA`, display `Hastanın hekimi.` (bilinçli 2 satır lockup), lede (tek adreste), primary `Kongreye kayıt ol` + ghost `Derneği tanı`; sağda 560×560 kardiyoloji karesi (Vitaly Gariev 39192342 — göğüste steteskop, yüz yok, soğuk ton); sol blok fotoğrafın içinde dikey ortalanmış, fotoğrafın alt kenarı kanıt şeridinin üst çizgisi.
+- Kanıt şeridi: hero'nun alt kenarına oturan tam genişlikte `white` şerit — 6.847 üye · 41 il · 12 çalışma grubu · 10 kılavuz; `stat` 44px `ink.900`, etiket 13px `ink.600`, ayırıcılar 12 kolonun 3'lü hücre sınırında. Siyah/near-black yüzey yok (principles §6).
+- Kongre bandı (sayfanın tek kırmızı alanı): `12. ULUSAL KONGRE`, `22–25 Nisan 2027`, `Antalya Kongre Merkezi, Belek · 96 oturum · 214 konuşmacı`; tek satırda bone `Kayıt ol` + ghost `Programı gör`; sağda `red.700` geri sayım bloğu (`147` + `GÜN` + erken kayıt notu). Yükseklik 316, içerikten türetildi.
+- `Gündem` — 3 rows (tarih, kategori, başlık, okuma süresi) + `Tüm haberler →` + yayım notu.
+- `Çalışma grupları` — 6 rows, iki kolon (576 + 48 + 576 = 1200) + `12 çalışma grubunun tümü →`; sıra numarası `data` 13px, ok kolonun sağ kenarında ve başlığın ilk satırına hizalı.
+- `Akademi` — 3 course rows; meta 1200'de biter, `Başla →` 1320 grid kenarında; STE notu.
+- `Yayın` — kitap fotoğrafı (280×300) + dergi kolonu (3 TOC satırı, `Sayıyı oku`) + ayın kılavuzu kolonu (ECG şeridi 360×44, `Kılavuzu indir`); iki link aynı satırda, fotoğrafın alt kenarı o çizgiye oturur.
+- `Üyelik` — `white` bant: `Yazan, toplayan, öğreten.`, lede, 3 madde, `Başvuruyu başlat →` linki, aidat satırı. İkinci doygun buton yok.
+- Footer white. Board yüksekliği 4464.
+- Declared bleeds: `top bar`, `masthead rule`, `hero proof surface` (+ kuralı), `kongre band`, `uyelik band`, `footer` / `footer bar`. Diğer her şey `X..X+CW` içinde (grid denetimi: 0 ihlal; hero kenar boşlukları 120/120).
+- Açıklanan lint medium'ları (düzeltildi değil, gerekçeli): `img-hero touches hero proof surface` — hero'nun mekanizması bu: fotoğrafın alt kenarı şeridin üst çizgisidir; `dead space in kongre band (75)` / `uyelik band (74)` — ölçü son *metin* ink'inden başlıyor, iki bandın alt dolgusu üst dolgusuyla aynı (56/59 ve 72/72); `intra-card gap band venue → band cta link (43)` — CTA grubu kendi havasını sahiplenir, `ctaRow` onu tek merkezde tutar; `type steps too close [1.23 …]` ve 13px microcopy — principles §8'de yazılı duruş.
 
 ### 02 · Dernek
 Hero (white card, no photo) with `1998'den beri`, display `1998'den beri tek çatı.`, lead.
@@ -303,36 +306,83 @@ URL in `tools/media.py` is the single source, so a rebuild reimports the accepte
 5. Prototype: flows exist, per-board interaction count non-zero.
 6. Independent reviewer has seen the render and crops.
 
-## M5 · 01 hero critique (from 1:1 tiles, 2026-11-02)
+## M6 · 01 hero — critique, three candidates, decision (2026-11-02, 1:1)
 
-Tile-01 (0-900) + region crops read at 1:1. The hero fails the hero contract:
+### Critique of the delivered hero (before this milestone)
 
-1. Sağ sütun ölü: 560×384 gri mat — `img-echo` slotu hiç doldurulmamış. Hero'nun yarısı yok; başlık-görsel ilişkisi kurulamamış.
-2. Görselin rolü yok: spec'teki kare (duvar tipi EKG monitörü + arkadan hemşire) klinik gözetim fotoğrafı; "Hastanın hekimi" mesajını göstermiyor, kanıtlamıyor, ruh vermiyor — stok doldurma.
-3. Kanıt hero'da değil: istatistik satırı (6.847/41/12/10) kongre bandının altında, ilk viewportun sınırında; hook (başlık) + kanıt + eylem üçlüsü ilk 900px'te bir arada değil.
-4. CTA enflasyonu: masthead "Üye ol" + hero "Kongreye kayıt ol" + bant "Kayıt ol" = 3 primary (`ux_gate` FAIL). Baskın tek eylem yok.
-5. Sol blok gevşek: display başlık → lede → CTA arası ritim sağdaki ölü griyle birlikte "iki yarım sayfa" okunuyor.
-6. İki kırmızı jest çarpışıyor: ECG çizgili beyaz kart + tam kırmızı kongre bandı (seam).
+Read from `shots/before/01-ana-sayfa.png` (1440×3952) plus 1:1 crops
+`c1-hero-left`, `c2-hero-photo`, `c3-proof`, `c4-band`, `c5-head`, `c7-groups`,
+`c8-pub` in the same folder.
 
-Karar: hero sıfırdan kurulacak (3 aday, scratch'ta karşılaştırma, puanlama, tek seçim).
+1. **The hero's left column had 255px of nothing under its CTA.** kicker 156,
+   title 188, lede 368, CTA 470–522, photo ends 716, strip starts 780. The title was
+   an accidental 2-line wrap in a 560px box; nothing was centred against the photo, so
+   the hero read as two half-pages.
+2. **The proof strip broke the system.** 6.847 / 41 / 12 / 10 sat on `ink.900` at
+   `dataLg` 16px with 13px labels — a near-black surface principles §6 forbids, and the
+   opposite of "loud data".
+3. **The band's CTA group had no row.** "Programı gör" sat at y+218, "Kayıt ol" at
+   y+268 and 24px to its right: no shared centre, no fixed gap; 75px of dead band below.
+4. **Three actions competed.** hero `Üye ol` (red fill), nav `Üye ol` (outline), band
+   `Kayıt ol` (bone). The page's single primary was membership while its only
+   time-limited action is congress registration.
+5. **Ghost numerals fought their titles.** 01–04 at `h2` 44px, 148px left of the kicker,
+   the same size as the 44px titles they labelled.
+6. **Rows touched and drifted.** group title→meta was a 6px box gap (13px ink); the TOC
+   rules sat 55px under one title and 17px above the next; the publication column left
+   111px under the guideline title and the book photo's bottom aligned with nothing.
 
-## M5 · 01 hero adayları (scratch, 2026-11-02)
+### Candidates (scratch boards, real photo, identical copy)
 
-Renderlar: `design/ihkd/shots/hero-candidates/cand-{a,b,c}*.png` (fotoğrafsız gri slot + art notu; mekanizma karşılaştırması).
+Renders: `shots/hero-candidates/cand-a-split.png`, `cand-b-kongre.png`,
+`cand-c-veri.png` (1440×900, read at 1:1).
 
-| eksen | A split+kanıt | B kongre-first | C veri-duvarı |
+| axis | A "Tek hasta, iki uzman" | B "Kongre lead" | C "Klinik veri" |
 |---|---|---|---|
-| hiyerarşi | 4 (başlık baskın; slot zayıflatıyor) | 5 | 4 |
-| hikâye | 4 (hook+kanıt tek viewportta) | 3 (dernek yok) | 3 (slogan geç, iş belirsiz) |
-| ilk-5-sn | 4 | 4 | 3 |
-| sığma | 5 | 4 (tarih fotoğrafa taşıyor, düzeltilmeli) | 5 |
-| tutarlılık | 4 (klinik izleyici dili) | 3 (yön sapması) | 4 |
-| erişilebilirlik | 4 | 4 | 4 |
-| TOPLAM | **25** | 23 | 23 |
+| mechanism | message column centred against a 560×560 cardiology frame; proof strip docked to the photo's bottom edge | date/venue at 80px display, countdown, registration as the only action; no photo | typographic hero + 360px ECG strip + 44px figures; no photo |
+| refuses | putting the congress in the hero (the primary is registration, the headline stays the society's) | naming the society in the first sentence | carrying feeling with photography |
+| visual role | PROVES — the stethoscope on the chest shows "the patient's physician", no face, cool room | — | — (the ECG is the signature graphic) |
+| hierarchy | 5 | 5 | 3 |
+| story | 5 | 2 | 3 |
+| first-5-seconds | 5 | 4 | 3 |
+| fit | 5 | 4 | 4 |
+| consistency | 5 | 3 | 4 |
+| accessibility | 5 | 4 | 4 |
+| **total** | **30** | 22 | 21 |
 
-Art-direction notları:
-- A: görsel KANITLAR — soğuk ışıkta gerçek klinik an, yüz yok/arkadan, kadrajda ekipman + el detayı; tam yükseklik sağ kolon. Reddeder: kongreyi hero'ya sokmayı.
-- B: görsel GÖSTERİR — kongre salonu arkadan, kalabalık silueti, sıcak ışık. Reddeder: dernek kimliğini ilk cümlede vermeyi.
-- C: görsel YOK — sayının kendisi görsel (ECG imza çizgisi grafik öğe). Reddeder: fotoğrafla duygu taşımayı.
+**A** wins: hook + proof + action in one viewport, the society speaks before the
+congress, and the photo's role is stated. **B** rejected: no society identity; the
+countdown's number and meta were hand-aligned at different sizes (visible 6px baseline
+drift) and the lower 200px were empty. **C** rejected: an ECG alone does not say what
+the product is; the job is unclear in the first five seconds and the lede arrived after
+the figures.
 
-SEÇİM: **A**. Gerekçe: sitenin işi dernek (kongre mevsimsel); hook+kanıt+eylem tek viewportta; kanıt şeridi hero'nun parçası olunca eski ECG-seam kartı ve bağımsız istatistik satırı düşer. B reddedildi (dernek hikâyesi yok; ayrıca tarih metni slota taşıyor). C reddedildi (ilk 5 saniyede iş belirsiz; sayı duvarı soğuk açılış).
+### Decision (written, built)
+
+1. **Hero = A.** Left column 560px, its block centred inside the 560×560 photo frame
+   (x760); the title is a deliberate 2-line lockup (`Hastanın` / `hekimi.`); the CTA
+   group is one row.
+2. **The proof strip is neutral.** The black band is gone: a full-width `white` strip
+   under a 1px `line.soft` rule, 44px `stat` figures in `ink.900`, 13px labels in
+   `ink.600` (AA 6.43), dividers on the 3-column cell boundaries, own rhythm
+   (28/48/10/20/28 = 134). Reason: principles §6 — a near-black surface is outside the
+   system, and "quiet interface, loud data" was the point of the strip all along.
+3. **One primary: congress registration.** hero `Kongreye kayıt ol` (red.600) + ghost
+   `Derneği tanı`; nav keeps the outline `Üye ol` (a ghost, not a fill); the band's
+   button is bone (`onred`); the page closes on a `Başvuruyu başlat →` link. Saturated
+   fills on the board: 1.
+4. **The band's CTA group is one row.** `ctaRow()` draws the button and its ghost link
+   at one vertical centre with a fixed 32px gap; the band's height derives from its
+   content (316).
+5. **Ghost numerals were reduced, not removed.** 01–04 are now `figure` 30px mono in
+   `ink.400`, on the kicker's line (baseline-aligned) with the section title starting on
+   the page's left edge. Reason: at 44px sans they competed with 44px titles; deleting
+   them would delete the product's spine (principles §5). New helper `headIndex()` is
+   the home page's section grammar; inner pages keep `head()` (the shared helper was not
+   touched).
+6. **Row joints fixed from the block's own edge.** group title→meta 12px (≈20px ink),
+   row height from content (112); TOC rows through `rows()` so each rule lands on a
+   block's bottom edge; the two publication links share one line (y+282) and the book
+   photo's bottom edge sits on it.
+7. **Story spread.** hook (hero) → proof (strip + congress band) → path (gündem,
+   groups, academy, publication) → action (membership band, one link).
