@@ -331,6 +331,75 @@ class PluginLockTest(unittest.TestCase):
             penpot_exec.call_execute_code(self.URL, "return 1;")
         self.assertEqual(seen, ["return 1;"])
 
+    def test_cli_read_flag_maps_to_write_false(self):
+        seen: list[bool] = []
+
+        def fake_call(url, code, *, write=True, expect_page=None):
+            seen.append(write)
+            return _mcp_result("{}")
+
+        with mock.patch.object(penpot_exec, "load_url", lambda: self.URL), \
+                mock.patch.object(penpot_exec, "call_execute_code", fake_call), \
+                contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(penpot_exec.main(["--code", "return 1;"]), 0)
+            self.assertEqual(penpot_exec.main(["--read", "--code", "return 1;"]), 0)
+        self.assertEqual(seen, [True, False])
+
+    def test_read_mode_refuses_to_inject_helpers(self):
+        calls: list[str] = []
+
+        def fake_call(url, code, **kwargs):
+            calls.append(code)
+            return _mcp_result(json.dumps({"version": "1.0.0"}))
+
+        @contextlib.contextmanager
+        def fake_lock(*args, **kwargs):
+            yield
+
+        with mock.patch.object(penpot_exec, "plugin_lock", fake_lock), \
+                mock.patch.object(penpot_exec, "call_execute_code", fake_call):
+            with self.assertRaises(penpot_exec.McpError) as ctx:
+                penpot_exec.ensure_helpers(self.URL, write=False)
+        self.assertIn("refusing to inject during a read", str(ctx.exception))
+        self.assertEqual(len(calls), 1, "a read must probe, never send the helper source")
+
+    def test_read_passes_a_held_session_without_waiting(self):
+        holder = (
+            "import sys, time\n"
+            "sys.path.insert(0, sys.argv[1])\n"
+            "import penpot_exec\n"
+            "penpot_exec.acquire_session(sys.argv[2])\n"
+            "print('held', flush=True)\n"
+            "time.sleep(float(sys.argv[3]))\n"
+        )
+        path = self.tmp / "holder_session.py"
+        path.write_text(holder)
+        env = dict(os.environ, PENPOT_LOCK_DIR=str(self.tmp), PENPOT_SESSION_WAIT="0.4",
+                   PENPOT_LOCK_WAIT="5")
+        hold = subprocess.Popen([sys.executable, str(path), str(HERE), self.URL, "3"],
+                                stdout=subprocess.PIPE, text=True, env=env)
+        self.addCleanup(hold.stdout.close)
+        self.addCleanup(hold.kill)
+        self.assertEqual(hold.stdout.readline().strip(), "held")
+        err = io.StringIO()
+        with mock.patch.dict(os.environ, {"PENPOT_LOCK_DIR": str(self.tmp),
+                                          "PENPOT_SESSION_WAIT": "900",
+                                          "PENPOT_LOCK_WAIT": "5"}), \
+                mock.patch.object(penpot_exec, "_execute",
+                                  lambda url, code: _mcp_result("{}")), \
+                contextlib.redirect_stderr(err):
+            started = time.monotonic()
+            penpot_exec.call_execute_code(self.URL, "return 1;", write=False)
+            elapsed = time.monotonic() - started
+            self.assertIn("build in progress", err.getvalue())
+            self.assertLess(elapsed, 2.0, "a reader must not wait for the writer session")
+        with mock.patch.dict(os.environ, {"PENPOT_LOCK_DIR": str(self.tmp),
+                                          "PENPOT_SESSION_WAIT": "0.4",
+                                          "PENPOT_LOCK_WAIT": "5"}), \
+                contextlib.redirect_stderr(io.StringIO()):
+            with self.assertRaises(penpot_exec.PluginBusy):
+                penpot_exec.call_execute_code(self.URL, "return 1;", write=True)
+
 
 def _mcp_result(text: str) -> dict:
     return {"result": {"content": [{"type": "text", "text": text}]}}
@@ -416,6 +485,25 @@ class GateTest(unittest.TestCase):
         self.assertIn("gate: FAIL (invalid)", text)
         self.assertIn("INVALID", text)
         self.assertNotIn("gate: PASS", text)
+
+    def test_qa_advisory_output_is_visible_and_pass_is_not_clean(self):
+        def fake_step(label, argv, timeout):
+            if label.startswith("design_qa"):
+                return {"step": label, "code": 0, "seconds": 0.0,
+                        "output": "findings:\n  - 2 shape(s) use a hard-coded fill: #FFFFFF\n"
+                                  "verdict: findings (non-strict) — 1 advisory finding(s); "
+                                  "hard-coded fills are not a clean fill count"}
+            return {"step": label, "code": 0, "seconds": 0.0, "output": ""}
+
+        buf = io.StringIO()
+        with mock.patch.object(gate, "run_step", fake_step), contextlib.redirect_stdout(buf):
+            code = gate.gate(["Mobil"], [], gate.DEFAULT_PROJECT, 30)
+        text = buf.getvalue()
+        self.assertEqual(code, 0)
+        self.assertIn("non-fatal QA finding", text)
+        self.assertIn("hard-coded fill", text)
+        self.assertIn("gate: PASS (", text)
+        self.assertIn("not clean", text)
 
     def test_an_environment_step_still_reports_environment(self):
         def fake_step(label, argv, timeout):

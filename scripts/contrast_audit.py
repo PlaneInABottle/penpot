@@ -2,17 +2,25 @@
 """Runtime contrast audit for a Penpot page: real text color vs real background.
 
 `check_contrast.py` verifies token pairs you list by hand; this walks every text
-shape on the page, resolves its painted fill against the nearest opaque ancestor
-fill, and reports the WCAG ratio. Catches the class hand-picked lists miss (a
-secondary token used on a background nobody listed).
+shape on the page, resolves the topmost painted layer under the ink centre
+inside the text's own top-level board, and reports the WCAG ratio. Catches the
+class hand-picked lists miss (a secondary token used on a background nobody
+listed, or a dark title that actually sits on a photo).
 
     contrast_audit.py --page Kurumsal [--min 4.5]
 
-Read-only (named page, never switches the view). Text over image fills is
-reported as manual-check, not a number. Large text (>=24px, or >=19px semibold+)
-is held to 3.0, everything else to --min (default 4.5).
+Read-only (named page, never switches the view). Resolution is paint-order and
+board scoped: an ancestor board fill counts, a sibling card painted before the
+text counts, and a layer in another board never does. Image fills, translucent
+layers and text without a resolvable opaque background are reported as
+MANUAL/unknown, not as a fabricated solid ratio. Those items are not a pass:
+the printed verdict says so, and the definition of done requires an eye check.
 
-Exit codes: 0 no failing pairs, 1 failures found, 2 environment problem.
+Large text (>=24px, or >=19px semibold+) is held to 3.0, everything else to
+--min (default 4.5).
+
+Exit codes: 0 no automatic failure (manual items may remain — read the verdict),
+1 failing pair, 2 environment problem.
 """
 
 from __future__ import annotations
@@ -29,38 +37,38 @@ from penpot_exec import McpError, call_execute_code, ensure_helpers, fail, load_
 COLLECT = """
 const page = penpot.currentFile.pages.find(p => p.name === __PAGE__);
 if (!page) throw new Error("page not found: " + __PAGE__);
-const out = [];
-const solids = [];
+const out = { texts: [], layers: [] };
 let seq = 0;
-const walk = (s, chain, boardName) => {
+const walk = (s, boardId, boardName) => {
   const order = seq++;
-  const fills = (s.fills || []).filter(f => (f.fillOpacity || 0) > 0.5 && f.fillColor);
-  if ((s.type === "rectangle" || s.type === "board") && fills.length && !fills[0].fillImage) {
-    solids.push({ order, board: boardName, fill: fills[0].fillColor,
-      x: s.x, y: s.y, w: s.width, h: s.height });
+  // Scope is the TOP-LEVEL board, so a nested panel shares its ancestor's
+  // background while a neighbouring board can never leak into this one.
+  const bid = boardId !== null ? boardId
+    : (s.type === "board" ? s.id : "root:" + s.id);
+  const bname = boardId !== null ? boardName
+    : (s.type === "board" ? s.name : null);
+  const fill = (s.fills || [])[0] || null;
+  const opacity = fill && fill.fillOpacity !== undefined && fill.fillOpacity !== null
+    ? Number(fill.fillOpacity) : 1;
+  if ((s.type === "rectangle" || s.type === "board" || s.type === "ellipse")
+      && fill && opacity > 0 && (fill.fillColor || fill.fillImage)) {
+    out.layers.push({ order, boardId: bid, board: bname, name: s.name,
+      kind: fill.fillImage ? "image" : "solid", fill: fill.fillColor || null,
+      opacity, x: s.x, y: s.y, w: s.width, h: s.height });
   }
-  const kids = s.children || [];
   if (s.type === "text") {
-    // true background = topmost opaque rect under the ink centre, regardless of
-    // nesting (a sibling pill paints exactly like an ancestor panel)
-    const cx = s.textBounds ? s.textBounds.x + s.textBounds.width / 2 : s.x + s.width / 2;
-    const cy = s.textBounds ? s.textBounds.y + s.textBounds.height / 2 : s.y + s.height / 2;
-    let bg = null, bgImage = false;
-    solids.forEach(r => {
-      if (r.board === boardName && cx >= r.x && cx <= r.x + r.w && cy >= r.y && cy <= r.y + r.h) bg = r.fill;
-    });
-    out.push({
-      name: s.name, board: chain.length ? chain[0].name : null,
+    const tb = s.textBounds;
+    const cx = tb ? tb.x + tb.width / 2 : s.x + s.width / 2;
+    const cy = tb ? tb.y + tb.height / 2 : s.y + s.height / 2;
+    out.texts.push({ order, boardId: bid, board: bname, name: s.name,
       size: Number(s.fontSize) || 0, variant: String(s.fontVariantId || ""),
-      fg: (s.fills && s.fills[0] && s.fills[0].fillColor) || null,
-      overImage: !!((s.fills || []).find(f => f.fillImage)),
-      bg: bg, bgImage: bgImage,
-    });
+      fg: fill && fill.fillColor ? fill.fillColor : null,
+      fgImage: !!(fill && fill.fillImage),
+      fgOpacity: opacity, cx, cy });
   }
-  kids.forEach(c => walk(c, chain.concat([s]), boardName));
+  (s.children || []).forEach(c => walk(c, bid, bname));
 };
-(page.root.children || []).forEach(s => walk(s, [], null));
-
+(page.root.children || []).forEach(s => walk(s, null, null));
 return JSON.stringify(out);
 """
 
@@ -76,6 +84,67 @@ def ratio(fg: str, bg: str) -> float:
     return round((light + 0.05) / (dark + 0.05), 2)
 
 
+def contains(layer: dict, x: float, y: float) -> bool:
+    return (layer["x"] <= x <= layer["x"] + layer["w"]
+            and layer["y"] <= y <= layer["y"] + layer["h"])
+
+
+def resolve(data: dict, min_ratio: float = 4.5, ignore: tuple[str, ...] = ()) -> dict:
+    """Pure resolution: paint-order + board-scoped, no plugin. Returns counts and rows."""
+    texts = data.get("texts") or []
+    layers = data.get("layers") or []
+    by_scope: dict[object, list[dict]] = {}
+    for layer in layers:
+        by_scope.setdefault(layer.get("boardId"), []).append(layer)
+    checked, ignored = 0, 0
+    fails: list[dict] = []
+    manual: list[dict] = []
+    for text in texts:
+        name = text.get("name", "?")
+        board = text.get("board")
+        if any(name.startswith(prefix) for prefix in ignore):
+            ignored += 1
+            continue
+        def note(reason: str) -> None:
+            manual.append({"board": board, "name": name, "reason": reason})
+        if text.get("fgImage"):
+            note("text fill is an image")
+            continue
+        if not text.get("fg"):
+            note("no solid text fill")
+            continue
+        if float(text.get("fgOpacity", 1)) < 0.99:
+            note("translucent text fill (unsupported compositing)")
+            continue
+        under = [layer for layer in by_scope.get(text.get("boardId"), [])
+                 if layer.get("order", 0) < text.get("order", 0)
+                 and contains(layer, text.get("cx", 0), text.get("cy", 0))]
+        if not under:
+            note("no painted shape under the ink centre")
+            continue
+        top = max(under, key=lambda layer: layer.get("order", 0))
+        if top.get("kind") == "image":
+            note(f"over image fill {top.get('name', '?')}")
+            continue
+        if float(top.get("opacity", 1)) < 0.99:
+            note(f"over translucent layer {top.get('name', '?')} (unsupported compositing)")
+            continue
+        try:
+            got = ratio(text["fg"], top["fill"])
+        except (ValueError, TypeError, IndexError):
+            note(f"unsupported colour {text['fg']!r} on {top.get('fill')!r}")
+            continue
+        checked += 1
+        size = float(text.get("size") or 0)
+        large = size >= 24 or (size >= 19 and text.get("variant") in ("500", "600", "700"))
+        need = 3.0 if large else min_ratio
+        if got < need:
+            fails.append({"board": board, "name": name, "fg": text["fg"],
+                          "bg": top["fill"], "ratio": got, "need": need})
+    return {"checked": checked, "ignored": ignored, "fails": fails, "manual": manual,
+            "total": len(texts)}
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--page", required=True)
@@ -87,38 +156,35 @@ def main(argv: list[str] | None = None) -> int:
     try:
         url = load_url()
         ensure_helpers(url)
-        nodes = payload(call_execute_code(url, COLLECT.replace("__PAGE__", json.dumps(args.page))))
-        if not isinstance(nodes, list):
-            fail("collector returned no node list")
+        data = payload(call_execute_code(url, COLLECT.replace("__PAGE__", json.dumps(args.page))))
+        if not isinstance(data, dict) or not isinstance(data.get("texts"), list):
+            fail("collector returned no text/layer report")
     except McpError as exc:
         fail(str(exc))
     except (urllib.error.URLError, TimeoutError, OSError) as exc:
         fail(f"{type(exc).__name__}: {exc}")
 
-    fails, manual, total, skipped = [], [], 0, 0
-    for n in nodes:
-        if not n.get("fg") or not n.get("bg"):
-            continue
-        if any(n.get("name", "").startswith(p) for p in (args.ignore or [])):
-            skipped += 1
-            continue
-        if n.get("overImage") or n.get("bgImage"):
-            manual.append(n)
-            continue
-        total += 1
-        large = n["size"] >= 24 or (n["size"] >= 19 and n["variant"] in ("500", "600", "700"))
-        need = 3.0 if large else args.min
-        got = ratio(n["fg"], n["bg"])
-        if got < need:
-            fails.append((n["board"], n["name"], n["fg"], n["bg"], got, need))
-
-    print(f"page: {args.page}  texts checked: {total}  failing: {len(fails)}  over-image (manual): {len(manual)}  ignored: {skipped}")
-    for board, name, fg, bg, got, need in fails[:30]:
-        print(f"  FAIL {board} / {name}: {fg} on {bg} = {got} (needs {need})")
+    report = resolve(data, args.min, tuple(args.ignore or []))
+    fails, manual = report["fails"], report["manual"]
+    print(f"page: {args.page}  texts: {report['total']}  checked: {report['checked']}  "
+          f"failing: {len(fails)}  manual/unknown: {len(manual)}  ignored: {report['ignored']}")
+    for row in fails[:30]:
+        print(f"  FAIL {row['board']} / {row['name']}: {row['fg']} on {row['bg']} = "
+              f"{row['ratio']} (needs {row['need']})")
     if len(fails) > 30:
         print(f"  ... and {len(fails) - 30} more")
-    for n in manual[:10]:
-        print(f"  MANUAL {n['board']} / {n['name']}: over image fill, check by eye")
+    for row in manual[:10]:
+        print(f"  MANUAL {row['board']} / {row['name']}: {row['reason']}")
+    if len(manual) > 10:
+        print(f"  ... and {len(manual) - 10} more manual item(s)")
+    if fails:
+        print("verdict: FAIL — automatic contrast failures above")
+    elif manual:
+        print(f"verdict: MANUAL ({len(manual)}) — not a pass; check each item by eye")
+    elif report["checked"] == 0:
+        print("verdict: NOTHING CHECKED — no automatic pair resolved; not a pass")
+    else:
+        print("verdict: PASS — every checked text resolved to an opaque solid background")
     return 1 if fails else 0
 
 

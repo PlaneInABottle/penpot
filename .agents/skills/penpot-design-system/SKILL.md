@@ -47,7 +47,7 @@ writes a file before the next starts; no artifact, no phase.
 | 1 | Intake | `brief.md` — audience, single job, content truth, constraints | answers exist or are marked unknown |
 | 2 | Direction | `brief.md` § direction · `principles.md` | 2–3 named directions, one chosen, rejects recorded; a taste-bearing hero instead gets 4–5 finished first viewports and the user chooses (`ux-design-process` § 3) |
 | 3 | Story | `ux-spec.json` — task, hook→proof→path→action, hero contract, states, mobile, claims | `ux_gate.py` exit 0, or findings owned with a reason |
-| 4 | Foundations | `tokens.json` · Penpot set · `Components` page | `tokens_sync --check` clean; every component instanced once |
+| 4 | Foundations | `tokens.json` · Penpot set · `Components` page | `tokens_sync --check` no drift; extras explained or `--strict`; every component instanced once |
 | 5 | Screens | `build/screen-NN.js` per screen | `design-verification` definition of done |
 | 6 | Prototype | flows and links on the screens | one flow, per-board interaction count verified post-rebuild |
 | 7 | Handoff | `README.md` · `shots/` · photo provenance | token/component inventory, board list, export evidence, gaps stated |
@@ -66,10 +66,12 @@ python3 scripts/tokens_sync.py --file design/<name>/tokens.json --set <set>
 ```
 
 The template ships `brief.md`, `principles.md`, `tokens.json`, a `ux-spec.json` whose
-placeholders fail `ux_gate` until answered, empty `craft-rules.json` and `copy-terms.json`,
-plus the `build/README.md` and `media/README.md` notes. Write the new `design/<name>/build/lib.js`
+placeholders fail `ux_gate` until answered, `craft-rules.json` declaring the template's
+surface palette, empty `copy-terms.json`, plus the `build/README.md` and `media/README.md` notes. Write the new `design/<name>/build/lib.js`
 from the four axes below; copying the previous project's `lib.js` is the failure this template
-exists to prevent. `media/provenance.json` is created by the first photo import.
+exists to prevent. The generic importer does not write `media/provenance.json`; persist each
+accepted source there — that table is what a rebuild restores. The template ships no runner:
+provide `build/build.py` with the lossless-rebuild contract before claiming a screen.
 
 ## Foundations and components
 
@@ -77,7 +79,9 @@ exists to prevent. `media/provenance.json` is created by the first photo import.
    (`syncTokens`); the set the screens use must be active. Names are `role path`s,
    unique across types within a set (`color.surface`, `space.md`, `radius.md`) — never two
    tokens called `md`. Values a token cannot express — line height, letter tracking, stroke
-   width, shadows — stay a `documented convention`, not an undeclared literal.
+   width, shadows — stay a `documented convention`, not an undeclared literal. Declare the
+   surface palette in `craft-rules.json` (`surface_white`, `surface_alt`) from the tokens;
+   without it `surface.role` warns and skips rather than assume a project's hex.
 2. **Components.** Build only what repeats verbatim: navigation, buttons, badges, alerts,
    footer, inputs. Content cards whose copy changes per row are a `template` in the build
    script, not a component — a component whose every instance overrides every text is a

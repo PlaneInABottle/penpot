@@ -1,8 +1,23 @@
 # media
 
-`provenance.json` (created by the first photo import) is the media table: the single source for photo choice. A rebuild
-re-imports from it, so a one-off inline import regresses on the next run — persist the
-winning query or pinned URL the moment a photo is accepted.
+`provenance.json` is this project's media table: the single source for photo choice. A
+rebuild re-imports from it, so persist the accepted record **before** claiming a lossless
+rebuild. The generic importer does not create the file and does not write the table — it
+prints `source:` and `provenance:` on stdout, and that output is your input.
+
+Generic import (one source, `--url` or `--search`; board-local `--x`/`--y`):
+
+```sh
+python3 scripts/import_media.py --url <pinned-url> --name <slot> \
+  --page <page> --board <board> --x 0 --y 0 --w <w> --h <h>
+```
+
+`--only`, `--force` and `--restore` are not generic flags. They belong to a project's own
+`tools/media.py` when it ships one (this template does not); that tool is also the thing
+that writes the media table. Open the target page first, read the committed slot size, crop
+to that aspect, and confirm the subject at 1:1.
+
+Fields to persist for every accepted photo:
 
 | field | meaning |
 |---|---|
@@ -12,8 +27,3 @@ winning query or pinned URL the moment a photo is accepted.
 | `source` | pinned Pexels URL; the key stays in the shell profile |
 | `query` | the search that produced it, for a re-run |
 | `crop` | committed aspect and what must survive it (face, hands, equipment) |
-
-Import: `python3 scripts/import_media.py --only <slot> --board <b> --page <p> --force`
-(always scope with `--only`; a bare `--board` retargets every slot to one board). Open the
-target page first — the attach fails on an inactive page — then read the committed slot
-size, crop to that aspect, and confirm the subject at 1:1.

@@ -66,8 +66,11 @@ DEFAULTS = {
     "marker_centre_tol": 1.5,    # px a bullet centre may drift from the line's ink centre
     "marker_rule_tol": 2.0,      # px a list separator may drift from the marker's left edge
     "marker_rule_gap": 48.0,     # how close below the item a separator still belongs to it
-    "surface_white": ["#FFFFFF"],
-    "surface_alt": ["#E8EBED"],  # inset/side-panel surface, never a card grid
+    # No palette is shipped: a project declares its own surface hexes in
+    # craft-rules.json (`surface_white`, `surface_alt`). A default here would
+    # silently skip another project's alt surface and let the rule look green.
+    "surface_white": [],
+    "surface_alt": [],  # inset/side-panel surface, never a card grid
     "surface_card_min_w": 120.0,
     "surface_card_min_h": 60.0,
     "surface_alt_min_w": 400.0,  # a large alt card beside white cards is a role conflict
@@ -1470,6 +1473,9 @@ def main() -> int:
     print(f"page: {args.page}  shapes: {len(nodes)}  findings: {len(findings)} "
           f"({len(high)} high, {len(medium)} medium, {len(acked)} acknowledged"
           + (f", {len(low)} low" if args.verbose else "") + ")")
+    if not rules.get("surface_white") or not rules.get("surface_alt"):
+        print("warning: surface.role is not configured — declare \"surface_white\" and "
+              "\"surface_alt\" in the project craft-rules.json; the rule was skipped")
     for finding in shown:
         if finding["acknowledged"]:
             continue

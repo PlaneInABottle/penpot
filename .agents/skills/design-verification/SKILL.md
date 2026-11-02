@@ -21,33 +21,37 @@ Run in this order; a later gate does not excuse an earlier failure.
 
 | gate | run when | passing means |
 |---|---|---|
-| `tokens_sync.py --check` | after a token edit, before any build | every set reconciles, no orphan token |
-| `design_lint.py --page <p> [--json]` | before the first visual review of a new or rebuilt page | **0 high**; a medium is fixed or explained; exit 2 = page unmeasured, findings invalid |
-| `design_qa.py --page <p> --lint-json lint.json` | with lint | clean report, `renderMismatches: 0`, fills bound |
+| `tokens_sync.py --check [--strict]` | after a token edit, before any build | no drift; tokens only in Penpot are printed, `--strict` also fails them |
+| `design_lint.py --page <p> [--json] [--dump-nodes]` | before the first visual review of a new or rebuilt page | **0 high**; a medium is fixed or explained; exit 2 = page unmeasured, findings invalid |
+| `design_qa.py --page <p> --lint-json lint.json` | with lint | verdict clean and `renderMismatches: 0`; advisory fills/unnamed/no-flow are printed and are not a clean pass |
 | `check_contrast.py --file … --pair fg:bg` | before a board is claimed | every pair used on the screen passes, pairs listed |
-| `rhythm.py nodes.json` | after any layout or copy move | gaps cluster at the declared rhythm, `>2×` has a written reason |
+| `contrast_audit.py --page <p>` | before claiming a board | automatic PASS/FAIL on resolved solid pairs; image, translucent and no-background texts are MANUAL — eye-check them, never count as pass |
+| `rhythm.py <dump-nodes file>` | after any layout or copy move | advisory only (exit 0): gaps cluster at the declared rhythm, `>2×` and `TOP-VOID` get a written reason |
 | `export_board.py --board <b> --page <p>` | together with the 1:1 review | one image per board, from the board's own id |
-| `crop_board.py --board … --out …` then `--attest` | the 1:1 review itself | every tile and region `reviewed: true` with a note, attest exit 0 |
-| `ux_gate.py --spec design/<p>/ux-spec.json` | after the story is written, again on the final state | exit 0: task, one CTA, beats above the fold, states, mobile twin, claims |
-| `gate.py --pages <p1,p2> [--boards …]` | a convenience run: lint → QA → ux per page (+export/crop for `--boards`) | prints `FAIL (invalid)`, never PASS, on an unmeasured page. It is **not** the definition of done: contrast, rhythm, 1:1 attest, flows and the independent review are separate gates below |
+| `crop_board.py --board … --out …` then `--attest` | the 1:1 review itself | every tile and region the board has is `reviewed: true` with a note; `--attest` also fails a missing PNG |
+| `ux_gate.py --spec design/<p>/ux-spec.json` | after the story is written, again on the final state | structural contract only: non-empty task/beats, named CTA exists, one saturated primary, firstViewport names above the fold, state/mobile names, claim counts |
+| `gate.py --pages <p1,p2> [--boards …]` | a convenience run: lint → QA → copy → ux per page (+export/crop for `--boards`) | prints QA advisories and a `PASS (not clean)` line; prints `FAIL (invalid)`, never PASS, on an unmeasured page. It is **not** the definition of done: contrast, rhythm, 1:1 attest, flows and the independent review are separate gates below |
 
 ## Definition of done
 
 A screen is finished only when all eight hold on the **final** state:
 
 1. `design_lint.py` → 0 high (fit family included; a medium fixed or explained).
-2. `design_qa.py --lint-json` → clean, `renderMismatches: 0`, fills bound.
-3. `check_contrast.py` → every pair used passes.
-4. 1:1 attest: tiles plus regions, four places minimum — smallest text, densest region,
-   primary action, every icon/arrow row — and margin symmetry on the hero at 1:1;
-   `crop_board.py --attest` exit 0.
+2. `design_qa.py --lint-json` → verdict clean and `renderMismatches: 0`; advisory fills keep
+   it from being a clean fill count.
+3. `check_contrast.py` → every listed pair passes; `contrast_audit.py` → no automatic failure
+   and every MANUAL item eye-checked.
+4. 1:1 attest: tiles plus the regions the board has — smallest text, densest region, primary
+   action, icon/arrow row when present (`--primary-action`/`--region` when the heuristic
+   misses) — and margin symmetry on the hero at 1:1; `crop_board.py --attest` exit 0.
 5. Prototype: `page.flows.length` is what you claim and the per-board interaction count is
    non-zero **after the last rebuild**.
 6. Independent review: a different model or session scores the tiles 0–5 per axis
    (rubric: `ux-design-process` §7) reading tiles, never the spec; two rounds max.
-7. Grid edges hold: every content shape inside the declared grid, only declared bleeds on
-   the board edge, read from lint `--json` geometry.
-8. `ux_gate.py` → exit 0.
+7. Grid edges hold: every content shape inside the declared grid and only declared bleeds on
+   the board edge. This is a manual `--dump-nodes` + 1:1 render check, not a script.
+8. `ux_gate.py` → exit 0 for the structural contract above; whether hook→proof→path→action
+   actually reads visually is item 6, never inferred from the gate.
 
 Anything not covered is reported as a gap, never as done.
 
@@ -59,8 +63,8 @@ Anything not covered is reported as a gap, never as done.
   PASS; fix it before returning. A blocked fix is a gap, not an explanation.
 - **A written shape is not paint.** Export the board and look: a binding proves intent, a
   bound fill can still render white or black, and coverage counts miss it. Then look again
-  at 1:1 in four places — smallest text, densest region, primary action, every icon/arrow
-  row — because page scale hides 1px rules and 16px glyphs.
+  at 1:1 in every region the board has — smallest text, densest region, primary action,
+  icon/arrow row when present — because page scale hides 1px rules and 16px glyphs.
 - **Structure**: re-read name, size, position, children and token bindings in a later call
   than the write; the commit is asynchronous.
 - **Geometry is not a render.** Clean coordinates coexist with clipped glyphs and
@@ -98,8 +102,8 @@ Anything not covered is reported as a gap, never as done.
 - **Sweep by fingerprint, not by helper name.** When a repeated pattern changes, enumerate
   its literals (magic numbers, `wire(...)` entries, board lists) and diff that list against
   the helper's caller list; anything on one but not the other is the finding.
-- **One owner per live page and `lib.js`.** Parallel agents split by board; the dispatch
-  names the owner.
+- **One writer per page.** Ownership, the plugin lock and `--read` intent are stated once in
+  `AGENTS.md` § Ownership and safety; this skill does not restate them.
 
 ## Handoff to implementation
 

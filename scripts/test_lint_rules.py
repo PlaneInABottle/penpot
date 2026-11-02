@@ -198,6 +198,12 @@ class ListMarkerTest(unittest.TestCase):
 
 
 class SurfaceRoleTest(unittest.TestCase):
+    """surface.role has no shipped palette: every fixture declares one."""
+
+    @staticmethod
+    def _rules(alt="#E8EBED"):
+        return {**design_lint.DEFAULTS, "surface_white": ["#FFFFFF"], "surface_alt": [alt]}
+
     def _card(self, node_id, x, fill, w=200, h=100, y=500):
         text = _text(node_id + "t", parent=node_id, x=x + 12, y=y + 12,
                      w=w - 24, h=20, ink_w=80)
@@ -206,7 +212,7 @@ class SurfaceRoleTest(unittest.TestCase):
 
     def test_same_size_cards_mixed_surface_is_medium(self):
         nodes = [_board(), *self._card("a", 120, "#FFFFFF"), *self._card("b", 340, "#E8EBED")]
-        findings = _findings(nodes, "different surface tokens")
+        findings = _findings(nodes, "different surface tokens", rules=self._rules())
         self.assertEqual(len(findings), 1)
         self.assertEqual(findings[0]["severity"], "medium")
 
@@ -215,25 +221,38 @@ class SurfaceRoleTest(unittest.TestCase):
         for i, x in enumerate((120, 340, 560)):
             nodes += self._card(f"p{i}", x, "#E8EBED", w=200, h=100)
         nodes += self._card("feat", 120, "#FFFFFF", w=240, h=200, y=700)
-        findings = _findings(nodes, "beside a white card")
+        findings = _findings(nodes, "beside a white card", rules=self._rules())
         self.assertEqual(len(findings), 1)
         self.assertEqual(findings[0]["severity"], "medium")
 
     def test_large_alt_card_with_white_is_medium(self):
         nodes = [_board(), *self._card("wide", 120, "#E8EBED", w=500, h=200),
                  *self._card("small", 700, "#FFFFFF", w=200, h=100)]
-        findings = _findings(nodes, "large surface.alt")
+        findings = _findings(nodes, "large surface.alt", rules=self._rules())
         self.assertEqual(len(findings), 1)
         self.assertEqual(findings[0]["severity"], "medium")
 
     def test_all_white_is_clean(self):
         nodes = [_board(), *self._card("a", 120, "#FFFFFF"), *self._card("b", 340, "#FFFFFF")]
-        self.assertEqual(_findings(nodes, "surface tokens"), [])
+        self.assertEqual(_findings(nodes, "surface tokens", rules=self._rules()), [])
 
     def test_full_width_alt_band_is_clean(self):
         nodes = [_board(), *self._card("band", 0, "#E8EBED", w=1440, h=200),
                  *self._card("card", 120, "#FFFFFF", w=200, h=100)]
-        self.assertEqual(_findings(nodes, "large surface.alt"), [])
+        self.assertEqual(_findings(nodes, "large surface.alt", rules=self._rules()), [])
+
+    def test_template_palette_behaves_like_the_explicit_fixture(self):
+        nodes = [_board(), *self._card("a", 120, "#FFFFFF"),
+                 *self._card("b", 340, "#EAEAE8")]
+        findings = _findings(nodes, "different surface tokens", rules=self._rules("#EAEAE8"))
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0]["severity"], "medium")
+
+    def test_unconfigured_palette_warns_and_skips(self):
+        code, out, _ = _run_lint([_board()], page="Mobil")
+        self.assertEqual(code, 0, out)
+        self.assertIn("surface.role is not configured", out)
+        self.assertNotIn("different surface tokens", out)
 
     def test_duplicate_token_value_is_flagged(self):
         specs = [

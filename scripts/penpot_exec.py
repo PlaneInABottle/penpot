@@ -5,11 +5,12 @@ The browser tab with the target file must have the Penpot MCP plugin connected;
 every call fails otherwise with "No Penpot instance connected for user token."
 
 Usage:
-    penpot_exec.py --file snippet.js            # run a file
+    penpot_exec.py --file snippet.js            # run a file (writer by default)
     penpot_exec.py --code 'return 1 + 1;'       # run inline
     cat snippet.js | penpot_exec.py             # run stdin
     penpot_exec.py --file snippet.js --raw      # print the raw JSON-RPC result
     penpot_exec.py --expect-page Üyelik --file 13.js   # refuse a drifted page
+    penpot_exec.py --read --code 'return JSON.stringify(storage.H.version);'
 
 The MCP URL (with the user token) is read from ~/.config/opencode/.penpot-mcp-url.
 The token is never printed. One call waits up to 240 s (PENPOT_HTTP_TIMEOUT
@@ -27,6 +28,12 @@ file description: a second level on the same file would deadlock its own holder.
 Waiting is bounded (PENPOT_LOCK_WAIT, 300 s); on expiry the call exits 2 with
 "plugin busy: held by pid=… t=…". `--expect-page` guards the page inside the
 task and verifies it again after it.
+
+`--read` is the caller's declaration that the snippet only reads: it takes the
+per-call lock but passes a running build session instead of waiting up to 900 s,
+and it never injects helpers. Missing or mismatched helpers are an error in
+read mode, not a write under a build. This is intent, not sandbox enforcement:
+the CLI cannot prove a snippet does not write.
 
 Exit codes: 0 success, 2 environment, transport or plugin failure (one line on
 stderr, no traceback).
@@ -510,6 +517,11 @@ def ensure_helpers(url: str, helpers: pathlib.Path | None = None, *, write: bool
         loaded = probe.get("version") if isinstance(probe, dict) else None
         if loaded == wanted:
             return loaded
+        if not write:
+            raise McpError(
+                f"helpers.js v{wanted} required but the plugin holds {loaded!r}; "
+                "refusing to inject during a read — run a writer once "
+                "(penpot_exec.py without --read, tokens_sync.py or build.py)")
 
         returned = payload(call_execute_code(url, source, write=write))
         loaded = returned.get("loaded") if isinstance(returned, dict) else None
@@ -525,6 +537,10 @@ def main(argv: list[str] | None = None) -> int:
     src.add_argument("--file", type=pathlib.Path)
     src.add_argument("--code")
     ap.add_argument("--raw", action="store_true", help="print the raw JSON-RPC result")
+    ap.add_argument("--read", action="store_true",
+                    help="caller intent: read-only. Passes a running build session instead of "
+                         "waiting (PENPOT_WAIT_BUILD=1 waits) and never injects helpers. "
+                         "Not a sandbox: the snippet is not inspected")
     ap.add_argument("--expect-page", metavar="NAME",
                     help="refuse to run, or to trust the result, when penpot.currentPage "
                          "is not NAME (exit 2: another session changed the page)")
@@ -542,7 +558,8 @@ def main(argv: list[str] | None = None) -> int:
         if not code.strip():
             ap.error("empty snippet: --file, --code and stdin must contain code")
 
-        result = call_execute_code(load_url(), code, write=True, expect_page=args.expect_page)
+        result = call_execute_code(load_url(), code, write=not args.read,
+                                   expect_page=args.expect_page)
     except McpError as exc:
         fail(str(exc))
     except (urllib.error.URLError, TimeoutError, OSError, json.JSONDecodeError) as exc:

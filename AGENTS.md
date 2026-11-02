@@ -72,28 +72,36 @@ All live scripts need the plugin connected. Exit codes everywhere: `0` clean, `1
 
 | command | when |
 |---|---|
-| `python3 scripts/tokens_sync.py --file design/<p>/tokens.json --set <set>` | create/update a token set (`--check` compares, `--export` reverses) |
-| `python3 scripts/design_lint.py --page <p> [--json out.json] [--rules design/<p>/craft-rules.json]` | before any visual review of a page |
-| `python3 scripts/design_qa.py --page <p> --lint-json lint.json` | with lint; high lint findings become fatal |
+| `python3 scripts/tokens_sync.py --file design/<p>/tokens.json --set <set>` | create/update a token set (`--check` reports drift; extras are informational unless `--strict`; `--export` reverses) |
+| `python3 scripts/design_lint.py --page <p> [--json out.json] [--dump-nodes nodes.json] [--rules design/<p>/craft-rules.json]` | before any visual review of a page; `--json` is findings, `--dump-nodes` is geometry |
+| `python3 scripts/design_qa.py --page <p> --lint-json lint.json` | with lint; high lint findings become fatal, advisory findings are printed and exit 0 (read the verdict) |
 | `python3 scripts/check_contrast.py --file design/<p>/tokens.json --pair fg:bg` | before claiming a board |
-| `python3 scripts/rhythm.py nodes.json` | after a layout or copy move |
-| `python3 scripts/ux_gate.py --spec design/<p>/ux-spec.json` | story, CTA, states, claims |
+| `python3 scripts/contrast_audit.py --page <p>` | walk every text; image/translucent backgrounds are MANUAL, never an automatic pass |
+| `python3 scripts/rhythm.py nodes.json` | after a layout or copy move; nodes from `--dump-nodes`, findings are advisory (exit 0) |
+| `python3 scripts/ux_gate.py --spec design/<p>/ux-spec.json` | structural story contract; visual beats stay in independent review |
 | `python3 scripts/export_board.py --board <b> --page <p> --out design/<p>/shots` | one board per call |
-| `python3 scripts/crop_board.py --board <b> --page <p> --out shots/<b>/ [--regions n.json]` | the 1:1 review |
-| `python3 scripts/crop_board.py --attest shots/<b>/manifest.json` | before any "reviewed 1:1" claim |
-| `python3 scripts/gate.py --pages <p1,p2> [--boards 01,05]` | one run: lint → QA → ux per page (+export/crop) |
+| `python3 scripts/crop_board.py --board <b> --page <p> --out shots/<b> [--regions n.json] [--region JSON] [--primary-action NAME]` | the 1:1 review; `--regions` is repeatable |
+| `python3 scripts/crop_board.py --attest shots/<b>/manifest.json` | before any "reviewed 1:1" claim; also fails a missing PNG |
+| `python3 scripts/gate.py --pages <p1,p2> [--boards 01,05]` | one run: lint → QA → copy per page (+ux, export/crop); prints QA advisories and never calls them clean |
 | `python3 scripts/gate.py stage design/<p>/build/screen-NN.js` | the only `git add -f design/…` path |
-| `python3 design/<p>/build/build.py screen-NN` | rebuild one screen: measures text, restores photos and links, prints `RESULT ok|fail nulls=N` (a project's runner; `--dry-run` is static) |
-| `python3 scripts/penpot_exec.py --file design/<p>/build/screen-NN.js` | run a snippet or a build script without a runner |
+| `python3 design/<p>/build/build.py screen-NN` | REQUIRED project runner: page/session affinity, fit poll, photos, flows, live `photos`/`links` counts, `RESULT ok|fail nulls=N` (not shipped by the template) |
+| `python3 scripts/penpot_exec.py [--read] --file design/<p>/build/screen-NN.js` | run a snippet; writer by default, `--read` passes a build session and never injects helpers |
 | `python3 scripts/patch_file.py <file> --old-file a.txt --new-file b.txt` | edit a build script |
-| `python3 scripts/import_media.py --only <slot> --board <b> --page <p> --force` | place a provenance photo |
-| `python3 scripts/docs_check.py [--json]` | after editing this file or any skill |
+| `python3 scripts/import_media.py --url <url> --search "<q>" --name <slot> --page <p> --board <b> --x 0 --y 0 --w <w> --h <h>` | generic import (one source, `--url` or `--search`); prints source/provenance, persists nothing |
+| `python3 scripts/docs_check.py [--json]` | after editing this file, README, a skill or the template |
 | `python3 -m unittest scripts.test_docs_check scripts.test_penpot_scripts scripts.test_speed_tools scripts.test_lint_rules` | offline; no network, no Penpot |
+
+`--only`/`--force`/`--restore` belong to a project's `tools/media.py`, never the generic
+importer. The generic importer does not write a media table: record the accepted source URL
+and provenance in the project table before claiming a lossless rebuild. `crop_board.py
+--region '{"slug":"…","name":"…","x":0,"y":0,"w":0,"h":0}'` declares one region (page-absolute,
+repeatable); `--primary-action NAME` overrides the CTA heuristic.
 
 Thresholds live in `design_lint.DEFAULTS`/`RULES`, `ux_gate` and `build.py`, never in prose:
 `--rules` is a written deviation, and `--acknowledge` entries need a reason. `design_lint.py`
 exits 2 when a page is unmeasured (over 5% of texts without `textBounds`), and `gate.py` then
-prints `FAIL (invalid)`, never PASS.
+prints `FAIL (invalid)`, never PASS. Grid edges and declared bleeds are a manual nodes+render
+check, not a script.
 
 ## Ownership and safety
 
@@ -101,6 +109,8 @@ prints `FAIL (invalid)`, never PASS.
   second writer waits and exits 2 (`plugin busy: held by pid=…`). One owner per live page and
   per `lib.js`; parallel agents split by board, never by session. The OS releases a `flock`
   when its process dies, so never delete a lock file by hand: wait, or find the holder.
+  `penpot_exec.py --read` is caller intent: it skips the session wait and helper injection,
+  but still takes the call lock — it is not a sandbox and does not prove a snippet is read-only.
 - `design/*/` is gitignored: stage a design only with an explicit `git add -f <path>` list (or
   `gate.py stage`), and verify with `git ls-files design/` — `git status` looks empty otherwise.
 - In zsh, separate output sections with `---`, never `echo ===` (it misparses).

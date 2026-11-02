@@ -16,6 +16,7 @@ import json
 import os
 import pathlib
 import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -26,6 +27,8 @@ sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent / "design" / "ihkd" / "tools"))
 sys.path.insert(0, str(HERE.parent / "design" / "ihkd" / "build"))
 
+import contrast_audit  # noqa: E402
+import copy_lint  # noqa: E402
 import design_qa  # noqa: E402
 import penpot_exec  # noqa: E402
 import tokens_sync  # noqa: E402
@@ -294,6 +297,31 @@ class LintBridgeTest(unittest.TestCase):
     def test_bad_shape_is_empty(self):
         self.assertEqual(design_qa.lint_high_findings(None), [])
         self.assertEqual(design_qa.lint_high_findings({"page": "Kongre"}), [])
+
+    def test_advisory_findings_are_printed_but_not_fatal_unless_strict(self):
+        report = {"page": "Mobil", "shapes": 3, "boards": 1, "texts": 1,
+                  "tokenSets": [{"name": "core", "tokens": 4, "active": True}],
+                  "components": [], "unnamed": 1, "flows": [],
+                  "interactiveShapes": 0,
+                  "tokenCoverage": {"fills": "1/2", "textSizes": "1/1", "renderMismatches": 0,
+                                    "hardColors": ["#FFFFFF"]}}
+        with mock.patch.object(design_qa, "load_url", lambda: "u"), \
+                mock.patch.object(design_qa, "ensure_helpers", lambda *a, **k: "1.5.0"), \
+                mock.patch.object(design_qa, "audit", lambda url, page: report), \
+                contextlib.redirect_stdout(io.StringIO()) as out:
+            self.assertEqual(design_qa.main(["--page", "Mobil"]), 0)
+        text = out.getvalue()
+        self.assertIn("hard-coded fill", text)
+        self.assertIn("default name", text)
+        self.assertIn("no prototype flow", text)
+        self.assertIn("verdict: findings (non-strict)", text)
+        self.assertIn("not a clean fill count", text)
+
+        with mock.patch.object(design_qa, "load_url", lambda: "u"), \
+                mock.patch.object(design_qa, "ensure_helpers", lambda *a, **k: "1.5.0"), \
+                mock.patch.object(design_qa, "audit", lambda url, page: report), \
+                contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(design_qa.main(["--page", "Mobil", "--strict"]), 1)
 
     def test_an_invalid_lint_document_stops_the_qa_verdict(self):
         """lint `valid:false` means the page was never measured; QA must not pass it."""
@@ -600,6 +628,8 @@ class CropBoardTest(unittest.TestCase):
         import crop_board
         with tempfile.TemporaryDirectory() as tmp:
             manifest = pathlib.Path(tmp) / "manifest.json"
+            for name in ("tile-01.png", "tile-02.png"):
+                (pathlib.Path(tmp) / name).write_bytes(b"png")
             manifest.write_text(json.dumps({
                 "tiles": [{"file": "tile-01.png", "reviewed": True, "note": "margins even"},
                           {"file": "tile-02.png", "reviewed": False, "note": ""}],
@@ -625,6 +655,364 @@ class CropBoardTest(unittest.TestCase):
             self.assertEqual(cropper.size, (300, 200))
             cropper.crop((0, 0, 200, 100), out / "tile-01.png")
             self.assertTrue((out / "tile-01.png").stat().st_size > 0)
+
+    def _nodes(self, w=1600, h=1200, arrow=True):
+        board = _node(id="b", name="01-home", type="board", parentId=None,
+                      x=0, y=0, w=w, h=h)
+        nav = _node(id="nav", name="primary nav ghost", type="text", parentId="b",
+                    parent="01-home", x=100, y=10, w=120, h=20, fill="#111",
+                    fontSize=16, lineHeight="1.5", text="Sign in",
+                    inkX=100, inkY=10, inkW=80, inkH=17)
+        footer = _node(id="foot", name="footer primary", type="text", parentId="b",
+                       parent="01-home", x=100, y=50, w=160, h=20, fill="#111",
+                       fontSize=16, lineHeight="1.5", text="Join now",
+                       inkX=100, inkY=50, inkW=100, inkH=17)
+        hero = _node(id="hero", name="hero cta", type="text", parentId="b",
+                     parent="01-home", x=100, y=400, w=200, h=40, fill="#111",
+                     fontSize=16, lineHeight="1.5", text="Join the program",
+                     inkX=100, inkY=400, inkW=160, inkH=20)
+        nodes = [board, nav, footer, hero]
+        if arrow:
+            nodes.append(_node(id="arrow", name="arrow icon", type="text", parentId="b",
+                               parent="01-home", x=1400, y=500, w=80, h=20, fill="#111",
+                               fontSize=16, lineHeight="1.5", text="->",
+                               inkX=1400, inkY=500, inkW=24, inkH=17))
+        return nodes
+
+    def _write_nodes(self, tmp, arrow=True):
+        path = pathlib.Path(tmp) / "nodes.json"
+        path.write_text(json.dumps(self._nodes(arrow=arrow)))
+        return path
+
+    def _run_crop(self, argv):
+        import crop_board
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            code = crop_board.main(argv)
+        return code, buf.getvalue()
+
+    def _manifest(self, out):
+        return json.loads((out / "manifest.json").read_text())
+
+    def _mark_reviewed(self, out):
+        path = out / "manifest.json"
+        manifest = json.loads(path.read_text())
+        for entry in manifest["tiles"] + manifest["regions"]:
+            entry["reviewed"] = True
+            entry["note"] = "checked at 1:1"
+        path.write_text(json.dumps(manifest))
+        return manifest
+
+    def test_explicit_primary_action_beats_the_heuristic(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            src = self._png(tmp, 1600, 1200)
+            nodes = self._write_nodes(tmp)
+            out = pathlib.Path(tmp) / "tiles"
+            code, stdout = self._run_crop(["--png", str(src), "--out", str(out),
+                                           "--regions", str(nodes),
+                                           "--primary-action", "hero cta"])
+            self.assertEqual(code, 0, stdout)
+            regions = {r["file"]: r for r in self._manifest(out)["regions"]}
+            self.assertEqual(regions["region-primary-action.png"]["subject"], "hero cta")
+            import crop_board
+            auto = {r["slug"]: r for r in crop_board.pick_regions(self._nodes())}
+            self.assertEqual(auto["primary-action"]["name"], "footer primary",
+                             "the nav ghost must not win the CTA heuristic")
+
+    def test_region_flag_is_repeatable(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            src = self._png(tmp, 1600, 1200)
+            out = pathlib.Path(tmp) / "tiles"
+            one = json.dumps({"slug": "one", "name": "one", "x": 10, "y": 10, "w": 20, "h": 20})
+            two = json.dumps({"slug": "two", "name": "two", "x": 40, "y": 40, "w": 20, "h": 20})
+            code, stdout = self._run_crop(["--png", str(src), "--out", str(out),
+                                           "--region", one, "--region", two])
+            self.assertEqual(code, 0, stdout)
+            regions = {r["file"] for r in self._manifest(out)["regions"]}
+            self.assertEqual(regions, {"region-one.png", "region-two.png"})
+
+    def test_rerun_keeps_a_declared_region_and_its_review(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            src = self._png(tmp, 1600, 1200)
+            nodes = self._write_nodes(tmp)
+            out = pathlib.Path(tmp) / "tiles"
+            region = json.dumps({"slug": "deep-rule", "name": "1px rule",
+                                 "x": 20, "y": 30, "w": 40, "h": 40})
+            code, stdout = self._run_crop(["--png", str(src), "--out", str(out),
+                                           "--regions", str(nodes), "--region", region])
+            self.assertEqual(code, 0, stdout)
+            self._mark_reviewed(out)
+            code, stdout = self._run_crop(["--png", str(src), "--out", str(out),
+                                           "--regions", str(nodes)])
+            self.assertEqual(code, 0, stdout)
+            regions = {r["file"]: r for r in self._manifest(out)["regions"]}
+            self.assertIn("region-deep-rule.png", regions)
+            self.assertTrue(regions["region-deep-rule.png"]["reviewed"])
+            self.assertEqual(regions["region-deep-rule.png"]["origin"], "declared")
+
+    def test_changed_source_invalidates_attestation(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            src = self._png(tmp, 1600, 1200)
+            nodes = self._write_nodes(tmp)
+            out = pathlib.Path(tmp) / "tiles"
+            self.assertEqual(self._run_crop(["--png", str(src), "--out", str(out),
+                                             "--regions", str(nodes)])[0], 0)
+            self._mark_reviewed(out)
+            from PIL import Image as PILImage
+            PILImage.new("RGB", (1600, 1200), "gray").save(src)
+            code, stdout = self._run_crop(["--png", str(src), "--out", str(out),
+                                           "--regions", str(nodes)])
+            self.assertEqual(code, 0, stdout)
+            manifest = self._manifest(out)
+            self.assertFalse(any(e["reviewed"] for e in manifest["tiles"] + manifest["regions"]))
+
+    def test_attest_rejects_a_missing_png(self):
+        import crop_board
+        with tempfile.TemporaryDirectory() as tmp:
+            manifest = pathlib.Path(tmp) / "manifest.json"
+            manifest.write_text(json.dumps({
+                "tiles": [{"file": "tile-01.png", "reviewed": True, "note": "checked"}],
+                "regions": []}))
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                code = crop_board.attest_manifest(manifest)
+            self.assertEqual(code, 1)
+            self.assertIn("referenced PNG(s) missing", buf.getvalue())
+            self.assertIn("tile-01.png", buf.getvalue())
+
+    def test_rerun_removes_stale_generated_tiles(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            src = self._png(tmp, 3000, 1200)
+            nodes = self._write_nodes(tmp)
+            out = pathlib.Path(tmp) / "tiles"
+            self.assertEqual(self._run_crop(["--png", str(src), "--out", str(out),
+                                             "--regions", str(nodes)])[0], 0)
+            self.assertTrue((out / "tile-02.png").is_file())
+            from PIL import Image as PILImage
+            PILImage.new("RGB", (800, 600), "white").save(src)
+            code, stdout = self._run_crop(["--png", str(src), "--out", str(out),
+                                           "--regions", str(nodes)])
+            self.assertEqual(code, 0, stdout)
+            self.assertFalse((out / "tile-02.png").exists())
+            self.assertIn("removed stale generated PNG", stdout)
+            self.assertTrue((out / "tile-01.png").is_file())
+
+    def test_coverage_claims_icon_region_only_when_present(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            src = self._png(tmp, 1600, 1200)
+            out = pathlib.Path(tmp) / "tiles"
+            nodes = self._write_nodes(tmp, arrow=True)
+            code, stdout = self._run_crop(["--png", str(src), "--out", str(out),
+                                           "--regions", str(nodes)])
+            self.assertEqual(code, 0, stdout)
+            manifest = self._manifest(out)
+            self.assertIn("icons-arrows", manifest["coverage"]["required"])
+
+        with tempfile.TemporaryDirectory() as tmp:
+            src = self._png(tmp, 1600, 1200)
+            out = pathlib.Path(tmp) / "tiles"
+            nodes = self._write_nodes(tmp, arrow=False)
+            code, stdout = self._run_crop(["--png", str(src), "--out", str(out),
+                                           "--regions", str(nodes)])
+            self.assertEqual(code, 0, stdout)
+            manifest = self._manifest(out)
+            self.assertNotIn("icons-arrows", manifest["coverage"]["required"])
+            self.assertIn("no icon/arrow row detected", stdout)
+
+
+class ImportMediaContractTest(unittest.TestCase):
+    """The generic importer's real CLI, and the docs that must not invent flags."""
+
+    def _run(self, *args):
+        return subprocess.run([sys.executable, str(HERE / "import_media.py"), *args],
+                              capture_output=True, text=True)
+
+    def test_project_only_flags_are_rejected_before_any_network(self):
+        required = ["--url", "http://example.invalid/x", "--name", "img-a", "--page", "P",
+                    "--board", "B", "--w", "1", "--h", "1"]
+        for flag, value in (("--only", "img-a"), ("--force", None)):
+            argv = required + [flag] + ([value] if value else [])
+            proc = self._run(*argv)
+            self.assertEqual(proc.returncode, 2, proc.stderr)
+            self.assertIn(f"unrecognized arguments: {flag}", proc.stderr)
+
+    def test_help_lists_source_and_geometry_flags(self):
+        proc = self._run("--help")
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        for flag in ("--url", "--search", "--name", "--page", "--board",
+                     "--x", "--y", "--w", "--h"):
+            self.assertIn(flag, proc.stdout)
+        self.assertNotIn("--only", proc.stdout)
+        self.assertNotIn("--restore", proc.stdout)
+
+    def test_docs_do_not_call_project_flags_generic(self):
+        root = HERE.parent
+        for rel in ("AGENTS.md", ".agents/skills/penpot-mcp-operations/SKILL.md",
+                    ".agents/skills/penpot-design-system/references/craft.md",
+                    "design/_template/media/README.md"):
+            text = (root / rel).read_text(encoding="utf-8")
+            self.assertNotIn("scripts/import_media.py --only", text, rel)
+            self.assertNotIn("scripts/import_media.py --force", text, rel)
+
+    def test_recipe_requires_persisting_provenance_before_a_rebuild(self):
+        root = HERE.parent
+        agents = (root / "AGENTS.md").read_text(encoding="utf-8")
+        media = (root / "design/_template/media/README.md").read_text(encoding="utf-8")
+        self.assertIn("does not write a media table", agents)
+        self.assertIn("does not write the table", media)
+        self.assertIn("prints `source:` and `provenance:`", media)
+        self.assertIn("claiming a lossless", media)
+
+
+class RebuildContractDocsTest(unittest.TestCase):
+    def test_template_requires_the_project_runner_contract(self):
+        text = (HERE.parent / "design" / "_template" / "build" / "README.md").read_text(
+            encoding="utf-8")
+        self.assertIn("does **not** ship one", text)
+        self.assertIn("raw", text)
+        self.assertIn("not a rebuild", text)
+        for needle in ("currentPage", "fit", "photos", "links", "flows.js",
+                       "RESULT ok|fail nulls=N"):
+            self.assertIn(needle, text)
+
+
+class ContrastAuditTest(unittest.TestCase):
+    @staticmethod
+    def _text(name="title", board_id="b", order=9, fg="#111111", cx=100, cy=100, size=32):
+        return {"name": name, "board": "board", "boardId": board_id, "order": order,
+                "fg": fg, "fgImage": False, "fgOpacity": 1, "size": size,
+                "variant": "regular", "cx": cx, "cy": cy}
+
+    @staticmethod
+    def _layer(order=0, board_id="b", kind="solid", fill="#FFFFFF", opacity=1,
+               x=0, y=0, w=400, h=400, name="layer"):
+        return {"order": order, "boardId": board_id, "board": "board", "kind": kind,
+                "fill": fill, "opacity": opacity, "x": x, "y": y, "w": w, "h": h, "name": name}
+
+    def test_sibling_photo_is_manual_not_a_white_pass(self):
+        data = {"layers": [self._layer(), self._layer(order=1, kind="image", fill=None)],
+                "texts": [self._text(order=2)]}
+        report = contrast_audit.resolve(data)
+        self.assertEqual(report["checked"], 0)
+        self.assertEqual(report["fails"], [])
+        self.assertIn("over image fill", report["manual"][0]["reason"])
+
+    def test_image_ancestor_is_manual(self):
+        data = {"layers": [self._layer(kind="image", fill=None)], "texts": [self._text()]}
+        report = contrast_audit.resolve(data)
+        self.assertIn("over image fill", report["manual"][0]["reason"])
+
+    def test_cross_board_isolation(self):
+        data = {
+            "layers": [self._layer(board_id="dark", fill="#000000"),
+                       self._layer(order=2, board_id="light", fill="#FFFFFF")],
+            "texts": [self._text(name="dark text", board_id="dark", order=1),
+                      self._text(name="light text", board_id="light", order=3)],
+        }
+        report = contrast_audit.resolve(data)
+        names = [row["name"] for row in report["fails"]]
+        self.assertEqual(names, ["dark text"], "the light board must not borrow the dark fill")
+
+    def test_later_sibling_and_opaque_layer_win(self):
+        data = {
+            "layers": [self._layer(fill="#FFFFFF"),
+                       self._layer(order=1, fill="#000000", name="panel"),
+                       self._layer(order=2, fill="#FFFFFF", name="card")],
+            "texts": [self._text(order=3, fg="#111111")],
+        }
+        report = contrast_audit.resolve(data)
+        self.assertEqual(report["checked"], 1)
+        self.assertEqual(report["fails"], [])
+        self.assertEqual(report["manual"], [])
+
+    def test_translucent_layer_is_unsupported_compositing(self):
+        data = {"layers": [self._layer(fill="#000000"),
+                           self._layer(order=1, opacity=0.4, fill="#FFFFFF")],
+                "texts": [self._text(order=2)]}
+        report = contrast_audit.resolve(data)
+        self.assertEqual(report["checked"], 0)
+        self.assertIn("translucent layer", report["manual"][0]["reason"])
+
+    def test_no_background_is_unknown_not_pass(self):
+        data = {"layers": [], "texts": [self._text()]}
+        report = contrast_audit.resolve(data)
+        self.assertEqual(report["checked"], 0)
+        self.assertIn("no painted shape", report["manual"][0]["reason"])
+
+    @unittest.skipUnless(shutil.which("node"), "node is not installed")
+    def test_collector_propagates_the_top_level_board_scope(self):
+        code = contrast_audit.COLLECT.replace("__PAGE__", json.dumps("Page"))
+        shapes = {
+            "children": [
+                {"type": "board", "id": "b1", "name": "01-home", "x": 0, "y": 0,
+                 "width": 400, "height": 400, "fills": [{"fillColor": "#FFFFFF", "fillOpacity": 1}],
+                 "children": [
+                     {"type": "board", "id": "panel", "name": "panel", "x": 0, "y": 0,
+                      "width": 200, "height": 200, "fills": [],
+                      "children": [
+                          {"type": "text", "id": "t1", "name": "title", "x": 10, "y": 10,
+                           "width": 100, "height": 20, "fontSize": 16,
+                           "fills": [{"fillColor": "#111111", "fillOpacity": 1}],
+                           "textBounds": {"x": 10, "y": 10, "width": 100, "height": 20},
+                           "children": []}]}]},
+                {"type": "board", "id": "b2", "name": "02-other", "x": 500, "y": 0,
+                 "width": 400, "height": 400, "fills": [{"fillColor": "#000000", "fillOpacity": 1}],
+                 "children": []},
+            ]
+        }
+        script = pathlib.Path(tempfile.mkdtemp()) / "collect.js"
+        self.addCleanup(shutil.rmtree, script.parent, True)
+        script.write_text(
+            "const code = " + json.dumps(code) + ";\n"
+            "const page = " + json.dumps(shapes) + ";\n"
+            "const penpot = {currentFile: {pages: [{name: 'Page', root: page}]}};\n"
+            "console.log(new Function('penpot', code)(penpot));\n")
+        proc = subprocess.run(["node", str(script)], capture_output=True, text=True)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        data = json.loads(proc.stdout)
+        self.assertEqual(data["texts"][0]["boardId"], "b1")
+        self.assertEqual(data["texts"][0]["board"], "01-home")
+        self.assertEqual({layer["boardId"] for layer in data["layers"]}, {"b1", "b2"})
+
+
+class CopyLintTest(unittest.TestCase):
+    def _run(self, project: pathlib.Path) -> tuple[int, str]:
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf), contextlib.redirect_stderr(buf), \
+                mock.patch.object(copy_lint, "load_url",
+                                  lambda: (_ for _ in ()).throw(AssertionError("plugin call"))):
+            try:
+                code = copy_lint.main(["--page", "P", "--project", str(project)])
+            except SystemExit as exc:
+                code = int(exc.code or 0)
+        return code, buf.getvalue()
+
+    def test_empty_terms_exit_zero_before_any_plugin_call(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = pathlib.Path(tmp)
+            (project / "copy-terms.json").write_text('{"terms": [], "allow": []}')
+            code, out = self._run(project)
+        self.assertEqual(code, 0, out)
+        self.assertIn("no terms declared", out)
+
+    def test_missing_terms_file_exits_zero(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            code, out = self._run(pathlib.Path(tmp))
+        self.assertEqual(code, 0, out)
+        self.assertIn("nothing to check", out)
+
+    def test_malformed_schema_is_an_error(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = pathlib.Path(tmp)
+            (project / "copy-terms.json").write_text('{"terms": "kalp"}')
+            code, out = self._run(project)
+        self.assertEqual(code, 1, out)
+        self.assertIn("terms must be a list of non-empty strings", out)
+
+    def test_actual_term_detection(self):
+        self.assertEqual(copy_lint.find_typos(["kap"], ["kalp"], []),
+                         [("kap", "kap", "kalp")])
+        self.assertEqual(copy_lint.find_typos(["kalp"], ["kalp"], []), [])
 
 
 class UxGateTest(unittest.TestCase):
@@ -894,10 +1282,10 @@ class OverlapBlindSpotTest(unittest.TestCase):
 
 
 class TopVoidTest(unittest.TestCase):
-    def _report(self, first_y):
+    def _report(self, first_y, args=None, rule_name="masthead rule"):
         board = _node(id="b", name="board", type="board", parentId=None,
                       x=0, y=400, w=1440, h=2000)
-        rule = _node(id="r", name="masthead rule", parentId="b", parent="board",
+        rule = _node(id="r", name=rule_name, parentId="b", parent="board",
                      x=0, y=484, w=1440, h=1, fill="#E8EBED")
         head = _node(id="h", name="ph label", type="text", parentId="b", parent="board",
                      x=120, y=400 + first_y, w=300, h=17, fill="#8F0F24",
@@ -908,7 +1296,7 @@ class TopVoidTest(unittest.TestCase):
             path.write_text(json.dumps([board, rule, head]))
             buf = io.StringIO()
             with contextlib.redirect_stdout(buf):
-                code = rhythm.main([str(path)])
+                code = rhythm.main([str(path)] + list(args or []))
         return code, buf.getvalue()
 
     def test_flags_large_void(self):
@@ -916,12 +1304,37 @@ class TopVoidTest(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertIn("TOP-VOID", out)
         self.assertIn("151px", out)
+        self.assertIn("advisory", out)
 
     def test_ok_small_void(self):
         code, out = self._report(156)
         self.assertEqual(code, 0)
         self.assertNotIn("TOP-VOID", out)
         self.assertIn("top-void ok", out)
+
+    def test_over_2x_gap_is_visibly_advisory_and_exits_zero(self):
+        board = _node(id="b", name="board", type="board", parentId=None,
+                      x=0, y=0, w=1440, h=2000)
+        a = _node(id="a", name="row a", parentId="b", parent="board", x=120, y=10, w=500, h=20)
+        b = _node(id="b-row", name="row b", parentId="b", parent="board", x=120, y=40, w=500, h=20)
+        c = _node(id="c", name="row c", parentId="b", parent="board", x=120, y=600, w=500, h=20)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "nodes.json"
+            path.write_text(json.dumps([board, a, b, c]))
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                code = rhythm.main([str(path), "--rhythm", "30"])
+        self.assertEqual(code, 0, "rhythm stays advisory, not a finding")
+        self.assertIn("advisory over-2x: [540]", buf.getvalue())
+        self.assertIn("not a gate", buf.getvalue())
+
+    def test_rule_name_selects_the_head_rule(self):
+        code, out = self._report(236, args=["--rule-name", "head rule"], rule_name="head rule")
+        self.assertEqual(code, 0)
+        self.assertIn("TOP-VOID", out)
+        code, out = self._report(236, rule_name="head rule")
+        self.assertEqual(code, 0)
+        self.assertIn("no 'masthead rule' shape", out)
 
 
 class ExportRescueTest(unittest.TestCase):

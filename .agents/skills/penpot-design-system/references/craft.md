@@ -82,13 +82,16 @@ next row.
   A build clears all children including placed images, so re-importing only slot A deletes
   slot B — and token coverage counts the placeholder's bound fill, so gates stay green.
 - **The media table is the single source for photo choice.** Persist the winning query or
-  pinned URL in the table the moment a photo is accepted, then `reimport` from the table; a
-  one-off inline import regresses on the next rebuild, which re-runs the table query.
+  pinned URL in the table the moment a photo is accepted, then reimport from the table; a
+  one-off inline import regresses on the next rebuild. The generic `import_media.py` only
+  prints provenance — it writes no table and takes no `--only`/`--force`; that is a project
+  tool's job.
 - **A photo replaces its slot, never covers it.** Name every image slot, import by that name,
   delete the placeholder rect in the placing call; after the import the board holds exactly
   one shape under that name. An empty mat next to a photo is a finding, not a style.
-- **Scope every reimport with `--only`**: `--only a,b --board B --page P --force`. A bare
-  `--board` retargets every table slot to that board and sprays photos across pages.
+- **Scope every reimport to its slots.** A project media tool that owns the table can use
+  `--only a,b --board B --page P --force`; a bare `--board` retargets every slot and sprays
+  photos across pages.
 - **Slots are measured, and crops are verified.** Read the slot's committed width/height in
   the call before the import and `crop` to that aspect — re-cropping to a guess is how a face
   ends up behind a caption. After placing, open the 1:1 tile and confirm the subject survives
@@ -104,17 +107,21 @@ next row.
 - **Two neutral layers per screen.** `paper` is the ground, `white` the card surface, and
   `surface.alt` only an inset or side panel. A card in `surface.alt` while its sibling
   screens use `white` is an inconsistency to fix, not a variation to explain.
+- **Declare the palette.** Put the white/alt hexes in `craft-rules.json`
+  (`surface_white`, `surface_alt`) so `surface.role` reads this project's tokens; without
+  the declaration the rule warns and skips, and a green lint means nothing for this check.
 
 ## Rhythm and joints
 
 - **Rhythm is declared, then audited.** The brief states the section rhythm in px (and the
-  data-row height); after the build, list every board's top-level y-gaps from lint `--json`
-  geometry. Gaps cluster at the rhythm, and any gap beyond 2× needs a reason written in the
-  brief.
+  data-row height); after the build, list every board's top-level y-gaps from
+  `design_lint.py --dump-nodes` geometry (`--json` is findings, not geometry). Gaps cluster
+  at the rhythm; `rhythm.py` prints a beyond-2× gap as advisory, and it needs a written reason.
 - **The head joint gets its own audit.** A shared head helper hardcodes the
   label/title/lede/rule spacing — one stale number voids every page at once. After any head
   change, read the masthead-rule→first-content gap on every affected board; anything much past
-  one rhythm step is a finding, and the rhythm `TOP-VOID` line guards exactly this joint.
+  one rhythm step needs a reason, and the rhythm `TOP-VOID` advisory line flags exactly this
+  joint (`--rule-name` when the head rule is named otherwise).
 - **Footers dock to content, panels are sums not slabs.** A footer sits at
   last-content-bottom + section rhythm and the board ends at footer + footer height; a
   hardcoded footer y survives every change above it and leaves dead canvas. A panel's height

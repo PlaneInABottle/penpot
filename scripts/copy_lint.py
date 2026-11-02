@@ -10,7 +10,11 @@ nodes. A word shorter than a dictionary term by exactly one letter — the
 `KAP`/`KALP` class — is a finding. Inflected forms (a correct word longer than
 its lemma) are never flagged, so Turkish suffixes do not produce noise.
 
-Exit codes: 0 clean, 1 findings, 2 environment or transport.
+An absent file or an empty `terms` list means the project declares no
+dictionary: exit 0 before any plugin call. A malformed schema is an error.
+
+Exit codes: 0 clean or no terms declared, 1 findings or bad schema, 2 environment
+or transport.
 """
 
 from __future__ import annotations
@@ -79,15 +83,31 @@ def find_typos(texts: list[str], terms: list[str], allow: list[str],
 
 
 def load_terms(path: pathlib.Path) -> tuple[list[str], list[str], int, int]:
+    """Vocabulary file -> (terms, allow, min_term_len, min_word_len).
+
+    An absent or empty `terms` list is valid: the project declares no dictionary
+    and the caller exits 0 before any plugin call. A malformed schema is an
+    error, never silently read as "no terms".
+    """
     try:
         doc = json.loads(path.read_text())
     except (OSError, json.JSONDecodeError) as exc:
         raise ValueError(f"{path}: {exc}") from exc
-    terms = [term for term in doc.get("terms", []) if isinstance(term, str) and term.strip()]
-    allow = [word for word in doc.get("allow", []) if isinstance(word, str) and word.strip()]
-    if not terms:
-        raise ValueError(f"{path}: no terms")
-    return terms, allow, int(doc.get("min_term_len", 4)), int(doc.get("min_word_len", 3))
+    if not isinstance(doc, dict):
+        raise ValueError(f"{path}: expected a JSON object")
+    for key in ("terms", "allow"):
+        value = doc.get(key, [])
+        if not isinstance(value, list) or any(
+                not isinstance(item, str) or not item.strip() for item in value):
+            raise ValueError(f"{path}: {key} must be a list of non-empty strings")
+    min_term_len = doc.get("min_term_len", 4)
+    min_word_len = doc.get("min_word_len", 3)
+    for key, value in (("min_term_len", min_term_len), ("min_word_len", min_word_len)):
+        if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+            raise ValueError(f"{path}: {key} must be a positive integer")
+    terms = [term.strip() for term in doc.get("terms", [])]
+    allow = [word.strip() for word in doc.get("allow", [])]
+    return terms, allow, min_term_len, min_word_len
 
 
 def lint_texts(nodes: list[dict], terms: list[str], allow: list[str],
@@ -131,6 +151,9 @@ def main(argv: list[str] | None = None) -> int:
         terms, allow, min_term_len, min_word_len = load_terms(terms_file)
     except ValueError as exc:
         fail(str(exc), code=1)
+    if not terms:
+        print(f"copy_lint: no terms declared in {terms_file}; nothing to check")
+        return 0
 
     try:
         url = load_url()

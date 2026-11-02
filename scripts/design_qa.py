@@ -8,9 +8,11 @@
     design_qa.py --lint-json lint.json  # also fail on high findings from
                                         # `design_lint.py --json lint.json`
 
-Exit codes: 0 clean, 1 findings that --strict escalates or that are always fatal
-(orphan components, duplicate token set names, high lint findings via --lint-json),
-2 environment problem.
+Exit codes: 0 clean, or advisory-only without --strict (hard-coded fills, unnamed
+shapes, no flow); 1 blocking findings (orphan components, duplicate token set
+names, render mismatches, high lint findings via --lint-json, unreadable lint) or
+advisory findings under --strict; 2 environment problem. The printed verdict
+names advisory findings so a caller never reads them as a clean fill count.
 
 Read-only against the file, and leaves the user's current page alone: a named page
 is audited in place, so `penpot.currentPage` never changes. The browser tab with the
@@ -96,38 +98,39 @@ def main(argv: list[str] | None = None) -> int:
     coverage = report["tokenCoverage"]
     filled, total = coverage_counts(coverage["fills"])
 
-    findings: list[str] = []
+    advisory: list[str] = []
+    blocking: list[str] = []
     info: list[str] = []
     if filled != total:
-        findings.append(
+        advisory.append(
             f"{total - filled} shape(s) use a hard-coded fill: {', '.join(coverage['hardColors'])}"
         )
     if coverage.get("renderMismatches"):
-        findings.append(
+        blocking.append(
             f"{coverage['renderMismatches']} token-bound fill(s) render another colour "
             f"(binding is metadata; the literal fill is what paints): "
             + "; ".join(coverage.get("mismatchSample", []))
         )
     if orphans:
-        findings.append(f"orphan component(s): {', '.join(orphans)}")
+        blocking.append(f"orphan component(s): {', '.join(orphans)}")
     if duplicated:
-        findings.append(f"duplicate token set name(s): {', '.join(duplicated)}")
+        blocking.append(f"duplicate token set name(s): {', '.join(duplicated)}")
     elif len(sets) > 1:
         info.append(
             f"{len(sets)} token sets: {', '.join(s['name'] for s in sets)} "
             "(several sets are fine, only duplicate names are fatal)"
         )
     if report["unnamed"]:
-        findings.append(f"{report['unnamed']} shape(s) keep a default name")
+        advisory.append(f"{report['unnamed']} shape(s) keep a default name")
     if not report["flows"]:
-        findings.append("no prototype flow on this page")
+        advisory.append("no prototype flow on this page")
 
     lint_high: list[dict] = []
     if args.lint_json:
         try:
             lint_doc = json.loads(args.lint_json.read_text())
         except (OSError, json.JSONDecodeError) as exc:
-            findings.append(f"cannot read lint findings {args.lint_json}: {exc}")
+            blocking.append(f"cannot read lint findings {args.lint_json}: {exc}")
         else:
             if isinstance(lint_doc, dict) and lint_doc.get("valid") is False:
                 # The lint ran on a page it never measured; its findings — and the
@@ -137,11 +140,12 @@ def main(argv: list[str] | None = None) -> int:
             lint_high = lint_high_findings(lint_doc)
             if lint_high:
                 boards = sorted({f.get("board", "?") for f in lint_high})
-                findings.append(
+                blocking.append(
                     f"{len(lint_high)} high lint finding(s) on {', '.join(boards)}: "
                     + "; ".join(f.get("finding", "?") for f in lint_high[:5])
                 )
 
+    findings = blocking + advisory
     print(f"page: {report['page']}  boards: {report['boards']}  shapes: {report['shapes']}")
     print(
         f"token coverage: fills {coverage['fills']} ({coverage_percent(coverage['fills'])}%), "
@@ -155,12 +159,19 @@ def main(argv: list[str] | None = None) -> int:
     for line in info:
         print(f"info: {line}")
 
+    if blocking:
+        print(f"verdict: FAIL — {len(blocking)} blocking finding(s); advisory={len(advisory)}")
+    elif advisory:
+        print(f"verdict: findings (non-strict) — {len(advisory)} advisory finding(s); "
+              "hard-coded fills are not a clean fill count, pass --strict to fail them")
+    else:
+        print("verdict: clean — coverage, render truth and hygiene hold")
+
     if args.json:
         args.json.write_text(json.dumps(report, indent=2) + "\n")
         print(f"wrote {args.json}")
 
-    fatal = bool(orphans or duplicated or coverage.get("renderMismatches") or lint_high)
-    return 1 if fatal or (args.strict and filled != total) else 0
+    return 1 if blocking or (args.strict and advisory) else 0
 
 
 if __name__ == "__main__":

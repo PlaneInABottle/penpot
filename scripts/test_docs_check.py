@@ -83,6 +83,62 @@ class DocsCheck(unittest.TestCase):
             self.assertIn("unresolved link: missing.md", out)
             self.assertNotIn("example.com", out)
 
+    def test_bullet_and_table_repeats_are_visible(self) -> None:
+        sentence = "A screen is finished only when every gate below holds on the final built state today."
+        with tempfile.TemporaryDirectory() as tmp:
+            root = build_root(
+                pathlib.Path(tmp),
+                agents=f"# agents\n\n- {sentence}\n\n| {sentence} | note |\n",
+                overrides={
+                    ".agents/skills/ux-design-process/SKILL.md": f"# ux\n\n- {sentence}\n",
+                    ".agents/skills/design-verification/SKILL.md":
+                        f"# done\n\n| concern | rule |\n|---|---|\n| {sentence} | note |\n",
+                },
+            )
+            code, out = run(root)
+            self.assertEqual(code, 1, out)
+            self.assertIn("repeat: .agents/skills/ux-design-process/SKILL.md", out)
+            self.assertIn("repeat: .agents/skills/design-verification/SKILL.md", out)
+
+    def test_fences_and_table_separators_are_not_prose(self) -> None:
+        sentence = "A screen is finished only when every gate below holds on the final built state today."
+        with tempfile.TemporaryDirectory() as tmp:
+            root = build_root(
+                pathlib.Path(tmp),
+                agents=f"# agents\n\n```sh\n{sentence}\n{sentence}\n```\n\n"
+                       "| a | b |\n|---|---|\n| one | two |\n",
+            )
+            code, out = run(root)
+            self.assertEqual(code, 0, out)
+
+    def test_readme_and_template_links_and_repeats_are_checked(self) -> None:
+        sentence = "A screen is finished only when every gate below holds on the final built state today."
+        with tempfile.TemporaryDirectory() as tmp:
+            root = build_root(
+                pathlib.Path(tmp),
+                agents=f"# agents\n\n{sentence}\n",
+                overrides={
+                    "README.md": "# readme\n\nSee [gone](missing-runtime.md).\n",
+                    "design/_template/brief.md": f"# brief\n\n{sentence}\n",
+                },
+            )
+            code, out = run(root)
+            self.assertEqual(code, 1, out)
+            self.assertIn("link: README.md: unresolved link: missing-runtime.md", out)
+            self.assertIn("repeat: design/_template/brief.md", out)
+
+    def test_template_placeholders_are_not_banned_vocabulary(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = build_root(
+                pathlib.Path(tmp),
+                overrides={
+                    "design/_template/build/README.md":
+                        "# build\n\nRun `screen-NN.js` for the `<board>` on `<page>`.\n",
+                },
+            )
+            code, out = run(root)
+            self.assertEqual(code, 0, out)
+
     def test_banned_tokens_and_repeated_sentences(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             sentence = "A screen is finished only when every gate below holds on the final built state today."

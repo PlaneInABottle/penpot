@@ -16,7 +16,9 @@ One summary table, one total, one exit code: 0 every step passed, 1 findings,
 2 environment/transport (a step's own exit code 2 maps here). The lint's own
 counts are echoed per page: `medium` there are reported but never gate, and
 `acknowledged` ones carry a recorded design reason (craft-rules.json), so only
-the unexplained medium count is worth reading. Exit 2 also covers
+the unexplained medium count is worth reading. `design_qa` exits 0 for advisory
+findings (hard-coded fills, unnamed shapes, no flow); the gate prints those lines
+and its PASS line then says "not clean", so exit 0 never hides them. Exit 2 also covers
 an INVALID step: design_lint reports a page whose texts were never measured
 (textBounds unavailable — the page is not open), and a gate that printed PASS
 there would pass a page nobody looked at.
@@ -215,6 +217,27 @@ def gate(pages: list[str], boards: list[str], project: pathlib.Path, timeout: fl
             if line.startswith("page: "):
                 print(f"  {line}")
 
+    # design_qa exits 0 for advisory findings (hard-coded fills, unnamed shapes,
+    # no flow). A gate that only reads exit codes would hide them and print PASS
+    # over an unclean QA report, so surface those lines explicitly.
+    advisory: list[str] = []
+    advisory_count = 0
+    for step in steps:
+        if not step["step"].startswith("design_qa") or step["code"] != 0:
+            continue
+        for line in step["output"].splitlines():
+            text = line.strip()
+            if text.startswith("- "):
+                advisory.append(f"{step['step']}: {text}")
+                advisory_count += 1
+            elif text.startswith("verdict: findings"):
+                advisory.append(f"{step['step']}: {text}")
+    if advisory:
+        print()
+        print(f"{advisory_count} non-fatal QA finding(s) — not a clean pass:")
+        for line in advisory:
+            print(f"  {line}")
+
     failing = [s for s in steps if s["code"] != 0]
     for step in failing:
         print()
@@ -232,6 +255,10 @@ def gate(pages: list[str], boards: list[str], project: pathlib.Path, timeout: fl
     if failing:
         print(f"gate: FINDINGS ({len(failing)} step(s)) — {total:.1f}s")
         return 1
+    if advisory:
+        print(f"gate: PASS ({advisory_count} non-fatal QA finding(s) — not clean; "
+              f"see above) — {total:.1f}s")
+        return 0
     print(f"gate: PASS — {total:.1f}s")
     return 0
 

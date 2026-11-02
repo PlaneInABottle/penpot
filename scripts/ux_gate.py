@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
-"""UX gate: verify a screen delivers its story, not just its pixels.
+"""UX gate: verify a screen's structural story contract, not its pixels.
 
     ux_gate.py --spec design/<project>/ux-spec.json
 
 The spec (JSON schema, documented below) states each screen's job in words:
 one task, one primary call to action, the hook->proof->path->action story,
 the states that exist, the mobile twin, what the first viewport must hold,
-and the numbers the copy claims. The gate checks those words against the
-live Penpot file — a screen whose copy claims 96 sessions while showing 19
-fails here even when every lint rule is green.
+and the numbers the copy claims. The gate checks the declared names and
+counts against the live Penpot file — a screen whose copy claims 96 sessions
+while showing 19 fails here even when every lint rule is green.
+
+What it cannot check: whether a beat actually reads as its story beat. A
+non-empty `hook` string proves presence, not hierarchy; the independent
+visual review owns that judgement (`ux-design-process` §7).
 
 Spec schema:
     {"project": "<name>",
@@ -215,7 +219,8 @@ def main(argv: list[str] | None = None) -> int:
     for finding in findings:
         print(f"  - {finding['screen']}: {finding['finding']}")
     if not findings:
-        print("  story holds on every screen — claims, CTA, viewport and states verified")
+        print("  structural contract holds — names, counts, CTA, viewport and states; "
+              "the visual story review is separate")
     return 1 if findings else 0
 
 

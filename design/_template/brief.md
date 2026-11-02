@@ -28,6 +28,8 @@ records why a beat is what it is.
 
 - Section rhythm in px, data-row height, spacing scale, type scale.
 - Margin and bleed decisions, one line each.
+- Declared surface palette: white and alt hexes, mirrored in `craft-rules.json`
+  (`surface_white`, `surface_alt`). `surface.role` warns and skips until they are declared.
 - Any deviation from a lint default, with the reason (`craft-rules.json` is the machine copy).
 
 ## 5. Copy

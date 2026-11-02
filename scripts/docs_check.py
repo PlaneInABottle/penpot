@@ -3,7 +3,8 @@
 
     docs_check.py [--root .] [--json]
 
-Four checks over AGENTS.md and `.agents/skills/**/*.md`:
+Four checks over `AGENTS.md`, `README.md`, `.agents/skills/**/*.md` and the
+`design/_template/**/*.md` recipe:
 
 1. **Line ceiling** — every manifest file stays within its hard limit. A skill that
    grows past it is either duplicating another skill or telling a story.
@@ -11,8 +12,15 @@ Four checks over AGENTS.md and `.agents/skills/**/*.md`:
    `http(s)` and `mailto` targets are skipped.
 3. **Banned tokens** — incident vocabulary (project names, screen numbers, pinned
    dates, "Incident") has no place in a reusable rule. Version numbers are fine.
-4. **Repeated sentences** — a normalized sentence of 10 words or more appears
-   once; a rule with a second home drifts.
+4. **Repeated prose** — a normalized sentence of 10 words or more appears once.
+   Bullets and table cells are inspected; markers and table pipes are stripped
+   first, and fenced code and table separator rows are skipped.
+
+The repeat check is exact normalized-sentence equality, not a semantic proof:
+two differently worded rules can still own the same concern. The limit is
+deliberate — a fuzzy detector would flag distinct rules that share vocabulary.
+Collapse an ownership duplicate in the prose instead of teaching this script an
+algorithm.
 
 Exit codes: 0 clean, 1 finding(s), 2 environment (root or a manifest file missing).
 """
@@ -29,18 +37,26 @@ import urllib.parse
 # path -> maximum lines. Raise a limit deliberately, never to silence a finding.
 MANIFEST = {
     "AGENTS.md": 120,
+    "README.md": 50,
     ".agents/skills/design-verification/SKILL.md": 140,
     ".agents/skills/penpot-design-system/SKILL.md": 150,
     ".agents/skills/penpot-design-system/references/craft.md": 180,
     ".agents/skills/penpot-mcp-operations/SKILL.md": 105,
     ".agents/skills/penpot-mcp-operations/references/mcp-failures.md": 110,
     ".agents/skills/ux-design-process/SKILL.md": 120,
+    "design/_template/brief.md": 70,
+    "design/_template/principles.md": 30,
+    "design/_template/build/README.md": 45,
+    "design/_template/media/README.md": 45,
 }
 
-SCAN = ("AGENTS.md", ".agents/skills")
+SCAN = ("AGENTS.md", "README.md", ".agents/skills", "design/_template")
 BANNED = re.compile(r"İHKD|ihkd|screen-\d\d|hero photo|20\d\d-\d\d-\d\d|Incident")
 LINK = re.compile(r"\[[^\]]*\]\(([^)\s]+)")
 SENTENCE = re.compile(r"(?<=[.!?])\s+")
+FENCE = re.compile(r"^\s*(```|~~~)")
+SEPARATOR = re.compile(r"^\s*\|?\s*:?-{3,}")
+MARKER = re.compile(r"^\s*(?:#{1,6}\s+|>\s?|(?:[-*+]|\d+[.)])\s+)")
 MIN_WORDS = 10
 
 
@@ -57,7 +73,17 @@ def markdown_files(root: pathlib.Path) -> list[pathlib.Path]:
 
 def normalize(sentence: str) -> str:
     text = re.sub(r"[`*_\[\]()]", "", sentence.lower())
-    return re.sub(r"\s+", " ", text).strip(" .,:;—–-")
+    return re.sub(r"\s+", " ", text).strip(" .,:;—–-|")
+
+
+def prose_segments(line: str) -> list[str]:
+    """One markdown line -> the prose it actually carries."""
+    text = MARKER.sub("", line).strip()
+    if not text:
+        return []
+    if text.startswith("|") or " | " in text:
+        return [cell.strip() for cell in text.strip("|").split("|") if cell.strip()]
+    return [text]
 
 
 def check_lines(root: pathlib.Path) -> list[dict]:
@@ -103,19 +129,25 @@ def check_repeats(root: pathlib.Path, files: list[pathlib.Path]) -> list[dict]:
     findings = []
     for path in files:
         rel = str(path.relative_to(root))
+        fenced = False
         for line in path.read_text(encoding="utf-8").splitlines():
-            if line.lstrip().startswith(("#", "|", ">", "-", "*", "```")):
+            if FENCE.match(line):
+                fenced = not fenced
                 continue
-            for sentence in SENTENCE.split(line):
-                if len(sentence.split()) < MIN_WORDS:
-                    continue
-                key = normalize(sentence)
-                if not key:
-                    continue
-                if key in seen:
-                    findings.append({"kind": "repeat", "path": rel, "detail": f"also in {seen[key]}: {sentence[:70]}…"})
-                else:
-                    seen[key] = rel
+            if fenced or SEPARATOR.match(line):
+                continue
+            for segment in prose_segments(line):
+                for sentence in SENTENCE.split(segment):
+                    if len(sentence.split()) < MIN_WORDS:
+                        continue
+                    key = normalize(sentence)
+                    if not key:
+                        continue
+                    if key in seen:
+                        findings.append({"kind": "repeat", "path": rel,
+                                         "detail": f"also in {seen[key]}: {sentence[:70]}…"})
+                    else:
+                        seen[key] = rel
     return findings
 
 
@@ -131,7 +163,7 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     files = markdown_files(root)
     if not files:
-        print(f"nothing to check under {root} (AGENTS.md, .agents/skills)", file=sys.stderr)
+        print(f"nothing to check under {root} (AGENTS.md, README.md, skills, template)", file=sys.stderr)
         return 2
 
     findings = check_lines(root) + check_links(root, files) + check_banned(root, files) + check_repeats(root, files)
@@ -148,7 +180,7 @@ def main(argv: list[str] | None = None) -> int:
         for item in findings:
             print(f"  - {item['kind']}: {item['path']}: {item['detail']}")
         if not findings:
-            print("  docs hold: ceilings, links, vocabulary and uniqueness")
+            print("  docs hold: ceilings, links, vocabulary and exact-sentence uniqueness")
 
     if missing:
         return 2

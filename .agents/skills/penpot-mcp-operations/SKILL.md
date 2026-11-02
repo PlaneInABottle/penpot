@@ -18,15 +18,16 @@ proof lives in [design-verification](../design-verification/SKILL.md).
 - A browser tab with the target file must have the plugin connected. Otherwise every call
   returns `No Penpot instance connected for user token.` — stop, do not retry.
 - The MCP endpoint URL carries the user token: read it from its file, never copy it into a
-  snippet, prompt, log or commit. Never echo a command that contains the auth header; verify a
-  value read from the URL file by its length only.
-- Never assume the browser: `ps -axo comm | grep -i "firefox\|chrome\|safari"` names the one
-  running Penpot.
+  snippet, prompt, log or commit. Verify a value by its length only; never echo the header.
+- Never assume the browser: `ps -axo comm | grep -i "firefox\|chrome\|safari"` names the running one.
 - `execute_code` returns text the server may wrap as `{"result": "<json>", "log": ""}`.
   Unwrap before decoding, or you decode a string twice.
 - One plugin, one writer: every call holds a `flock` in `~/.cache/penpot-mcp/`, a build holds
   the session lock for its run, and a second writer exits 2 with `plugin busy: held by pid=…`.
-  `--expect-page NAME` refuses a drifted page.
+  `--expect-page NAME` refuses a drifted page; `penpot_exec.py --read` passes a running build,
+  still takes the call lock and never injects helpers (caller intent, not a sandbox).
+- A raw snippet run is not a rebuild: it proves execution, not page affinity, fit, photos,
+  flows or live counts; use the project runner.
 
 ## Helpers
 
@@ -49,20 +50,18 @@ functions included; re-inject after a plugin reload or a version mismatch.
 
 ## Paint is not bind
 
-`shape.applyToken(token, ["fill"])` records the binding in `shape.tokens` and does **not**
-change `shape.fills`; the shape keeps rendering white or black. Assigning `shape.fills` clears
-the binding. The only working order is **literal first, then bind** — what `H.apply`/`H.paint`
-do, so a shape can be "100% token covered" and visually wrong. Re-binding in bulk is not free
-either: chunk a batch to about 50 shapes and verify the bindings in the next call.
+`shape.applyToken(token, ["fill"])` records the binding in `shape.tokens` and does **not** change
+`shape.fills`; it keeps rendering white or black. Assigning `shape.fills` clears the binding, so
+**literal first, then bind** (`H.apply`/`H.paint`) — a shape can be "100% token covered" and
+visually wrong. Re-binding in bulk is not free: chunk to ~50 shapes and verify in the next call.
 
 ## Text
 
-Set `fontId` + `fontFamily` + `fontVariantId` (`"regular"`, `"500"`, `"600"`). Setting
-`fontWeight` alone asks for a variant that does not exist and leaves a 1×1 box with
-`textBounds: null`; weight 500 does work through the variant id. `letterSpacing` is px, not em
-(0.14em at 11px = `1.54`). Text inside a flex parent never auto-sizes: set
-`layoutChild.horizontalSizing = "auto"` and resize to `textBounds` in a later call.
-`growType` controls wrapping (`auto-height` for copy, `auto-width` for labels).
+Set `fontId` + `fontFamily` + `fontVariantId` (`"regular"`, `"500"`, `"600"`); `fontWeight` alone
+asks for a variant that does not exist and leaves a 1×1 box with `textBounds: null` (500 works
+through the variant id). `letterSpacing` is px, not em (0.14em at 11px = `1.54`). Text in a flex
+parent never auto-sizes: set `layoutChild.horizontalSizing = "auto"` and resize to `textBounds`
+in a later call. `growType` controls wrapping (`auto-height` copy, `auto-width` labels).
 
 ## Pages, components, flows
 
@@ -84,9 +83,10 @@ The plugin sandbox cannot fetch cross-origin, so `uploadMediaUrl` returns an obj
 bytes and the shape renders empty. Download outside Penpot, shrink it (~700px longest side,
 JPEG q55 — the request body tops out near 100KB of base64 and answers `HTTP 413` above it),
 then `await penpot.uploadMediaData(name, bytes, mime)` and set `shape.fills = [{fillOpacity: 1,
-fillImage: media}]`. Attach with `appendChild` **after** the target page is active, or the call
-fails with `Cannot modify a page that is not currently active`. `scripts/import_media.py` does
-all of this from a media table; it needs the Pexels key from the environment.
+fillImage: media}]`; attach **after** the page is active or `Cannot modify a page that is not
+currently active`. `scripts/import_media.py` places one image (`--url` or `--search`, explicit
+name/page/board/w/h), prints source and provenance, and persists nothing: record the URL in
+the project media table before a rebuild. `--only`/`--force`/`--restore` are project-tool flags.
 
 ## Export
 

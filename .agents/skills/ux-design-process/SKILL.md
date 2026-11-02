@@ -31,8 +31,9 @@ fails an empty one.
    `*cta*`/`*primary*` and fails on two or more.
 
 Record the four beats plus `firstViewport` (shape names that must sit inside the first 900px)
-in `ux-spec.json`; `ux_gate.py` verifies each beat exists, each named shape is above the fold,
-and accent fills stay under the declared ratio.
+in `ux-spec.json`; `ux_gate.py` verifies each beat string is non-empty, each named shape is
+above the fold, CTA/state/mobile names resolve, and accent fills stay under the ratio. It
+cannot judge whether a beat actually reads: §7 review owns that.
 
 ## 3. Hero contract
 
@@ -77,8 +78,8 @@ content-fill ratio ≥ 0.6.
 ## 5. Rhythm, then eyes
 
 One spacing scale per project, one declared section rhythm in px, one "breather" rule per
-section (what separates, what groups). This skill sets the numbers; the audit (`rhythm.py`),
-the joints and margin symmetry are in `craft.md`.
+section (what separates, what groups). This skill sets the numbers; the advisory audit
+(`rhythm.py`, exit stays 0), the joints and margin symmetry are in `craft.md`.
 
 ## 6. State matrix and mobile
 
@@ -103,8 +104,8 @@ scores 0–5 per axis and returns `region · score · observed vs expectation` f
 | consistency | tokens, rhythm and voice match the rest of the file |
 | accessibility | contrast pairs pass, touch targets and focus order hold |
 
-Two rounds max, then the owner decides. Attest every tile in the manifest
-(`crop_board.py --attest`) — an unreviewed tile is an unreviewed screen.
+Two rounds max, then the owner decides. Attest every tile and region in the manifest
+(`crop_board.py --attest`) — an unreviewed tile or missing PNG is an unreviewed screen.
 
 ## 8. Record the decision
 
