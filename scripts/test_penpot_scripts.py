@@ -1902,5 +1902,108 @@ class RebuildLosslessTest(unittest.TestCase):
         self.assertIn("elsewhere", missing[0])
 
 
+
+
+class ContrastCollectorTest(unittest.TestCase):
+    """The COLLECT node walk must read Penpot's null opacity as "unset".
+
+    Penpot returns `opacity: null` for an untouched shape and `fillOpacity: 1`
+    for a painted fill. `Number(null)` is 0, so a naive coercion turned every
+    text into "translucent (opacity 0)" and the audit checked nothing on the
+    live file (2026-11-03). These cases run the shipped collector source in
+    node against a stub page, then classify the result.
+    """
+
+    def _collect(self, shapes):
+        if not shutil.which("node"):
+            self.skipTest("node is required for the collector contract test")
+        source = contrast_audit.COLLECT.replace("__PAGE__", json.dumps("P"))
+        harness = (
+            "const COLLECT = " + json.dumps(source) + ";\n"
+            "const shapes = " + json.dumps(shapes) + ";\n"
+            "const penpot = { currentFile: { pages: [{ name: 'P', root: { children: shapes } }] } };\n"
+            "const result = new Function('penpot', COLLECT)(penpot);\n"
+            "process.stdout.write(result);\n"
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "collect.js"
+            path.write_text(harness)
+            proc = subprocess.run(["node", str(path)], capture_output=True, text=True)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        return json.loads(proc.stdout)
+
+    @staticmethod
+    def _shape(name, kind="text", **over):
+        shape = {"name": name, "type": kind, "visible": True, "x": 0, "y": 0,
+                 "width": 400, "height": 400, "fills": [], "children": []}
+        shape.update(over)
+        return shape
+
+    @staticmethod
+    def _fill(color="#111111", opacity=1):
+        return {"fillColor": color, "fillOpacity": opacity}
+
+    def _page(self, text_opacity=None, fill_opacity=1, board_opacity=None):
+        text = self._shape("t", opacity=text_opacity,
+                           fontSize="16", fontVariantId="regular",
+                           textBounds={"x": 10, "y": 10, "width": 100, "height": 20},
+                           fills=[self._fill(opacity=fill_opacity)])
+        board = self._shape("panel", kind="board", opacity=board_opacity, w=400, h=400,
+                            fills=[self._fill("#FFFFFF", 1)], children=[text])
+        return [board]
+
+    def test_null_opacity_reads_as_opaque(self):
+        data = self._collect(self._page(text_opacity=None, fill_opacity=None, board_opacity=None))
+        text = data["texts"][0]
+        self.assertEqual(text["fgOpacity"], 1)
+        layer = [layer for layer in data["layers"] if layer["name"] == "panel"][0]
+        self.assertEqual(layer["opacity"], 1)
+        self.assertEqual(contrast_audit.resolve(data)["manual"], [])
+
+    def test_explicit_zero_stays_transparent(self):
+        data = self._collect(self._page(text_opacity=0))
+        text = data["texts"][0]
+        self.assertEqual(text["fgOpacity"], 0)
+        report = contrast_audit.resolve(data)
+        self.assertEqual(report["checked"], 0)
+        self.assertIn("translucent text fill", report["manual"][0]["reason"])
+
+    def test_fractional_opacity_is_preserved(self):
+        data = self._collect(self._page(text_opacity=0.72))
+        self.assertEqual(data["texts"][0]["fgOpacity"], 0.72)
+        report = contrast_audit.resolve(data)
+        self.assertEqual(report["checked"], 0)
+        self.assertIn("0.72", report["manual"][0]["reason"])
+
+    def test_full_opacity_is_one(self):
+        data = self._collect(self._page(text_opacity=1, fill_opacity=1))
+        self.assertEqual(data["texts"][0]["fgOpacity"], 1)
+        self.assertEqual(contrast_audit.resolve(data)["checked"], 1)
+
+    def test_ancestor_zero_makes_the_text_transparent(self):
+        data = self._collect(self._page(board_opacity=0))
+        self.assertEqual(data["texts"][0]["fgOpacity"], 0)
+        self.assertIn("translucent", contrast_audit.resolve(data)["manual"][0]["reason"])
+
+    def test_unreadable_fill_opacity_is_manual_not_opaque(self):
+        data = self._collect(self._page(fill_opacity="abc"))
+        report = contrast_audit.resolve(data)
+        self.assertEqual(report["checked"], 0)
+        self.assertEqual(report["fails"], [])
+        self.assertIn("unknown", report["manual"][0]["reason"])
+
+    def test_nan_opacity_in_the_report_is_manual(self):
+        """A NaN that still reaches the resolver must not become a solid ratio."""
+        data = {"layers": [{"order": 0, "boardId": "b", "board": "board", "kind": "solid",
+                            "fill": "#FFFFFF", "opacity": 1, "x": 0, "y": 0, "w": 400, "h": 400,
+                            "name": "panel"}],
+                "texts": [{"name": "t", "board": "board", "boardId": "b", "order": 1,
+                           "fg": "#111111", "fgKind": "solid", "fgPaints": 1,
+                           "fgOpacity": float("nan"), "size": 16, "variant": "regular",
+                           "cx": 10, "cy": 10}]}
+        report = contrast_audit.resolve(data)
+        self.assertEqual(report["checked"], 0)
+        self.assertIn("unknown text opacity", report["manual"][0]["reason"])
+
 if __name__ == "__main__":
     unittest.main()

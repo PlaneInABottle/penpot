@@ -173,10 +173,11 @@ Cross-page journeys stay unwired by design (the API stores a hollow destination 
    hero's source) and two parked concepts live there. Nothing is deleted without the user.
 10. **State coverage is desktop-only and partial**: empty (01), loading (07), registration
     error (09). Success/disabled/offline states are not drawn.
-11. **`contrast_audit.py` mis-reads an unset shape opacity** (`Number(null) === 0`), so on this
-    file it reports every text as "translucent (opacity 0)" and checks nothing automatically.
-    The audit in § Verification ran from a patched copy; the repository tool still needs the
-    null guard (see § Verification item 2).
+11. **`contrast_audit.py` read an unset shape opacity as 0** (`Number(null) === 0`), so on
+    this file every text was "translucent (opacity 0)" and nothing was checked automatically.
+    Fixed in the tool (`num()` falls back on null/undefined/"" before coercion; an unreadable
+    value is MANUAL, an explicit 0 stays transparent), with `ContrastCollectorTest` running the
+    shipped COLLECT source in node against null/0/.72/1/bad values (§ Verification item 2).
 12. **The Penpot file is still named "New File 3"** (live check this round). Renaming is a
     live write on the shared file and is left to the owner of the handoff, not a build step.
 13. **Component instances are not used by the screens** (see § Component inventory); the
@@ -193,7 +194,7 @@ Run on this checkout with the cherry-picked evidence tools (`2420380`, `2279557`
 | `design_lint … --rules craft-rules.json` on five pages + `Components` | **0 high, 0 unexplained medium** everywhere; Üyelik's 3 mediums are its `acknowledge` entries |
 | `design_qa` on Kurumsal/Kongre/Components/Üyelik | fills 764/764 · 885/885 · 120/120 · 261/261, text sizes 100%, `findings: none` except Components' advisory "no prototype flow" (a library page has no journey — printed, not called clean) |
 | `ux_gate --spec` | **0 findings**, 3 screens |
-| `contrast_audit` (Kurumsal, Üyelik, Components) | Kurumsal 0 automatic fails, 7 ghost numerals ignored, 8 MANUAL over `img-hero`; Üyelik 0 fails, 4 MANUAL (the retained .85/.88 lines, measured 4.88 / 4.64 on the render); Components 6 automatic fails, all **disabled-state** labels (1.91–2.28) — inactive controls, no live-content failure |
+| `contrast_audit` (Kurumsal, Üyelik, Components — repository tool, exit 0/0/1) | Kurumsal 593 texts / 578 checked / **0 failing**, 7 ghost numerals ignored, 8 MANUAL over `img-hero`; Üyelik 0 fails, 4 MANUAL (the retained .85/.88 lines, measured 4.88 / 4.64 on the render); Components 6 automatic fails, all **disabled-state** labels (1.91–2.28) — inactive controls, no live-content failure |
 | `crop_board` re-cut (11 boards) + `--attest` | exit 0 on every board; no blank CTA region; the hero CTA, 07's nav CTA, 08's `f send` and 09's `reg cta` are the crop subjects |
 | negative attest (temp fixture, one PNG removed) | exit 1 with "1 referenced PNG(s) missing" — the real evidence files were copied, never deleted |
 | `penpot_exec.py --read` | returns the live file and all seven pages (`Kurumsal…_scratch`) |
@@ -206,11 +207,15 @@ Two tool/data facts this round produced, recorded so the next reader does not re
    non-list or non-string entry with exit 2 at the rules-loading boundary, and
    `test_lint_rules.ProjectPaletteConfigTest` proves the shipped config activates the rule
    (fixture → 1 medium) and that no `design/*/craft-rules.json` carries a scalar again.
-2. **`contrast_audit.py` treats an unset shape opacity as 0.** `num(null, 1)` → `Number(null)=0`,
-   so on this file every text was reported "translucent (opacity 0)" and nothing was checked
-   automatically. The audit above ran from a one-line-patched **copy** (`value == null` →
-   fallback) in the task temp dir; the repository tool is untouched and needs that guard
-   (`if (value === null || value === undefined || value === "") return fallback;`).
+2. **`contrast_audit.py` treated an unset shape opacity as 0.** `num(null, 1)` →
+   `Number(null)=0`, so every text was "translucent (opacity 0)" and nothing was checked
+   automatically. Fixed in the tool: `num()` returns the fallback for null/undefined/"" before
+   any coercion, keeps an explicit `0` (transparent) and `0.72`/`1` as given, and returns `NaN`
+   for an unreadable value so the reader reports it MANUAL instead of inventing a solid ratio.
+   `ContrastCollectorTest` executes the shipped COLLECT source in node (null opacity and
+   fillOpacity and ancestor → 1; explicit 0 → transparent/MANUAL; 0.72 → 0.72; "abc" →
+   MANUAL) and the resolver has NaN guards for both the text and the background layer. The
+   numbers in the table above come from the repository tool, no copy.
 
 Photo compliance: `img-auth`, `img-desk` and `img-team` were replaced with already-sourced
 instrument/publication frames (415779, 3860983) and their captions corrected; a contact sheet of

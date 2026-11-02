@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import pathlib
 import re
 import sys
@@ -41,9 +42,16 @@ const page = penpot.currentFile.pages.find(p => p.name === __PAGE__);
 if (!page) throw new Error("page not found: " + __PAGE__);
 const out = { texts: [], layers: [] };
 let seq = 0;
+// Absent (null/undefined/"") means "unset": the documented fallback (Penpot
+// returns null for an untouched shape.opacity, not 1). An explicit number keeps
+// its value, including 0 — a transparent paint must stay transparent. Anything
+// else is UNKNOWN, not opaque: return NaN so the reader reports the paint as
+// MANUAL instead of inventing a solid ratio.
 const num = (value, fallback) => {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : fallback;
+  if (value === null || value === undefined) return fallback;
+  if (typeof value === "string" && value.trim() === "") return fallback;
+  const parsed = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(parsed) ? parsed : NaN;
 };
 const kindOf = (fill, paints) => {
   if (paints > 1) return "unsupported";
@@ -150,8 +158,13 @@ def resolve(data: dict, min_ratio: float = 4.5, ignore: tuple[str, ...] = ()) ->
         if not SOLID_HEX.match(str(text["fg"])):
             note(f"unsupported text colour {text['fg']!r}")
             continue
-        if float(text.get("fgOpacity", 1)) < 0.99:
-            note(f"translucent text fill (opacity {float(text.get('fgOpacity', 1)):g})")
+        fg_opacity = float(text.get("fgOpacity", 1))
+        if not math.isfinite(fg_opacity):
+            # an unreadable opacity is unknown, never opaque (see COLLECT num)
+            note("unknown text opacity")
+            continue
+        if fg_opacity < 0.99:
+            note(f"translucent text fill (opacity {fg_opacity:g})")
             continue
         under = [layer for layer in by_scope.get(text.get("boardId"), [])
                  if layer.get("order", 0) < text.get("order", 0)
@@ -175,9 +188,13 @@ def resolve(data: dict, min_ratio: float = 4.5, ignore: tuple[str, ...] = ()) ->
         if not SOLID_HEX.match(str(top.get("fill") or "")):
             note(f"unsupported background colour {top.get('fill')!r}")
             continue
-        if float(top.get("opacity", 1)) < 0.99:
+        layer_opacity = float(top.get("opacity", 1))
+        if not math.isfinite(layer_opacity):
+            note(f"over layer with unknown opacity {top.get('name', '?')}")
+            continue
+        if layer_opacity < 0.99:
             note(f"over translucent layer {top.get('name', '?')} "
-                 f"(opacity {float(top.get('opacity', 1)):g})")
+                 f"(opacity {layer_opacity:g})")
             continue
         try:
             got = ratio(text["fg"], top["fill"])
