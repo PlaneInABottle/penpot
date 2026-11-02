@@ -51,7 +51,7 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--board", required=True)
     ap.add_argument("--page")
     ap.add_argument("--out", default="design/shots", type=pathlib.Path)
-    ap.add_argument("--wait", type=float, default=45.0)
+    ap.add_argument("--wait", type=float, default=150.0)
     args = ap.parse_args(argv)
 
     try:
