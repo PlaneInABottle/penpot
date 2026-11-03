@@ -705,16 +705,53 @@ const IK = (function () {
     return n;
   }
 
+  /**
+   * Canvas spacing after a rebuild. A board that changes height leaves its
+   * followers where they were: 06-kongre grew past 07-program and 07 past
+   * 08-bildiri (08 hovered at y7220 over 07's bottom 7336 — 116px of overlap,
+   * 2026-11-03). Screen scripts own their board's contents, never the canvas,
+   * so the runner calls this once the final height has settled: walk the
+   * rebuilt board's vertical column (same x, top-level boards only), keep their
+   * order, and move only the boards that would sit closer than `gap` to the
+   * board above. Positions that already clear the gap stay untouched (a large
+   * intentional gap is never compacted), and a board in another column is never
+   * considered. Moving a board translates its children (verified live: a +300
+   * board move shifted a child by exactly 300), so ids, sizes, interactions and
+   * relative geometry survive a pure translation.
+   */
+  function reflowColumn(pageName, boardName, gap) {
+    const p = page(pageName);
+    const g = gap === undefined ? 240 : gap;
+    const all = (p.root.children || []).filter((b) => b.type === "board");
+    const target = all.filter((b) => b.name === boardName)[0];
+    if (!target) return { gap: g, moves: [], error: "board not found: " + boardName };
+    const column = all.filter((b) => Math.abs(b.x - target.x) < 1).sort((a, b) => a.y - b.y);
+    const moves = [];
+    let bottom = null;
+    column.forEach((b) => {
+      if (bottom !== null) {
+        const want = snap(bottom + g);
+        if (b.y < want - 0.5) {
+          const from = b.y;
+          b.y = want;
+          moves.push({ name: b.name, from: Math.round(from), to: Math.round(want) });
+        }
+      }
+      bottom = b.y + b.height;
+    });
+    return { gap: g, moves: moves };
+  }
+
   function report(pageName) {
     return page(pageName).root.children.map((b) => ({ name: b.name, x: b.x, y: b.y, w: b.width, h: b.height, children: (b.children || []).length }));
   }
 
   /** Bumped when this file changes: build.py re-sends it only on a mismatch. */
-  const VERSION = "1.2.2";
+  const VERSION = "1.2.3";
 
   return {
     SET, W, X, CW, ROLE, FONT, warnings, gaps, VERSION, HELPERS: H.version,
-    start, end, fit, fitBars, fitCards, report, page, rect, board, text, rule, vrule, bind, paint, stroke, corners,
+    start, end, fit, fitBars, fitCards, reflowColumn, report, page, rect, board, text, rule, vrule, bind, paint, stroke, corners,
     btn, link, tag, head, pageHead, stat, field, photo, sheet, masthead, footer, sidebar, crumbs,
     progress, ecg, row, rows, bullets, vcenter, snap, nrm, token, estLines,
     statsStrip, ctaRow, headIndex,

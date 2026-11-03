@@ -2028,5 +2028,77 @@ class ContrastCollectorTest(unittest.TestCase):
         self.assertEqual(report["checked"], 0)
         self.assertIn("over layer with unknown opacity", report["manual"][0]["reason"])
 
+
+
+class ReflowColumnTest(unittest.TestCase):
+    """The shipped lib's canvas reflow, exercised against the real 2026-11-03 fixture.
+
+    `design/ihkd/build/lib.js` holds the function the project runner calls after a
+    board's height settles; a rebuild used to leave the following boards where they
+    were (07-program's bottom 7336 sat under 08-bildiri's top 7220 — 116px of
+    overlap). The fixture below is the live Kongre column at the time of the bug.
+    """
+
+    FIXTURE = [
+        ("06-kongre", 0, 440, 3840),
+        ("07-program", 0, 4480, 2856),
+        ("08-bildiri", 0, 7220, 2632),
+        ("09-kayit", 0, 10660, 1968),
+        ("10-konaklama", 0, 13660, 2400),
+        ("07-program-loading", 0, 16300, 1300),
+        ("09-kayit-hata", 0, 17840, 1104),
+        ("separate column", 2000, 500, 400),
+    ]
+
+    def _run(self, board_name="08-bildiri", gap=240):
+        if not shutil.which("node"):
+            self.skipTest("node is required for the reflow contract test")
+        lib = (HERE.parent / "design" / "ihkd" / "build" / "lib.js").read_text()
+        boards = [{"type": "board", "name": name, "x": x, "y": y, "height": h}
+                  for name, x, y, h in self.FIXTURE]
+        harness = (
+            "const lib = " + json.dumps(lib) + ";\n"
+            "const storage = { H: { version: 'test' } };\n"
+            "const boards = " + json.dumps(boards) + ";\n"
+            "const penpot = { currentFile: { pages: [{ name: 'P', root: { children: boards } }] } };\n"
+            "const IK = new Function('storage', 'penpot', lib + '\\nreturn storage.IK;')(storage, penpot);\n"
+            f"const first = IK.reflowColumn('P', {json.dumps(board_name)}, {gap});\n"
+            f"const second = IK.reflowColumn('P', {json.dumps(board_name)}, {gap});\n"
+            "process.stdout.write(JSON.stringify({ first, second, boards }));\n"
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "reflow.js"
+            path.write_text(harness)
+            proc = subprocess.run(["node", str(path)], capture_output=True, text=True)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        return json.loads(proc.stdout)
+
+    def test_overlapping_followers_are_moved_to_the_project_gap(self):
+        data = self._run()
+        moves = {m["name"]: (m["from"], m["to"]) for m in data["first"]["moves"]}
+        self.assertEqual(moves, {"07-program": (4480, 4520), "08-bildiri": (7220, 7616)},
+                         "the 200px gap above 07 and the 116px overlap below it are both repaired")
+        bounds = {b["name"]: b for b in data["boards"]}
+        self.assertEqual(bounds["08-bildiri"]["y"] - (bounds["07-program"]["y"] + 2856), 240)
+        self.assertGreaterEqual(bounds["09-kayit"]["y"] - (bounds["08-bildiri"]["y"] + 2632), 240)
+
+    def test_second_run_is_a_no_op(self):
+        data = self._run()
+        self.assertEqual(data["second"]["moves"], [])
+
+    def test_untouched_neighbours_keep_their_positions(self):
+        data = self._run()
+        before = {name: (x, y, h) for name, x, y, h in self.FIXTURE}
+        after = {b["name"]: (b["x"], b["y"], b["height"]) for b in data["boards"]}
+        for name in ("06-kongre", "09-kayit", "10-konaklama",
+                     "07-program-loading", "09-kayit-hata", "separate column"):
+            self.assertEqual(after[name], before[name], f"{name} must not move")
+        self.assertEqual(after["06-kongre"][2], before["06-kongre"][2], "no height may change")
+
+    def test_other_column_is_not_linearised(self):
+        data = self._run(board_name="separate column")
+        self.assertEqual(data["first"]["moves"], [])
+        self.assertEqual(data["boards"][-1]["y"], 500)
+
 if __name__ == "__main__":
     unittest.main()

@@ -362,6 +362,24 @@ def expected_photo_names(board: str) -> list[str]:
     return entries_for_board(provenance, board) if isinstance(provenance, dict) else []
 
 
+def reflow_layout(url: str, page: str, board: str, gap: int = 240) -> dict:
+    """Keep the rebuilt board's canvas column spaced after its height settled.
+
+    A screen owns its board's contents, not the canvas: a height change leaves
+    the boards below where they were (08-bildiri overlapped 07-program by 116px
+    after 07 grew). This runs once after fit, before photos are restored, and
+    moves only the following top-level boards that sit closer than `gap`.
+    """
+    code = f"""
+if (penpot.currentPage.name !== {json.dumps(page)}) throw new Error("page not active: " + penpot.currentPage.name);
+if (!storage.IK || !storage.IK.reflowColumn) throw new Error("lib without reflowColumn — send lib.js first");
+return JSON.stringify(storage.IK.reflowColumn({json.dumps(page)}, {json.dumps(board)}, {gap}));
+"""
+    state = payload(call_execute_code(url, code))
+    state = json.loads(state) if isinstance(state, str) else state
+    return state if isinstance(state, dict) else {}
+
+
 def restore_photos(page: str, board: str) -> int:
     """Re-place this board's provenance photos; returns media.py's exit code."""
     proc = subprocess.run(
@@ -512,6 +530,15 @@ def run(url: str, screen: str, fit_deadline: float) -> dict:
     zoom_s = zoom_board(url, page, board)
     quiet, nulls, names, fit_s, passes = fit_board(url, page, board, lib, fit_deadline)
     require_page(url, page, f"{screen} after fit")
+    # The board's height is final here; reconcile the canvas before photos are
+    # placed, so a moved slot receives its photo at the new position.
+    layout = reflow_layout(url, page, board)
+    moved = layout.get("moves") or []
+    if moved:
+        print("  layout: " + ", ".join(f"{m['name']} {m['from']}→{m['to']}" for m in moved))
+    else:
+        print(f"  layout: 0 moves (column gap {layout.get('gap', 240)} already holds)")
+    require_page(url, page, f"{screen} after layout")
 
     photo_names = expected_photo_names(board)
     media_rc = 0

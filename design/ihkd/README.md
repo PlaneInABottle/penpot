@@ -91,6 +91,12 @@ instance them yet — moving to instances is a breaking change and a later job.
 | 20 | Üyelik | 20-panel | 1440×1680 | 48eb7286-684f-8018-8008-e197bd55d6fb |
 | — | Components | component sheet | 1440×2460 | d464fdd4-6900-809f-8008-e2dc73baa1d4 |
 
+Canvas spacing: after a rebuild settles a board's height, the runner reconciles that board's
+column (`lib.reflowColumn`, the project's 240px gap). Only the following boards that would sit
+closer than 240px move; ids, sizes, contents and relative child geometry are untouched, and a
+large deliberate gap is never compacted. 2026-11-03 on Kongre: `07-program` +40,
+`08-bildiri` +396, overlap 0, every other board where it was; a second run is a no-op.
+
 ## Export evidence (`design/ihkd/shots/`, bytes on disk 2026-11-03)
 
 | board | PNG bytes | board | PNG bytes |
