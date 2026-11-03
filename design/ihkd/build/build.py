@@ -368,7 +368,7 @@ def reflow_layout(url: str, page: str, board: str, gap: int = 240) -> dict:
     A screen owns its board's contents, not the canvas: a height change leaves
     the boards below where they were (08-bildiri overlapped 07-program by 116px
     after 07 grew). This runs once after fit, before photos are restored, and
-    moves only the following top-level boards that sit closer than `gap`.
+    moves only top-level boards in that column that sit closer than `gap`.
     """
     code = f"""
 if (penpot.currentPage.name !== {json.dumps(page)}) throw new Error("page not active: " + penpot.currentPage.name);
