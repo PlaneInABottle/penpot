@@ -13,10 +13,9 @@ here; they live in the skills below and are stated once.
 | `ux-design-process` | story, density, states, review of a screen | task, story arc, hero contract, review rubric |
 | `penpot-mcp-operations` | snippet, helpers, export, failed/stale bridge call | bridge contract, helpers API, failure table |
 
-Craft and art direction come from `visual-interface-design`; option variety comes from
-`design-variety`; never from here.
-`scripts/helpers.js` is a symlink into the design-system skill's `assets/`; adding an asset
-never repoints it.
+Craft, art direction and creative-trial review come from `visual-interface-design`;
+option variety comes from `design-variety`. `scripts/helpers.js` symlinks the design-system
+`assets/`; a new asset never repoints it.
 
 ## Start here
 
@@ -33,9 +32,10 @@ never repoints it.
 
 ## Runtime
 
-Compose project `penpot`, containers `penpot-penpot-*`, file `docker-compose.yaml`.
-Nothing starts automatically (`restart: "no"`): after a reboot or a Docker restart the stack
-is down until `up -d` runs.
+The target is whatever `~/.config/opencode/.penpot-mcp-url` names: active design work runs on
+a hosted instance (no Docker, no local exporter fallback), and the compose stack below —
+project `penpot`, containers `penpot-penpot-*`, file `docker-compose.yaml` — is explicit
+self-host maintenance only. It starts nothing automatically: after a reboot, run `up -d` explicitly.
 
 ```sh
 docker compose up -d                                   # start; also how config/image changes apply
@@ -59,9 +59,9 @@ docker compose down                                    # stop, keep data in the 
 
 ## Access
 
-- App: http://localhost:9001 — Mailpit: http://localhost:8025
-- The MCP endpoint URL carries a user token; it is read from its file at call time. Never
-  copy, print, log or commit it, and never echo a command that contains it.
+- Local stack (only while compose runs): http://localhost:9001 — Mailpit: http://localhost:8025
+- The MCP endpoint URL carries a user token and is read from its file at call time; it decides
+  the target (today: hosted) and is never copied, printed, logged, committed or echoed.
 - `PEXELS_API_KEY` is exported in the shell profile; record the photo URL as provenance,
   never the key.
 

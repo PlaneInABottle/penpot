@@ -9,8 +9,8 @@ metadata:
 
 # Penpot MCP operations
 
-The bridge runs arbitrary JavaScript inside an open browser tab, observed against Penpot
-2.18.5. Design process lives in [penpot-design-system](../penpot-design-system/SKILL.md);
+The bridge runs arbitrary JavaScript inside an open browser tab, observed against Penpot 2.18.5
+locally and 2.19 hosted. Design process lives in [penpot-design-system](../penpot-design-system/SKILL.md);
 proof lives in [design-verification](../design-verification/SKILL.md).
 
 ## Contract
@@ -22,19 +22,19 @@ proof lives in [design-verification](../design-verification/SKILL.md).
 - Never assume the browser: `ps -axo comm | grep -i "firefox\|chrome\|safari"` names the running one.
 - `execute_code` returns text the server may wrap as `{"result": "<json>", "log": ""}`.
   Unwrap before decoding, or you decode a string twice.
-- One plugin, one writer: every call holds a `flock` in `~/.cache/penpot-mcp/`, a build holds
-  the session lock for its run, and a second writer exits 2 with `plugin busy: held by pid=…`.
-  `--expect-page NAME` refuses a drifted page; `penpot_exec.py --read` passes a running build,
-  still takes the call lock and never injects helpers (caller intent, not a sandbox).
+- One plugin, one writer: locks, `--expect-page` and `--read` intent are stated once in
+  `AGENTS.md` § Ownership and safety; the hosted-vs-local target in § Runtime.
 - A raw snippet run is not a rebuild: it proves execution, not page affinity, fit, photos,
   flows or live counts; use the project runner.
 
 ## Helpers
 
-`assets/helpers.js` (in `penpot-design-system`, symlinked as `scripts/helpers.js`) is loaded by
-sending the whole file through `execute_code`; it assigns `storage.H`, and later calls use
-`storage.H.*` — a bare `H` is undefined. `storage` persists across calls and MCP sessions,
-functions included; re-inject after a plugin reload or a version mismatch.
+`assets/helpers.js` (in `penpot-design-system`, symlinked as `scripts/helpers.js`) assigns
+`storage.H` when the whole file is sent through `execute_code`; later calls use `storage.H.*` —
+a bare `H` is undefined. `storage` persists across calls and MCP sessions, functions included;
+re-inject after a plugin reload or version mismatch. No CLI path injects it: `penpot_exec.py`
+runs the snippet only, and `design_lint`/`design_qa` refuse a missing version during a read.
+Bootstrap a fresh tab via `tokens_sync.py --check`, the project runner or `ensure_helpers(load_url())`.
 
 | helper | effect |
 |---|---|
@@ -90,12 +90,12 @@ the project media table before a rebuild. `--only`/`--force`/`--restore` are pro
 
 ## Export
 
-`scripts/export_board.py` is the only path to an image, `one board per call` — the bulk
-renderer is unreliable past the MCP task limit. `export_shape` is a separate tool (`shapeId`,
-`format`, `mode`) that returns image data and writes no file; `"page"` and page names fail
-because the page root is zero-size. A bound fill can still render white: `design_qa.py`
-reports that as `renderMismatches` and fails on it. A tall export that times out usually
-`rescue`d: take the newest `penpot.*.png.*` out of the exporter container.
+`scripts/export_board.py` is the only path to an image, one board per call — the bulk renderer
+is unreliable past the MCP task limit. `export_shape` is a separate tool (`shapeId`, `format`,
+`mode`) returning image data and writing no file; `"page"` and page names fail because the page
+root is zero-size. A bound fill can still render white: `design_qa.py` reports that as
+`renderMismatches` and fails on it. The exporter rescue exists only on a loopback endpoint:
+matching width x height proves the size, never the identity, of a render.
 
 ## Failures
 

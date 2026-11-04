@@ -8,13 +8,15 @@
 is the only way to look at a render. The board is resolved by name on `--page`
 (default: the page currently open in the plugin).
 
-A PNG comes from whichever path finishes first: the bridge, or the exporter's own
-render on disk. The bridge is abandoned by the MCP server after 120 s on tall boards
-while the exporter has already rendered in ~3 s, so a task timeout is not a failure —
-the tool keeps polling the exporter's temp dir for up to `--wait` seconds (300 s,
-past the task limit) and accepts only a PNG of exactly the board's width x height.
-Nothing is written unless the dimensions match: every board is 1440 wide, so a
-neighbour's render is the failure mode worth checking.
+A PNG comes from the bridge, or — on a loopback endpoint only — from the exporter's
+own render on disk, whichever finishes first. The bridge is abandoned by the MCP
+server after 120 s on tall boards while the local exporter has already rendered in
+~3 s, so a task timeout is not a failure: the tool keeps polling the exporter's temp
+dir for up to `--wait` seconds (300 s) and accepts only a PNG of exactly the board's
+width x height. A hosted endpoint has no local exporter, so it never calls compose
+and an exhausted bridge is reported as such. Dimensions check the size, never the
+identity, of a render: every board is 1440 wide, so a neighbour's render is the
+failure mode worth checking.
 
 Exit codes: 0 exported, 1 board not found, 2 environment, transport or plugin failure.
 """
@@ -30,10 +32,12 @@ import subprocess
 import sys
 import threading
 import time
+import urllib.parse
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from penpot_exec import (  # noqa: E402
-    McpError, call_execute_code, fail, load_url, parse_sse, payload, plugin_lock, post,
+    INITIALIZED, McpError, call_execute_code, fail, http_error, initialize, load_url,
+    parse_sse, payload, plugin_lock, post,
 )
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -41,6 +45,7 @@ SERVICE = "penpot-exporter"
 TMP = "/tmp/penpot"
 WAIT_S = 300.0   # longer than the MCP task limit (120 s): the render lands in ~3 s
 POLL_S = 5.0
+LOOPBACK = {"localhost", "127.0.0.1", "::1"}
 
 FIND_BOARD = """
 const page = {page};
@@ -57,33 +62,25 @@ def call_tool(url: str, name: str, arguments: dict) -> dict:
         return tool_call(url, name, arguments)
 
 
+def is_local_endpoint(url: str) -> bool:
+    """True only for the self-hosted stack whose compose file this script can reach.
+
+    The exporter rescue runs `docker compose` in this checkout's project root, so a
+    hosted endpoint must never reach it: its renders do not exist here.
+    """
+    return (urllib.parse.urlparse(url).hostname or "").lower() in LOOPBACK
+
+
 def tool_call(url: str, name: str, arguments: dict) -> dict:
-    status, headers, raw = post(
-        url,
-        {
-            "jsonrpc": "2.0",
-            "id": 1,
-            "method": "initialize",
-            "params": {
-                "protocolVersion": "2025-06-18",
-                "capabilities": {},
-                "clientInfo": {"name": "export-board", "version": "1.0.0"},
-            },
-        },
-    )
-    if status != 200:
-        raise McpError(f"initialize failed: HTTP {status}: {raw[:300]}")
-    session = headers.get("mcp-session-id") or headers.get("Mcp-Session-Id")
-    if not session:
-        raise McpError("initialize returned no mcp-session-id")
-    post(url, {"jsonrpc": "2.0", "method": "notifications/initialized"}, session_id=session)
+    session = initialize(url, "export-board", "1.0.0")
+    post(url, INITIALIZED, session_id=session)
     status, _, raw = post(
         url,
         {"jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": {"name": name, "arguments": arguments}},
         session_id=session,
     )
     if status != 200:
-        raise McpError(f"tools/call failed: HTTP {status}: {raw[:300]}")
+        raise http_error("tools/call", status, raw, url)
     return parse_sse(raw, 2)
 
 
@@ -108,10 +105,12 @@ def compose(*args: str) -> str:
 
 
 def exporter_renders() -> list[str]:
-    """The exporter's finished renders, newest first.
+    """The local exporter's finished renders, newest first.
 
-    Its temp names carry the extension mid-name (`penpot.resource.png.<uuid>`),
-    and the `.tmp.bitmap` intermediates are not the shape's own render.
+    Only meaningful for a loopback endpoint: it reads the `penpot-exporter`
+    container of this checkout. Its temp names carry the extension mid-name
+    (`penpot.resource.png.<uuid>`), and the `.tmp.bitmap` intermediates are not
+    the shape's own render.
     """
     out = compose("exec", "-T", SERVICE, "sh", "-c", f"ls -t {TMP} 2>/dev/null")
     return [line.strip() for line in out.splitlines()
@@ -127,7 +126,7 @@ def png_size(path: pathlib.Path) -> tuple[int, int]:
 
 
 def verify_png(path: pathlib.Path, info: dict) -> pathlib.Path:
-    """A render that is not exactly this board is not this board's render."""
+    """Check the render is the board's pixel size — dimensions, not identity."""
     want = (round(info["width"]), round(info["height"]))
     got = png_size(path)
     if got != want:
@@ -163,14 +162,17 @@ def export_png(url: str, info: dict, target: pathlib.Path, wait: float = WAIT_S,
                poll: float = POLL_S, provenance: list[str] | None = None) -> pathlib.Path:
     """Write this board's PNG to `target` from the bridge or the exporter's own file.
 
-    Both paths run together and the first PNG of exactly the board's size wins. A
-    bridge task timeout is only that path losing — the exporter rendered seconds
-    ago and its file outlives the task. Waiting is bounded by `wait`, which is
-    longer than the 120 s task limit on purpose. `provenance` collects one line
-    saying which path won and after how long.
+    On a loopback endpoint both paths run together and the first PNG of exactly the
+    board's size wins; a bridge task timeout is only that path losing, because the
+    local exporter rendered seconds ago and its file outlives the task. A hosted
+    endpoint has no local exporter, so the bridge is the only path and its failure
+    ends the call instead of waiting for a file that cannot appear. Waiting is
+    bounded by `wait`, longer than the 120 s task limit on purpose. `provenance`
+    collects one line saying which path won and after how long.
     """
     note = provenance if provenance is not None else []
-    before = set(exporter_renders())
+    local = is_local_endpoint(url)
+    before = set(exporter_renders()) if local else set()
     box: dict = {}
 
     def fire() -> None:
@@ -196,10 +198,16 @@ def export_png(url: str, info: dict, target: pathlib.Path, wait: float = WAIT_S,
                 verify_png(target, info)
                 note.append(f"bridge {time.monotonic() - started:.1f}s")
                 return target
-        found = rescue_pass(before, target, info, attempts)
-        if found is not None:
-            note.append(f"exporter {found[1]} {time.monotonic() - started:.1f}s")
-            return found[0]
+        if local:
+            found = rescue_pass(before, target, info, attempts)
+            if found is not None:
+                note.append(f"exporter {found[1]} {time.monotonic() - started:.1f}s")
+                return found[0]
+        elif bridged or box.get("error") is not None:
+            cause = bridged or str(box["error"])
+            raise McpError(f"no {round(info['width'])}x{round(info['height'])} render for "
+                           f"{info['name']} from the MCP bridge ({cause}); the local exporter "
+                           "fallback is loopback-only")
         if time.monotonic() - started >= wait:
             cause = bridged or str(box.get("error") or "bridge still busy")
             raise McpError(f"no {round(info['width'])}x{round(info['height'])} render for "

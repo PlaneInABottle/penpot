@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import base64
 import contextlib
+import http.server
 import io
 import json
 import os
@@ -19,6 +20,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import unittest
 from unittest import mock
@@ -209,6 +211,148 @@ class ExitCodeTest(unittest.TestCase):
         with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as caught:
             penpot_exec.main(["--code", ""])
         self.assertEqual(caught.exception.code, 2)
+
+
+class _WireServer:
+    """A loopback MCP endpoint that records requests and answers by method.
+
+    Stateless by default — no `Mcp-Session-Id`, like the hosted instance — and
+    stateful when a session id is passed, like the local server.
+    """
+
+    def __init__(self, *, session: str | None = None, result: dict | None = None,
+                 status: dict | None = None, body: str = ""):
+        import http.server
+        outer = self
+        self.requests: list[tuple[dict, dict]] = []
+        self.result = result or {}
+        self.status = status or {}
+        self.body = body
+
+        class Handler(http.server.BaseHTTPRequestHandler):
+            def do_POST(self) -> None:
+                length = int(self.headers.get("Content-Length") or 0)
+                payload = json.loads(self.rfile.read(length) or b"{}")
+                outer.requests.append((payload, dict(self.headers)))
+                method = payload.get("method")
+                if method in outer.status:
+                    self._reply(outer.status[method], outer.body, {})
+                elif method == "initialize":
+                    extra = {"Mcp-Session-Id": session} if session else {}
+                    self._reply(200, json.dumps({
+                        "jsonrpc": "2.0", "id": 1,
+                        "result": {"protocolVersion": "2025-06-18", "capabilities": {},
+                                   "serverInfo": {"name": "wire", "version": "1"}}}), extra)
+                elif method == "notifications/initialized":
+                    self._reply(202, "", {})
+                elif method == "tools/call":
+                    name = (payload.get("params") or {}).get("name")
+                    self._reply(200, json.dumps(outer.result.get(name) or {}), {})
+                else:
+                    self._reply(400, json.dumps({"error": "unknown method"}), {})
+
+            def _reply(self, code: int, text: str, extra: dict) -> None:
+                data = text.encode()
+                self.send_response(code)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(data)))
+                for key, value in extra.items():
+                    self.send_header(key, value)
+                self.end_headers()
+                self.wfile.write(data)
+
+            def log_message(self, *args) -> None:
+                pass
+
+        self.httpd = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        self.url = f"http://127.0.0.1:{self.httpd.server_address[1]}/mcp?userToken=t"
+        threading.Thread(target=self.httpd.serve_forever, daemon=True).start()
+
+    def close(self) -> None:
+        self.httpd.shutdown()
+        self.httpd.server_close()
+
+    def methods(self) -> list[str]:
+        return [payload.get("method") for payload, _ in self.requests]
+
+
+def _header(headers: dict, name: str) -> str | None:
+    return {key.lower(): value for key, value in headers.items()}.get(name.lower())
+
+
+class McpWireTest(unittest.TestCase):
+    """The real HTTP client against a fake endpoint, hosted-shape and local-shape.
+
+    This proves the wire contract (headers, stateless handshake, ordering), not
+    that the hosted service behaves this way; the live call is the acceptance.
+    """
+
+    def setUp(self):
+        self.tmp = pathlib.Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.tmp, True)
+        patcher = mock.patch.dict(os.environ, {
+            "PENPOT_LOCK_DIR": str(self.tmp), "PENPOT_LOCK_WAIT": "5",
+            "PENPOT_SESSION_WAIT": "5"})
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def _server(self, **kwargs) -> _WireServer:
+        server = _WireServer(**kwargs)
+        self.addCleanup(server.close)
+        return server
+
+    def test_stateless_initialize_needs_no_session_header(self):
+        server = self._server(result={"execute_code": content_result('{"result": 2}')})
+        result = penpot_exec.call_execute_code(server.url, "return 2;", write=False)
+        self.assertEqual(penpot_exec.payload(result), 2)
+        self.assertEqual(server.methods(),
+                         ["initialize", "notifications/initialized", "tools/call"])
+        for _, headers in server.requests:
+            self.assertEqual(_header(headers, "User-Agent"), penpot_exec.USER_AGENT)
+            self.assertNotIn("python-urllib", _header(headers, "User-Agent").lower())
+            self.assertIsNone(_header(headers, "mcp-session-id"))
+
+    def test_stateful_session_header_is_carried(self):
+        server = self._server(session="abc123", result={"execute_code": content_result('"ok"')})
+        penpot_exec.call_execute_code(server.url, "return 'ok';", write=False)
+        self.assertEqual(server.methods(),
+                         ["initialize", "notifications/initialized", "tools/call"])
+        for payload, headers in server.requests[1:]:
+            self.assertEqual(_header(headers, "mcp-session-id"), "abc123", payload.get("method"))
+
+    def test_export_shape_uses_the_same_handshake(self):
+        import export_board
+        data = b"\x89PNG\r\n\x1a\n" + b"\x00" * 16
+        image = {"jsonrpc": "2.0", "id": 2, "result": {"content": [
+            {"type": "image", "data": base64.b64encode(data).decode()}]}}
+        server = self._server(result={"export_shape": image})
+        result = export_board.tool_call(server.url, "export_shape", {"shapeId": "s1"})
+        self.assertEqual(export_board.image_bytes(result), data)
+        self.assertEqual(server.methods(),
+                         ["initialize", "notifications/initialized", "tools/call"])
+        self.assertEqual(server.requests[-1][0]["params"]["name"], "export_shape")
+        self.assertIsNone(_header(server.requests[-1][1], "mcp-session-id"))
+
+    def test_an_http_error_body_never_leaks_the_token(self):
+        server = self._server(status={"initialize": 403})
+        token = "c1c5439b-21a6-42f3-aea0-775ecbf416f0"
+        server.url = server.url.rsplit("=", 1)[0] + "=" + token
+        # the body echoes a bare token and the whole endpoint: both must be redacted
+        server.body = "blocked userToken=" + token + " " + server.url
+        with self.assertRaises(penpot_exec.McpError) as ctx:
+            penpot_exec.call_execute_code(server.url, "return 1;", write=False)
+        message = str(ctx.exception)
+        self.assertNotIn(token, message)
+        self.assertIn("userToken=<redacted>", message)
+        self.assertIn("HTTP 403", message)
+
+    def test_the_read_cli_runs_the_snippet_unchanged(self):
+        server = self._server(result={"execute_code": content_result('"ok"')})
+        with mock.patch.object(penpot_exec, "load_url", lambda: server.url), \
+                contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(penpot_exec.main(["--read", "--code", "return 'ok';"]), 0)
+        code = server.requests[-1][0]["params"]["arguments"]["code"]
+        self.assertEqual(code, "return 'ok';", "a read must never prepend helper injection")
 
 
 class CompareTest(unittest.TestCase):
@@ -1683,6 +1827,9 @@ class ExportRescueTest(unittest.TestCase):
     that this machine's compose file is right.
     """
 
+    LOCAL = "http://localhost:9001/mcp?userToken=t"
+    REMOTE = "https://design.example.test/mcp?userToken=t"
+
     def setUp(self):
         import export_board
         self.eb = export_board
@@ -1728,7 +1875,7 @@ class ExportRescueTest(unittest.TestCase):
         with mock.patch.object(self.eb, "call_tool", lambda *a, **k: result), \
                 mock.patch.object(self.eb, "exporter_renders", lambda: []):
             note: list[str] = []
-            self.eb.export_png("u", self.info, self.target, wait=1, poll=0.01, provenance=note)
+            self.eb.export_png(self.LOCAL, self.info, self.target, wait=1, poll=0.01, provenance=note)
         self.assertEqual(self.eb.png_size(self.target), (1440, 4464))
         self.assertTrue(note[0].startswith("bridge "), note)
 
@@ -1743,7 +1890,7 @@ class ExportRescueTest(unittest.TestCase):
                 mock.patch.object(self.eb, "exporter_renders", lambda: list(self.listing)), \
                 mock.patch.object(self.eb, "compose", self._fake_compose()):
             note: list[str] = []
-            self.eb.export_png("u", self.info, self.target, wait=2, poll=0.01, provenance=note)
+            self.eb.export_png(self.LOCAL, self.info, self.target, wait=2, poll=0.01, provenance=note)
         self.assertEqual(self.eb.png_size(self.target), (1440, 4464))
         self.assertIn("cp", [c[0] for c in self.calls])
         self.assertTrue(note[0].startswith("exporter penpot.resource.png.fresh "), note)
@@ -1760,7 +1907,7 @@ class ExportRescueTest(unittest.TestCase):
                 mock.patch.object(self.eb, "exporter_renders", lambda: list(self.listing)), \
                 mock.patch.object(self.eb, "compose", self._fake_compose()):
             with self.assertRaises(self.eb.McpError) as ctx:
-                self.eb.export_png("u", self.info, self.target, wait=0.2, poll=0.01)
+                self.eb.export_png(self.LOCAL, self.info, self.target, wait=0.2, poll=0.01)
         self.assertIn("1440x4464", str(ctx.exception))
         self.assertIn("timed out after 120 seconds", str(ctx.exception))
         self.assertFalse(self.target.exists(), "a wrong-sized render must not be written")
@@ -1783,7 +1930,7 @@ class ExportRescueTest(unittest.TestCase):
             self.listing = ["neighbour"]  # lands after the export fires
             return self._timeout_result()
 
-        with mock.patch.object(export_rescue, "load_url", lambda: "u"), \
+        with mock.patch.object(export_rescue, "load_url", lambda: self.LOCAL), \
                 mock.patch.object(export_rescue, "call_execute_code", execute), \
                 mock.patch.object(self.eb, "call_tool", fire), \
                 mock.patch.object(self.eb, "exporter_renders", lambda: list(self.listing)), \
@@ -1808,7 +1955,7 @@ class ExportRescueTest(unittest.TestCase):
             self.listing = ["fresh"]  # lands after the export fires
             return self._timeout_result()
 
-        with mock.patch.object(export_rescue, "load_url", lambda: "u"), \
+        with mock.patch.object(export_rescue, "load_url", lambda: self.LOCAL), \
                 mock.patch.object(export_rescue, "call_execute_code", execute), \
                 mock.patch.object(self.eb, "call_tool", fire), \
                 mock.patch.object(self.eb, "exporter_renders", lambda: list(self.listing)), \
@@ -1824,7 +1971,7 @@ class ExportRescueTest(unittest.TestCase):
                 mock.patch.object(self.eb, "exporter_renders", lambda: []), \
                 mock.patch.object(self.eb, "compose", lambda *a: ""):
             with self.assertRaises(self.eb.McpError) as ctx:
-                self.eb.export_png("u", self.info, self.target, wait=0.15, poll=0.01)
+                self.eb.export_png(self.LOCAL, self.info, self.target, wait=0.15, poll=0.01)
         self.assertIn("within 0.15s", str(ctx.exception))
         self.assertIn("bridge down", str(ctx.exception))
 
@@ -1835,9 +1982,42 @@ class ExportRescueTest(unittest.TestCase):
                 mock.patch.object(self.eb, "exporter_renders", lambda: list(self.listing)), \
                 mock.patch.object(self.eb, "compose", self._fake_compose()):
             with self.assertRaises(self.eb.McpError):
-                self.eb.export_png("u", self.info, self.target, wait=0.15, poll=0.01)
+                self.eb.export_png(self.LOCAL, self.info, self.target, wait=0.15, poll=0.01)
         # the render existed before the export fired: it belongs to an earlier call
         self.assertFalse(self.target.exists())
+
+    def test_only_loopback_endpoints_get_the_exporter_fallback(self):
+        self.assertTrue(self.eb.is_local_endpoint("http://localhost:9001/mcp?userToken=t"))
+        self.assertTrue(self.eb.is_local_endpoint("http://127.0.0.1:9001/mcp?userToken=t"))
+        self.assertTrue(self.eb.is_local_endpoint("http://[::1]:9001/mcp?userToken=t"))
+        self.assertFalse(self.eb.is_local_endpoint(self.REMOTE))
+        self.assertFalse(self.eb.is_local_endpoint("http://localhost.example.test/mcp"))
+
+    def test_a_remote_bridge_failure_never_calls_compose(self):
+        """The hosted instance has no exporter container here: no compose, no wait."""
+        self.listing = ["penpot.resource.png.fresh"]
+        with mock.patch.object(self.eb, "call_tool", lambda *a, **k: self._timeout_result()), \
+                mock.patch.object(self.eb, "exporter_renders",
+                                  lambda: self.fail("remote endpoint must not read the exporter")), \
+                mock.patch.object(self.eb, "compose",
+                                  lambda *a: self.fail("remote endpoint must not call compose")):
+            with self.assertRaises(self.eb.McpError) as ctx:
+                self.eb.export_png(self.REMOTE, self.info, self.target, wait=5, poll=0.01)
+        self.assertIn("loopback-only", str(ctx.exception))
+        self.assertIn("timed out after 120 seconds", str(ctx.exception))
+        self.assertFalse(self.target.exists())
+
+    def test_a_remote_bridge_render_is_written(self):
+        data = self._write_png(1440, 4464)
+        result = {"result": {"content": [{"type": "image", "data": base64.b64encode(data).decode()}]}}
+        with mock.patch.object(self.eb, "call_tool", lambda *a, **k: result), \
+                mock.patch.object(self.eb, "compose",
+                                  lambda *a: self.fail("remote endpoint must not call compose")):
+            note: list[str] = []
+            self.eb.export_png(self.REMOTE, self.info, self.target, wait=1, poll=0.01,
+                               provenance=note)
+        self.assertEqual(self.eb.png_size(self.target), (1440, 4464))
+        self.assertTrue(note[0].startswith("bridge "), note)
 
 
 class RebuildLosslessTest(unittest.TestCase):

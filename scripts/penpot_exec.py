@@ -13,7 +13,8 @@ Usage:
     penpot_exec.py --read --code 'return JSON.stringify(storage.H.version);'
 
 The MCP URL (with the user token) is read from ~/.config/opencode/.penpot-mcp-url.
-The token is never printed. One call waits up to 240 s (PENPOT_HTTP_TIMEOUT
+That file, not this script, decides the target: the self-hosted stack or a hosted
+instance. The token is never printed. One call waits up to 240 s (PENPOT_HTTP_TIMEOUT
 overrides it); on a timeout it does NOT retry — a second call would race a task
 that may still be running — and exits 2 with instructions to query live state.
 
@@ -59,10 +60,16 @@ import urllib.parse
 import urllib.request
 
 URL_FILE = pathlib.Path.home() / ".config/opencode/.penpot-mcp-url"
+# A hosted endpoint sits behind Cloudflare, which answers urllib's default
+# "Python-urllib/x.y" signature with HTTP 403 / error 1010. A stable product
+# User-Agent passes that edge; it is honest identification, not a browser disguise.
+USER_AGENT = "penpot-workspace-cli/1.1.0"
 MCP_HEADERS = {
     "Content-Type": "application/json",
     "Accept": "application/json, text/event-stream",
+    "User-Agent": USER_AGENT,
 }
+INITIALIZED = {"jsonrpc": "2.0", "method": "notifications/initialized"}
 HELPERS_PROBE = "return JSON.stringify({ version: (storage.H && storage.H.version) || null });"
 HELPERS_VERSION = re.compile(r"""version:\s*["']([^"']+)["']""")
 DEFAULT_TIMEOUT_S = 240.0
@@ -323,7 +330,10 @@ def post(url: str, payload: dict, session_id: str | None = None,
             raw = resp.read().decode("utf-8", "replace")
             return resp.status, dict(resp.headers), raw
     except urllib.error.HTTPError as exc:
-        return exc.code, dict(exc.headers or {}), exc.read().decode("utf-8", "replace")
+        try:
+            return exc.code, dict(exc.headers or {}), exc.read().decode("utf-8", "replace")
+        finally:
+            exc.close()
     except (TimeoutError, OSError) as exc:
         # urllib wraps a socket timeout in URLError on some platforms.
         if isinstance(exc, TimeoutError) or isinstance(getattr(exc, "reason", None), TimeoutError):
@@ -332,6 +342,46 @@ def post(url: str, payload: dict, session_id: str | None = None,
                 "wait and query the live state (no retry; PENPOT_HTTP_TIMEOUT overrides)"
             ) from exc
         raise
+
+
+def redact(text: str, url: str) -> str:
+    """Strip the endpoint and its user token from text that may reach a log."""
+    token = urllib.parse.parse_qs(urllib.parse.urlparse(url).query).get("userToken", [""])[0]
+    out = str(text)
+    for secret in filter(None, (url, token)):
+        out = out.replace(secret, "<redacted>")
+    return re.sub(r"userToken=[^&\s\"'<>]+", "userToken=<redacted>", out)
+
+
+def http_error(what: str, status: int, raw: str, url: str) -> McpError:
+    """One secret-safe transport error: the body is redacted, never the endpoint."""
+    return McpError(f"{what} failed: HTTP {status}: {redact(raw, url)[:300]}")
+
+
+def initialize(url: str, client: str, version: str = "1.1.0") -> str | None:
+    """MCP initialize; returns the server's session id, None when it is stateless.
+
+    `Mcp-Session-Id` is optional in the Streamable HTTP contract: a server may
+    keep no session state (the hosted instance answers without it). The caller
+    then omits the header instead of failing, and the initialized notification
+    is still sent, as the lifecycle requires.
+    """
+    status, headers, raw = post(
+        url,
+        {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": {
+                "protocolVersion": "2025-06-18",
+                "capabilities": {},
+                "clientInfo": {"name": client, "version": version},
+            },
+        },
+    )
+    if status != 200:
+        raise http_error("initialize", status, raw, url)
+    return headers.get("mcp-session-id") or headers.get("Mcp-Session-Id") or None
 
 
 def parse_sse(raw: str, request_id: int | None = None) -> dict:
@@ -429,30 +479,9 @@ def payload(result: dict):
 
 def _execute(url: str, code: str) -> dict:
     """One execute_code exchange; the caller holds the plugin lock."""
-    status, headers, raw = post(
-        url,
-        {
-            "jsonrpc": "2.0",
-            "id": 1,
-            "method": "initialize",
-            "params": {
-                "protocolVersion": "2025-06-18",
-                "capabilities": {},
-                "clientInfo": {"name": "penpot-exec", "version": "1.1.0"},
-            },
-        },
-    )
-    if status != 200:
-        raise McpError(f"initialize failed: HTTP {status}: {raw[:300]}")
-    session = headers.get("mcp-session-id") or headers.get("Mcp-Session-Id")
-    if not session:
-        raise McpError("initialize returned no mcp-session-id")
+    session = initialize(url, "penpot-exec")
+    post(url, INITIALIZED, session_id=session)
 
-    post(
-        url,
-        {"jsonrpc": "2.0", "method": "notifications/initialized"},
-        session_id=session,
-    )
     status, _, raw = post(
         url,
         {
@@ -464,7 +493,7 @@ def _execute(url: str, code: str) -> dict:
         session_id=session,
     )
     if status != 200:
-        raise McpError(f"tools/call failed: HTTP {status}: {raw[:300]}")
+        raise http_error("tools/call", status, raw, url)
     result = parse_sse(raw, 2)
     _raise_for_error(result)
     return result
@@ -522,8 +551,8 @@ def ensure_helpers(url: str, helpers: pathlib.Path | None = None, *, write: bool
         if not write:
             raise McpError(
                 f"helpers.js v{wanted} required but the plugin holds {loaded!r}; "
-                "refusing to inject during a read — run a writer once "
-                "(penpot_exec.py without --read, tokens_sync.py or build.py)")
+                "refusing to inject during a read — bootstrap with a writer entry point "
+                "(tokens_sync.py --check, build.py, media.py); penpot_exec.py never injects")
 
         returned = payload(call_execute_code(url, source, write=write))
         loaded = returned.get("loaded") if isinstance(returned, dict) else None

@@ -82,7 +82,7 @@ file, otherwise it returns `No Penpot instance connected for user token.`
 |---|---|---|---|
 | 9 | export of a page | export fails, returns empty, or times out on `#screenshot-00000000-…` | export each board by its own shape id; `"page"` and page names are a zero-size shape |
 | 29 | exporter hangs | a board export times out at 120s although the board is small and the document is idle | restart the exporter container, wait, retry; if it persists the shape is the suspect |
-| 33 | `export_shape` times out on tall boards | `Task … timed out after 120 seconds` on boards above ~2500px while smaller boards export fine | the exporter usually still rendered: fire the export, ignore the task result, and copy the newest `penpot.*.png.*` out of the exporter container (`docker compose cp penpot-exporter:/tmp/penpot/<file>`); filenames are `penpot.resource.png.<uuid>`, the `.png` sits mid-name |
+| 33 | `export_shape` times out on tall boards | `Task … timed out after 120 seconds` on boards above ~2500px while smaller boards export fine | loopback only: the exporter may still have rendered; use the local recovery in `export_board.py` (`penpot.resource.png.<uuid>` has `.png` mid-name). Hosted runs must never copy a local exporter's bitmap; report a bridge failure instead |
 
 ### Build runner and gates
 

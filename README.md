@@ -3,6 +3,9 @@
 Official Penpot 2.18 compose stack (frontend, backend, admin-console, mcp, exporter,
 postgres 15, valkey, mailpit). No source build; images come from `penpotapp/*:2.18`.
 
+This file covers the local stack only. The active MCP target may be a hosted instance
+(see `AGENTS.md` § Runtime); the compose facts here do not describe it.
+
 - App: <http://localhost:9001> (registration open, email verification disabled)
 - Mailpit (captured mail): <http://localhost:8025>
 - Config: `docker-compose.yaml` (upstream file; only the secret key is templated and

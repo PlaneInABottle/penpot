@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Export a Penpot board by taking the exporter's own render.
+"""Export a Penpot board, with exporter-disk recovery on loopback targets only.
 
 `export_shape` returns its PNG through the plugin bridge, which the MCP server
 abandons after 120 s on tall boards while the exporter itself rendered in a few
 seconds and left the bitmap in its temp dir. The recovery lives in
-`export_board.export_png`, which runs both paths together and accepts only a PNG
-of the board's exact width x height. Two boards with identical dimensions are
+`export_board.export_png`, which uses the bridge alone on hosted targets and both
+paths on loopback targets, checking the PNG's width x height. Two same-size boards are
 still indistinguishable on the disk path; the bridge path identifies the shape
 by id.
 
