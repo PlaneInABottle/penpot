@@ -4,15 +4,16 @@ description: Design in Penpot — turn a brief into a token set, component libra
 license: MIT
 metadata:
   author: configs
-  version: "3.0.0"
+  version: "3.1.0"
 ---
 
 # Penpot design system
 
 Produce the artifact inside a real Penpot file and prove it exists: tokens first, components
 second, screens third, prototype links fourth, verification last. This skill owns the
-process and the design decisions. Art direction comes from `visual-interface-design`; layout
-mechanics from `references/craft.md`; tool mechanics and the failure table from
+process and the design decisions. Art direction comes from `visual-interface-design`; its
+§ Two Internal Checks, One Delivery governs the maker's idea-fit and rendered-execution
+checks. Layout mechanics from `references/craft.md`; tool mechanics and the failure table from
 `penpot-mcp-operations`; the definition of done from `design-verification`.
 
 ## Preconditions
@@ -38,9 +39,11 @@ components (`library.local.components`), flows, and a coverage audit of the targ
 
 ## Lifecycle
 
-Seven phases, in order. A later step that `never invents` a value an earlier step owns is a
-defect: screens never hard-code a hex, components never carry per-screen spacing. Each phase
-writes a file before the next starts; no artifact, no phase.
+Seven phases, in order, for a new project. A later step must not invent a value an earlier
+step owns: screens never hard-code a hex, components never carry per-screen
+spacing. Each phase writes a file before the next starts; no artifact, no phase. Existing work
+resumes at the affected phase and reuses valid artifacts, without unnecessary intake or files.
+Rerun checks and review where changed inputs invalidate their evidence.
 
 | # | Phase | Writes | `Exit` condition |
 |---|---|---|---|
@@ -48,15 +51,16 @@ writes a file before the next starts; no artifact, no phase.
 | 2 | Direction | `brief.md` § direction · `principles.md` | 2–3 named directions, one chosen, rejects recorded; a taste-bearing hero instead gets 4–5 finished first viewports and the user chooses (`ux-design-process` § 3) |
 | 3 | Story | `ux-spec.json` — task, hook→proof→path→action, hero contract, states, mobile, claims | `ux_gate.py` exit 0, or findings owned with a reason |
 | 4 | Foundations | `tokens.json` · Penpot set · `Components` page | `tokens_sync --check` no drift; extras explained or `--strict`; every component instanced once |
-| 5 | Screens | `build/screen-NN.js` per screen | `design-verification` definition of done |
-| 6 | Prototype | flows and links on the screens | one flow, per-board interaction count verified post-rebuild |
-| 7 | Handoff | `README.md` · `shots/` · photo provenance | token/component inventory, board list, export evidence, gaps stated |
+| 5 | Screens | `build/screen-NN.js` per screen | applicable screen checks from `design-verification`: lint, QA, contrast, 1:1 attest, grid edges; not a PASS — full definition of done at handoff |
+| 6 | Prototype | flows and links on the screens | links completed; one flow, per-board interaction count verified post-rebuild |
+| 7 | Handoff | `README.md` · `shots/` · media provenance | the full eight-item definition of done on the final state; token/component inventory, board list, export evidence, gaps stated |
 
 One project folder per design. Page, board and set names come from that project's `brief.md`;
 boards are numbered for their screen, at `1440` desktop and 390 mobile, with
-`component/state` names, components on the `Components` page and throwaway work on
-`_scratch`, removed before handoff. Build scripts are `idempotent` — check-then-create,
-rebuild from scratch — and run one at a time through `build.py`.
+`component/state` names, components on the `Components` page and task-owned throwaway work on
+`_scratch`, cleaned up at handoff. User-kept candidate boards follow `design-variety`'s parking
+rule and are never deleted because handoff arrived. Build scripts are `idempotent` —
+check-then-create, rebuild from scratch — and run one at a time through `build.py`.
 
 ## Start a new project
 
@@ -123,12 +127,15 @@ previous project. If it is, change an axis, not the accent.
    scale; hierarchy comes from weight and colour before size.
 5. **`same token names` on every rebuild.** A regenerated screen reconciles, never duplicates.
 6. **`reuse before creating`.** An existing set, component, board or flow wins over a new one.
-7. **The file stays clean.** Scratch work on a scratch page, removed before handoff; the
-   library is `file-scoped`, so deleting a page leaves its sets behind.
-8. **`content is real`.** Real strings, dates and prices; no lorem ipsum and no placeholder a
-   reviewer would mistake for copy. When the direction changes, grep the old vocabulary
-   project-wide before freezing the new scope and sync every changed string back into the
-   brief, or the next milestone re-introduces the old words.
+7. **The file stays clean.** Scratch work lives on a scratch page; handoff cleanup removes
+   only task-owned temporary work and never a kept candidate (`design-variety` § Park, do not
+   delete). The library is `file-scoped`, so deleting a page leaves its sets behind.
+8. **`content is truthful`.** Use real production strings, dates and prices when they are
+   known; otherwise label concept, demo or sample data explicitly — never lorem ipsum or fake
+   proof. Do not invent claimed shipping capability or customer statistics. When the
+   direction changes, grep the old vocabulary project-wide before freezing the new scope and
+   sync every changed string back into the brief, or the next milestone re-introduces the old
+   words.
 9. **`states are part of the screen`.** Hover, disabled, empty and error states are designed
    where they are reachable, not invented later in code.
 10. **`prove with a render`.** A token binding is intent; the exported image is evidence.

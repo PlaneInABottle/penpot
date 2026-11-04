@@ -4,7 +4,7 @@ description: The one definition of done for a Penpot screen or file — which ga
 license: MIT
 metadata:
   author: configs
-  version: "1.1.0"
+  version: "1.2.0"
 ---
 
 # Design verification
@@ -48,7 +48,9 @@ A screen is finished only when all eight hold on the **final** state:
 5. Prototype: `page.flows.length` is what you claim and the per-board interaction count is
    non-zero **after the last rebuild**.
 6. Independent review: a different model or session scores the tiles 0–5 per axis
-   (rubric: `ux-design-process` §7) reading tiles, never the spec; two rounds max.
+   (rubric: `ux-design-process` §7) reading tiles, never the spec; two rounds max. Separate
+   idea-fit findings from execution findings (`visual-interface-design` § Two Internal Checks,
+   One Delivery); this stays one review, not a ninth gate or a second reviewer.
 7. Grid edges hold: every content shape inside the declared grid and only declared bleeds on
    the board edge. This is a manual `--dump-nodes` + 1:1 render check, not a script.
 8. `ux_gate.py` → exit 0 for the structural contract above; whether hook→proof→path→action
