@@ -139,6 +139,8 @@ previous project. If it is, change an axis, not the accent.
 9. **`states are part of the screen`.** Hover, disabled, empty and error states are designed
    where they are reachable, not invented later in code.
 10. **`prove with a render`.** A token binding is intent; the exported image is evidence.
+11. **`openings end on the fold`.** A full-bleed opening block ends on the fold: anchor its
+    foot (signature, trace, imprint) to the block's bottom edge, never to a fixed offset.
 
 ## Layout mechanics
 

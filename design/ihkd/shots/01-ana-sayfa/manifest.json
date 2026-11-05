@@ -1,10 +1,10 @@
 {
  "board": "01-ana-sayfa",
  "source": "01-ana-sayfa.png",
- "source_sha256": "681e714c59d8db57a16bfc514ade7a75454b301f2f1220dfdc1217da9d66f72d",
+ "source_sha256": "a2b826614638a4081c436883d1f7747c8557cef1671d743ac745fb7b8075b1ce",
  "image": {
   "w": 1440,
-  "h": 4076
+  "h": 4084
  },
  "tile": {
   "w": 1440,
@@ -18,8 +18,8 @@
    "y0": 0,
    "x1": 1440,
    "y1": 900,
-   "reviewed": true,
-   "note": "Hero viewport at 1:1 (same render as the approved hero round): poster 108–776, the 12 at 904–1296, one red primary, the stat strip below. No text clipped by the photo."
+   "reviewed": false,
+   "note": ""
   },
   {
    "file": "tile-02.png",
@@ -27,8 +27,8 @@
    "y0": 810,
    "x1": 1440,
    "y1": 1710,
-   "reviewed": true,
-   "note": "Proof labels + groups section at 1:1: two 576 columns, rules on block bottoms, red section link."
+   "reviewed": false,
+   "note": ""
   },
   {
    "file": "tile-03.png",
@@ -36,8 +36,8 @@
    "y0": 1620,
    "x1": 1440,
    "y1": 2520,
-   "reviewed": true,
-   "note": "Akademi + Yayın head at 1:1: meta right edge 1200, Başla at 1320, journal photo 280x300."
+   "reviewed": false,
+   "note": ""
   },
   {
    "file": "tile-04.png",
@@ -45,17 +45,17 @@
    "y0": 2430,
    "x1": 1440,
    "y1": 3330,
-   "reviewed": true,
-   "note": "Yayın contents, guide ECG strip, Gündem rows: one row per news item, reading time right-aligned."
+   "reviewed": false,
+   "note": ""
   },
   {
    "file": "tile-05.png",
    "x0": 0,
-   "y0": 3176,
+   "y0": 3184,
    "x1": 1440,
-   "y1": 4076,
-   "reviewed": true,
-   "note": "Gündem note, üyelik band (white, one red link), footer with its 2px bar."
+   "y1": 4084,
+   "reviewed": false,
+   "note": ""
   }
  ],
  "regions": [
@@ -67,41 +67,41 @@
    "w": 163,
    "h": 65,
    "origin": "auto",
-   "reviewed": true,
-   "note": "13px nav kicker at 1:1 (ink.500 on paper)."
+   "reviewed": false,
+   "note": ""
   },
   {
    "file": "region-densest.png",
-   "subject": "96 texts near x=120",
+   "subject": "90 texts near x=120",
    "x": 96,
    "y": 0,
    "w": 768,
    "h": 948,
    "origin": "auto",
-   "reviewed": true,
-   "note": "Hero type stack at 1:1: no cross-ink between label, date, venue, countdown, CTA."
+   "reviewed": false,
+   "note": ""
   },
   {
    "file": "region-primary-action.png",
    "subject": "hero cta",
    "x": 96,
-   "y": 384,
+   "y": 360,
    "w": 284,
    "h": 100,
    "origin": "auto",
-   "reviewed": true,
-   "note": "The board's one saturated primary 'Kongreye kayıt ol' (red.600) — correct subject; the nav CTA is a ghost, so the crop heuristic cannot pick it."
+   "reviewed": false,
+   "note": ""
   },
   {
    "file": "region-icons-arrows.png",
    "subject": "6 icon/arrow shape(s)",
    "x": 656,
-   "y": 1161,
+   "y": 1165,
    "w": 688,
-   "h": 287,
+   "h": 291,
    "origin": "auto",
-   "reviewed": true,
-   "note": "Arrow row at 1:1: the group/course/journal arrows sit on their column's right edge."
+   "reviewed": false,
+   "note": ""
   },
   {
    "file": "region-hero-imprint.png",
@@ -111,19 +111,8 @@
    "w": 660,
    "h": 62,
    "origin": "declared",
-   "reviewed": true,
-   "note": "13px association imprint at 1:1: full line to 'ANKARA' on the poster's darkest band; the 2x zoom (hero-imprint-zoom.png, outside the manifest) confirms the ending is not clipped. White-on-photo measured 5.17:1 at the 95th-percentile background."
-  },
-  {
-   "file": "region-proof-strip.png",
-   "subject": "poster edge to the 44px stat strip",
-   "x": 0,
-   "y": 750,
-   "w": 1440,
-   "h": 150,
-   "origin": "declared",
-   "reviewed": true,
-   "note": "Poster edge to the 44px stat strip: values 120/426/732/1038, dividers on cell boundaries, 13px labels (5.83:1). The dark edge is the joint, no white band."
+   "reviewed": false,
+   "note": ""
   },
   {
    "file": "region-hero-cta.png",
@@ -133,8 +122,8 @@
    "w": 520,
    "h": 75,
    "origin": "manual",
-   "reviewed": true,
-   "note": "Hero primary + ghost at 1:1: one saturated button, ghost link with a white underline sharing its centre."
+   "reviewed": false,
+   "note": ""
   },
   {
    "file": "region-hero-top.png",
@@ -144,8 +133,8 @@
    "w": 1340,
    "h": 200,
    "origin": "manual",
-   "reviewed": true,
-   "note": "Label/date/venue at 1:1: white on the dark ceiling band, no crowding of the 12."
+   "reviewed": false,
+   "note": ""
   },
   {
    "file": "region-hero-numeral.png",
@@ -155,8 +144,8 @@
    "w": 580,
    "h": 420,
    "origin": "manual",
-   "reviewed": true,
-   "note": "The vector 12 at 1:1: clean path edges, covers the right balcony only."
+   "reviewed": false,
+   "note": ""
   },
   {
    "file": "region-hero-foot.png",
@@ -166,8 +155,8 @@
    "w": 720,
    "h": 265,
    "origin": "manual",
-   "reviewed": true,
-   "note": "Brand line, ECG trace and imprint at 1:1: all white, no collision, no scrim."
+   "reviewed": false,
+   "note": ""
   },
   {
    "file": "region-hero-cta-2x.png",
@@ -177,8 +166,8 @@
    "w": 300,
    "h": 75,
    "origin": "manual",
-   "reviewed": true,
-   "note": "2x: button label centred, radius 2, white on red.600."
+   "reviewed": false,
+   "note": ""
   },
   {
    "file": "region-transition.png",
@@ -188,8 +177,8 @@
    "w": 1440,
    "h": 300,
    "origin": "manual",
-   "reviewed": true,
-   "note": "Strip bottom to the groups head (112 rhythm) at 1:1."
+   "reviewed": false,
+   "note": ""
   }
  ],
  "coverage": {
@@ -205,13 +194,11 @@
    "primary-action",
    "icons-arrows",
    "hero-imprint",
-   "proof-strip",
    "hero-cta",
    "hero-top",
    "hero-numeral",
    "hero-foot",
    "hero-cta-2x",
-   "hero-imprint-2x",
    "transition"
   ],
   "missing": []

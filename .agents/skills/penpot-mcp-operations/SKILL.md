@@ -19,11 +19,12 @@ proof lives in [design-verification](../design-verification/SKILL.md).
   returns `No Penpot instance connected for user token.` — stop, do not retry.
 - The MCP endpoint URL carries the user token: read it from its file, never copy it into a
   snippet, prompt, log or commit. Verify a value by its length only; never echo the header.
+- Switching that file to another instance needs one build and one export smoke before design
+  work: the tab, helpers and page affinity belong to the instance you left.
 - Never assume the browser: `ps -axo comm | grep -i "firefox\|chrome\|safari"` names the running one.
-- `execute_code` returns text the server may wrap as `{"result": "<json>", "log": ""}`.
-  Unwrap before decoding, or you decode a string twice.
+- `execute_code` may wrap its reply as `{"result": "<json>", "log": ""}`: unwrap before decoding.
 - One plugin, one writer: locks, `--expect-page` and `--read` intent are stated once in
-  `AGENTS.md` § Ownership and safety; the hosted-vs-local target in § Runtime.
+  `AGENTS.md` § Ownership and safety; the target is whatever the endpoint file names.
 - A raw snippet run is not a rebuild: it proves execution, not page affinity, fit, photos,
   flows or live counts; use the project runner.
 
@@ -59,19 +60,19 @@ visually wrong. Re-binding in bulk is not free: chunk to ~50 shapes and verify i
 
 Set `fontId` + `fontFamily` + `fontVariantId` (`"regular"`, `"500"`, `"600"`); `fontWeight` alone
 asks for a variant that does not exist and leaves a 1×1 box with `textBounds: null` (500 works
-through the variant id). `letterSpacing` is px, not em (0.14em at 11px = `1.54`). Text in a flex
-parent never auto-sizes: set `layoutChild.horizontalSizing = "auto"` and resize to `textBounds`
-in a later call. `growType` controls wrapping (`auto-height` copy, `auto-width` labels).
+through the variant id). Hosted 2.19 rejects `fontVariantId "400"`: the 400 face is `"regular"`.
+`letterSpacing` is px, not em (0.14em at 11px = `1.54`). Text in a flex parent never auto-sizes:
+set `layoutChild.horizontalSizing = "auto"` and resize to `textBounds` in a later call.
+`growType` controls wrapping (`auto-height` copy, `auto-width` labels).
 
 ## Pages, components, flows
 
 - `openPage` needs a Page object or UUID, not a name. `createPage()` does not switch
   `currentPage` synchronously, so renaming the current page right after it renames the
   previous one — rename by id in a later call.
-- `component.instance()` lands in the last active container: `targetBoard.appendChild(it)`,
-  then set `x`/`y`. Instances inherit the master's size.
-- Component names containing `/` are a path plus a name; assigning `"nav/top"` later corrupts
-  the path into `nav / nav`.
+- `component.instance()` lands in the last active container: append it to the board, then set
+  `x`/`y`; instances inherit the master's size. A name containing `/` is a path plus a name:
+  assigning `"nav/top"` later corrupts it into `nav / nav`.
 - Create a component only on a board that does not already hold a fresh instance of it;
   otherwise `Cannot create a component from the given shapes` until the next call.
 - A flow can drop while its interactions stay: read `page.flows` and repair with
@@ -91,15 +92,14 @@ the project media table before a rebuild. `--only`/`--force`/`--restore` are pro
 ## Export
 
 `scripts/export_board.py` is the only path to an image, one board per call — the bulk renderer
-is unreliable past the MCP task limit. `export_shape` is a separate tool (`shapeId`, `format`,
-`mode`) returning image data and writing no file; `"page"` and page names fail because the page
-root is zero-size. A bound fill can still render white: `design_qa.py` reports that as
+is unreliable past the MCP task limit, and a task over 120 s may still have completed:
+`build.py --recover screen-NN` reads its result. `export_shape` is a separate tool (`shapeId`,
+`format`, `mode`) returning image data and writing no file; `"page"` and page names fail because
+the page root is zero-size. A bound fill can still render white: `design_qa.py` reports that as
 `renderMismatches` and fails on it. The exporter rescue exists only on a loopback endpoint:
 matching width x height proves the size, never the identity, of a render.
 
 ## Failures
 
 [references/mcp-failures.md](references/mcp-failures.md) is the table of 45 observed failure
-modes, grouped by phase, with the exact error strings and fixes. Open it on the first failed
-call. The four that hit first: async commit, remove-and-recreate in one call, `easing` missing
-on animations, and a bound fill that never painted.
+modes, grouped by phase, with the exact error strings and fixes. Open it on the first failed call.

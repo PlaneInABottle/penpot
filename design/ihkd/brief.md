@@ -159,7 +159,7 @@ Card: 24px padding (32 for feature cards), 1px border, no shadow.
 
 | # | Page | Board | Primary action | Height |
 |---|---|---|---|---|
-| 01 | `Kurumsal` | `01-ana-sayfa` | Kongreye kayıt ol | 4076 |
+| 01 | `Kurumsal` | `01-ana-sayfa` | Kongreye kayıt ol | 4084 |
 | 02 | `Kurumsal` | `02-dernek` | Tüzüğü oku | 2452 |
 | 03 | `Kurumsal` | `03-yonetim` | Kurul üyesine ulaş | 2296 |
 | 04 | `Kurumsal` | `04-calisma-gruplari` | Grup seç | 2088 |
@@ -180,8 +180,8 @@ Card: 24px padding (32 for feature cards), 1px border, no shadow.
 | 19 | `Üyelik` | `19-giris` | Giriş yap | 1024 |
 | 20 | `Üyelik` | `20-panel` | Kursa devam et | 1680 |
 
-Heights are the live board sizes, re-verified 2026-11-03 (the same numbers are tabled in
-`README.md`).
+Heights are the live board sizes, re-verified 2026-11-03; 01 was re-measured 2026-11-05
+after M11 (4084). `README.md` tables the same 4084.
 
 States and the library are first-class boards now:
 
@@ -202,15 +202,15 @@ Copy below is final Turkish; build it verbatim.
 
 ### 01 · Ana sayfa
 - Nav: İHKD + `Dernek · Çalışma grupları · Kongre · Akademi · Yayın · Haberler` + `Üye girişi` + ghost `Üye ol` (tek doygun primary hero'dadır).
-- Hero (seçim AFİŞ, M8; kullanıcı seçti): the page opens as a congress poster over a full hall. `hero scene` board 1440×668 at y 108, fill `ink.900`, with a full-bleed `img-hero` rect (Pexels 20733081, cool grade). White type on it: `12. ULUSAL İÇ HASTALIKLARI VE KARDİYOLOJİ KONGRESİ` (label), `22–25 Nisan 2027` (display 80), `Antalya Kongre Merkezi, Belek · 96 oturum · 214 konuşmacı` (body), `147` (stat 44) + `gün kaldı · erken kayıt 31 Ocak 2027'de kapanıyor` (meta), one primary `Kongreye kayıt ol` + ghost `Programı gör`; the edition numeral `12` is a vector path (469×384 at 904, Inter Tight 700 outlines) and a white 1440×30 ECG trace crosses the audience. The society signs the poster: `Hastanın hekimi.` (h3 30) above the trace and `İHKD · İç Hastalıkları ve Kardiyoloji Derneği · 1998'den beri Ankara` (label) as the imprint below it. No scrim, no gradient.
-- `hero proof` — the poster's evidence on paper, not on the photo: 44px `stat` strip at y 776 (`6.847` Üye · `41` İl temsilcisi · `12` Çalışma grubu · `10` Kılavuz), values `ink.900`, labels 13px `ink.600`, dividers on the cell boundaries, no white band. The poster's dark edge is the joint; the next section starts at 1006 (strip bottom 894 + 112).
+- Hero (seçim AFİŞ, M8; kullanıcı seçti): the page opens as a congress poster over a full hall, and the poster **is** the first viewport: `hero scene` board 1440×816 at y 84 (84..900), fill `ink.900`, with a full-bleed `img-hero` rect (Pexels 20733081, cool grade) filling the same box. The masthead draws no bottom rule (`S.masthead(..., { rule: false })`), so there is no paper band above the poster, and the poster's bottom edge is the fold: no paper band below it either. White type on it: `12. ULUSAL İÇ HASTALIKLARI VE KARDİYOLOJİ KONGRESİ` (label), `22–25 Nisan 2027` (display 80), `Antalya Kongre Merkezi, Belek · 96 oturum · 214 konuşmacı` (body), `147` (stat 44) + `gün kaldı · erken kayıt 31 Ocak 2027'de kapanıyor` (meta), one primary `Kongreye kayıt ol` + ghost `Programı gör`; the edition numeral `12` is a vector path (469×384 at 904, Inter Tight 700 outlines) and a white 1440×30 ECG trace crosses the audience edge to edge (0..1440). The society signs the poster: `Hastanın hekimi.` (h3 30) above the trace and `İHKD · İç Hastalıkları ve Kardiyoloji Derneği · 1998'den beri Ankara` (label) as the imprint below it. The foot is anchored to the poster's bottom edge (society at H−248, trace at H−128, imprint at H−44), so the copy rides a taller poster. No scrim, no gradient.
+- Afiş altındaki 4 hücreli proof şeridi kaldırıldı (M10): `12` §01'in kendi başlığında, `10` §03'te, `6.847` ve `41` Dernek sayfasında zaten yazılı. Kanıt afişin kendi rakamlarında (96 oturum, 214 konuşmacı, 147 gün) ve Dernek sayfasında kalır; bölüm başlığı afişin altından standart 112 ritmiyle başlar.
 - `Çalışma grupları` — 6 rows, iki kolon (576 + 48 + 576 = 1200) + `12 çalışma grubunun tümü →`; sıra numarası `data` 13px, ok kolonun sağ kenarında ve başlığın ilk satırına hizalı.
 - `Akademi` — 3 course rows; meta 1200'de biter, `Başla →` 1320 grid kenarında; STE notu.
 - `Yayın` — kitap fotoğrafı (280×300) + dergi kolonu (3 TOC satırı, `Sayıyı oku`) + ayın kılavuzu kolonu (ECG şeridi 360×44, `Kılavuzu indir`); iki link aynı satırda, fotoğrafın alt kenarı o çizgiye oturur.
 - `Gündem` — **Yayın'dan sonra** (`Bu hafta`): 3 rows (tarih, kategori, başlık, okuma süresi) + `Tüm haberler →` + yayım notu. Kongre satırı tektir; hero'nun duyurusunu dev bir bantla tekrarlamaz.
 - `Üyelik` — `white` bant: `Yazan, toplayan, öğreten.`, lede, 3 madde, `Başvuruyu başlat →` linki, aidat satırı. İkinci doygun buton yok.
-- Footer white. Board yüksekliği 4076.
-- Declared bleeds: `top bar`, `masthead rule`, `hero scene` / `img-hero` (1440 wide, the poster edge), `hero ecg` (1440 wide trace), `uyelik band`, `footer` / `footer bar`, `hero twelve` (its right edge ends on 1296, inside the poster). Diğer her şey `X..X+CW` içinde (grid denetimi: 0 ihlal).
+- Footer white. Board yüksekliği 4084.
+- Declared bleeds: `top bar`, `hero scene` / `img-hero` (1440 wide, the poster edge — the masthead draws no rule on this screen, M11), `hero ecg` (1440 wide trace), `uyelik band`, `footer` / `footer bar`, `hero twelve` (its right edge ends on 1296, inside the poster). Diğer her şey `X..X+CW` içinde (grid denetimi: 0 ihlal).
 - Açıklanan lint medium/low'ları (düzeltildi değil, gerekçeli): `type steps too close [1.23, 1.38, 1.36, 1.47, 1.82]` — 13→16 microcopy pair and the display steps; principles §6. `type.small_body` ×6 at 13px (`hero label`, `hero countdown note`, `hero society line`, `member fee`, `akademi note`, footer microcopy) — these are the project's `label`/`meta` micro role, not body copy (13px minimum, brief §3). `dead space in uyelik band` — the band's padding is symmetric 72/72. The ghost section numerals are `ink.400` (2.07:1 on paper): a decorative-structural numeral, principles §3.7 "felt, not read", on every board of the set.
 ### 02 · Dernek
 Hero (white card, no photo) with `1998'den beri`, display `1998'den beri tek çatı.`, lead.
@@ -375,10 +375,14 @@ concepts.
 
 - **Photo:** Pexels **20733081** (BBSO) — a large auditorium seen from the audience, the
   speaker at the left, cool grade. Pinned in `tools/media.py` (`img-hero`) and recorded in
-  `media/provenance.json`; the slot `img-hero` is a full-bleed 1440×668 rect inside the
-  `hero scene` board, so `build.py --restore` re-places and verifies it on every rebuild.
+  `media/provenance.json`; the slot `img-hero` is a full-bleed 1440×816 rect inside the
+  `hero scene` board, so `build.py --restore` re-places, re-crops and verifies it on every
+  rebuild.
 - **Surface:** `hero scene` is a board with an `ink.900` fill and the type sits on that
   board; the photo is the board's sibling rect. No gradient, no scrim rectangle.
+- **First viewport (M11).** The poster occupies 84..900: straight under the 84px masthead,
+  whose bottom rule is off on this screen (`rule: false`), and ending on the 900px fold.
+  There is no paper band above or below it; the fold is the poster's bottom edge.
 - **Type on the photo:** white (`on.ink`) — `12. ULUSAL İÇ HASTALIKLARI VE KARDİYOLOJİ
   KONGRESİ` (label 13), `22–25 Nisan 2027` (display 80), `Antalya Kongre Merkezi, Belek ·
   96 oturum · 214 konuşmacı` (body 16), `147` (stat 44) + `gün kaldı · erken kayıt 31
@@ -389,31 +393,37 @@ concepts.
   node: at 520px a text node would be the board's seventh type size (`design_lint`
   `type.sizes`, max 6), and the numeral is a poster layer, not copy.
 - **White ECG trace:** the project's `S.ecg` instrument, 1440×30 at the poster's lower
-  third, stroke `on.ink` — data, not a divider.
+  third, stroke `on.ink` — data, not a divider. It spans the full board width (`x 0..1440`;
+  before M11 the 10th cycle's 0.18 length left the trace ending at 1321).
 - **Actions:** one saturated primary `Kongreye kayıt ol` (`red.600`) + ghost `Programı
   gör` (white text, white underline). No other red field on the page.
-- **Proof, not on the photo:** `6.847 üye · 41 il · 12 çalışma grubu · 10 kılavuz` is a
-  44px `stat` strip on `paper` directly under the poster (`hero proof`): values `ink.900`,
-  labels 13px `ink.600` (AA on paper). The strip is the dark→paper joint — no white band,
-  no seam.
+- **Proof is the poster itself:** the 4-cell stat strip under the poster was removed (M10).
+  `12` repeated §01's own title `On iki grup, on iki soru`, `10` is implied by §03, and
+  `6.847` with `41` are already stated on the Dernek page. The poster's own figures — 96
+  oturum, 214 konuşmacı, 147 gün — are the proof; §01 starts 112 below the poster's edge.
 - **Society identity stays in the first viewport** as a secondary line: `Hastanın hekimi.`
   at 30px plus the association's name at 13px, bottom-left of the poster. The congress is
   the poster's message, the society is its signature; the date is not contested.
 
-### As-built (2026-11-03, 1:1)
+### As-built (2026-11-03, re-measured 2026-11-05 after M11, 1:1)
 
-Poster 108..776 (`hero scene` 1440×668, `img-hero` full bleed), `hero proof` strip 776..894
-(44px figures, pad 20, no surface), Çalışma grupları head 1006, Akademi 1660, Yayın 2196,
-Gündem 2788 (head labels 1012 / 1664 / 2220 / 2812), Üyelik band 3344..3680, footer 3736;
-board **4076**. The `12` is 392×321 at 904 — its ink right edge 1296 keeps the candidate's
-144px margin, and its share of the poster (48%) is the candidate's (49%). ECG trace
-540..570, brand line 424..445, imprint 626..643.
+Poster 84..900 (`hero scene` 1440×816 at y 84, `img-hero` full bleed), Çalışma grupları head
+1012, Akademi 1668, Yayın 2224, Gündem 2816, news title 0 at 2988, Üyelik band 3372..3708
+(h 336), footer bar 3764; board **4084**. The `12` is 392×321 at 904 — its ink right edge 1296
+keeps the candidate's 144px margin, and the numeral kept its size and its `HERO_Y`-relative
+offset when the poster grew, so it now sits in the poster's upper half (M11) instead of
+carrying the candidate's 48% share of a 668px height. ECG trace 772..802, brand line 652..689,
+imprint 855..873 — all inside the poster, the imprint 27px clear of the fold.
 
-White type was measured against the pixels actually behind each ink box (graded photo
-cache), not against `ink.900`: worst is the 13px imprint at **5.17:1** (95th-percentile
-background), then brand line 6.55:1 (large text), date 11.03:1, label 19.3:1, venue 18.7:1,
-countdown 19.6:1. AA holds with no scrim. Paper pairs: `ink.900` 16.92, `ink.600` 5.83,
-`ink.500` 5.04, `red.700` 8.42, `on.red` 6.04.
+White type was measured against the pixels actually behind each ink box (the graded photo
+cache at the poster's M11 1440×816 crop), not against `ink.900`: p95-background contrast is
+**19.68:1** countdown, **11.49:1** date, **9.63:1** label, **18.66:1** countdown note,
+**18.43:1** ghost link, **8.76:1** primary label, **8.38:1** brand line (large text),
+**5.56:1** imprint and **4.92:1** venue — the 16px `body` venue line is now the tightest
+(3.6% of its box dips below 4.5:1); its old 18.7:1 belonged to the 668px crop, and the taller
+crop puts it over brighter audience pixels. AA still holds at the p95 measure with no scrim;
+the venue line is the one to watch if the crop moves again. Paper pairs: `ink.900` 16.92,
+`ink.600` 5.83, `ink.500` 5.04, `red.700` 8.42, `on.red` 6.04.
 
 Two fixes this milestone made, both rebuild-safe:
 
@@ -516,3 +526,53 @@ tutulur; kullanıcı aksini söyleyene kadar silinmez.
   measured against the pixels behind each ink box (never token pairs alone), and the
   `contrast_audit.py` shipped this round mis-reads an unset shape opacity (`Number(null) → 0`),
   so the audit above ran from a patched copy — the repository tool needs that null guard.
+
+## M10 · Hero proof strip removed (2026-11-05)
+
+- **The strip is gone.** The 4-cell stat strip under the poster (`6.847` Üye · `41` İl
+  temsilcisi · `12` Çalışma grubu · `10` Kılavuz) is removed; `screen-01.js` now goes straight
+  to `let y = HERO_Y + HERO_H;`, so §01's head follows on the standard 112 rhythm and the
+  112px dead band the bar left between poster and §01 is gone. Board 3960; §01 head 888,
+  Akademi 1544, Yayın 2100, Gündem 2692, Üyelik band 3248..3584, footer bar 3640.
+- **Duplication, not shortage.** `12` repeated §01's own title `On iki grup, on iki soru`, `10`
+  is implied by §03, and `6.847` with `41` are stated on the Dernek page. The poster's own
+  figures (`96 oturum · 214 konuşmacı · 147 gün`) remain the home page's proof.
+- **Hosted `fontVariantId`.** `lib.js` `ROLE.data`'s `fontVariantId` changed `"400"` → `"regular"`:
+  hosted Penpot 2.19 rejects `400` (`Value not valid: 400. Code: :fontVariantId`), so every
+  400-weight text on the hosted file now reads back as `regular`.
+
+## M11 · Poster fills the first viewport (2026-11-05)
+
+- **The defect, measured on the 1440×3960 render.** The poster ran 108..776, so the first
+  900px viewport carried a 24px paper band between the masthead rule and the photo (the rule
+  sat on 84, the poster began on 108) and a 124px paper band below the photo (776..900). The
+  white ECG trace also stopped at x 1321: its 10th cycle only draws 0.18 of a slot, so the
+  path ended at 0.918 × 1440 while the shape is 1440 wide.
+- **Poster = first viewport.** `HERO_Y 84`, `HERO_H 816` (84..900); the masthead takes
+  `{ rule: false }` and `lib.js masthead` draws its bottom rule only when `o.rule !== false`
+  (every other screen still draws it — `01` is the only caller that opts out). Poster foot is
+  anchored to the bottom edge — `hero society` at `H-248`, `hero ecg` at `H-128`,
+  `hero society line` at `H-44` — while label/date/venue/countdown/CTA/numeral keep their
+  `HERO_Y`-relative offsets, so the copy block is unchanged and only the space between CTA
+  and foot grew.
+- **ECG spans the board.** `lib.js ecg` appends one closing segment at the flat level
+  (`0.55*h`) from the last cycle's end to `x = w`. Wave shape, stroke width, count and every
+  other ECG (guideline strip, states) are untouched.
+- **Spec and geometry.** `ux-spec.json` 01: `story.proof` is the poster's own figures, the
+  viewport claim is `hero countdown value`, and the four-cell `hero proof value` claim is
+  gone. As-built 4084: §01 head 1012, Akademi 1668, Yayın 2224, Gündem 2816, news title 0
+  2988, üyelik band 3372..3708, footer bar 3764.
+- **Pixel proof (exported PNG, 1440×4084).** Row means: 64..83 = 243.7 (paper masthead
+  interior), **84 = 26.6 first poster row**, 85..899 all dark (only y 788 is bright at 241.4 —
+  that row *is* the white trace), **900 = 243.7 paper**. Pure-white pixels in y 772..802
+  cover every column 0..1439 (previously 0..1321). `img-hero` is 1440×816, re-cropped by
+  `media.py --restore` from the pinned source, not stretched; the imprint ink 855..873 sits
+  27px above the fold with no clipping.
+- **White type re-measured.** The taller crop also changes the pixels behind the type: the
+  16px `hero venue` line is now the tightest at **4.92:1** (p95 of the graded crop, 3.6% of
+  its box under 4.5:1) and the imprint 5.56:1; every other poster line is 8.4:1 or better.
+  The as-built contrast paragraph carries the new numbers; the old 18.7:1 venue figure
+  described the 668px crop.
+- **Run.** `build.py screen-01` completed inside one session (no 120s abort):
+  `RESULT ok nulls=0`, photos 2/2, links 1/1, layout quiet after 3 fit passes; canvas reflow
+  moved `02-dernek` 4720→4764. `ux_gate --spec design/ihkd/ux-spec.json` → exit 0, 0 findings.

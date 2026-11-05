@@ -62,11 +62,11 @@ active · disabled` (4), `tag`, `card`, `stat` (3). Names are `aile-durum`, not 
 Penpot rewrites a `/` in a shape or component name as a path separator. The screens do not
 instance them yet — moving to instances is a breaking change and a later job.
 
-## Boards (live, re-verified 2026-11-03)
+## Boards (live; 01 re-verified 2026-11-05, others 2026-11-03)
 
 | # | page | board | size | live id |
 |---|---|---|---|---|
-| 01 | Kurumsal | 01-ana-sayfa | 1440×4076 | 20e5225e-73fe-80f2-8008-ddabe9d31da3 |
+| 01 | Kurumsal | 01-ana-sayfa | 1440×4084 | 20e5225e-73fe-80f2-8008-ddabe9d31da3 |
 | 02 | Kurumsal | 02-dernek | 1440×2452 | 20e5225e-73fe-80f2-8008-ddaf06748101 |
 | 03 | Kurumsal | 03-yonetim | 1440×2296 | 20e5225e-73fe-80f2-8008-ddaf2955649f |
 | 04 | Kurumsal | 04-calisma-gruplari | 1440×2088 | 20e5225e-73fe-80f2-8008-ddaf3f95791b |
@@ -97,11 +97,11 @@ closer than 240px move; ids, sizes, contents and relative child geometry are unt
 large deliberate gap is never compacted. 2026-11-03 on Kongre: `07-program` +40,
 `08-bildiri` +396, overlap 0, every other board where it was; a second run is a no-op.
 
-## Export evidence (`design/ihkd/shots/`, bytes on disk 2026-11-03)
+## Export evidence (`design/ihkd/shots/`, bytes on disk 2026-11-03; 01 re-exported 2026-11-05)
 
 | board | PNG bytes | board | PNG bytes |
 |---|---|---|---|
-| 01-ana-sayfa | 1221293 | 11-akademi | 211899 |
+| 01-ana-sayfa | 1341471 | 11-akademi | 211899 |
 | 01-bos | 58582 | 12-kurs-detay | 255395 |
 | 02-dernek | 258613 | 13-kilavuzlar | 384861 |
 | 03-yonetim | 232334 | 14-dergi | 331920 |

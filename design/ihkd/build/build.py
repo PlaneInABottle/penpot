@@ -21,6 +21,12 @@ session is a named error, not a silent wrong-page write.
 `--settle SCREEN` runs the recovery alone (toggle + fit, no rebuild), for a
 board that is otherwise built but not quiet.
 
+`--recover SCREEN` runs the whole post-build pipeline (toggle, fit, reflow,
+photos, flows, links) on an already-built board, without rebuilding it. A hosted
+plugin task can be aborted at 120 s while the board itself finished; the build
+then exits 2 with that pipeline unrun, and this is the explicit path back. It
+cannot prove the build reached its last shape.
+
 `--dry-run` is the static pass: `node --check` on each named screen, the SCREENS
 entry, without contacting the plugin (for a queued live run).
 
@@ -587,6 +593,81 @@ def settle(url: str, screen: str, fit_deadline: float) -> tuple[int, int]:
 
 
 
+def recover(url: str, screen: str, fit_deadline: float,
+            flows: pathlib.Path | None) -> tuple[int, int]:
+    """Run the post-build pipeline on a board that already exists; never rebuilds.
+
+    The hosted plugin aborts a task at 120 s although the board finished; the
+    build then exits 2 with fit, reflow, photos and flows unrun. This runs those
+    steps on the live board. It cannot prove the build reached its last shape.
+    """
+    page, board = SCREENS[screen]
+    print("recover: post-build pipeline only — it cannot prove the build reached "
+          "its last shape.")
+    t0 = time.monotonic()
+    code = 0
+    try:
+        open_page_retry(url, page)
+        require_page(url, page, f"{screen} recover start")
+        toggle_s = toggle_page(url, page)
+        zoom_s = zoom_board(url, page, board)
+        lib = (HERE / "lib.js").read_text()
+        quiet, nulls, names, fit_s, passes = fit_board(url, page, board, lib, fit_deadline)
+        require_page(url, page, f"{screen} recover after fit")
+        layout = reflow_layout(url, page, board)
+        moved = layout.get("moves") or []
+        if moved:
+            print("  layout: " + ", ".join(f"{m['name']} {m['from']}→{m['to']}" for m in moved))
+        else:
+            print(f"  layout: 0 moves (column gap {layout.get('gap', 240)} already holds)")
+        require_page(url, page, f"{screen} recover after layout")
+
+        photo_names = expected_photo_names(board)
+        media_rc = restore_photos(page, board) if photo_names else 0
+        if photo_names:
+            require_page(url, page, f"{screen} recover after media")
+        photo_ok, photo_msg = verify_photos(url, page, board, photo_names)
+        if media_rc:
+            photo_ok = False
+            photo_msg += f" (media exit {media_rc})"
+        print(f"  toggle {toggle_s:.2f}s  zoom {zoom_s:.2f}s  fit {fit_s:.2f}s "
+              f"({passes} pass(es), {'quiet' if quiet else 'NOT quiet'})  {photo_msg}  "
+              f"total {time.monotonic() - t0:.2f}s")
+        if not quiet or nulls:
+            fail_line(screen, page, board,
+                      f"layout not quiet after {passes} fit pass(es); "
+                      f"{nulls} text(s) unmeasured: {', '.join(names)}")
+            code = 1
+        if not photo_ok:
+            fail_line(screen, page, board, photo_msg)
+            code = 1
+
+        if flows is not None:
+            flow_state = run_flows(url, flows)
+            print(flow_state["msg"])
+            if not flow_state["ok"]:
+                code = 1
+
+            # flows leaves asynchronous page switches queued; let them land.
+            time.sleep(1.5)
+            expected = (flow_state["byBoard"] or {}).get(board) or []
+            if current_page(url) != page:
+                open_page_retry(url, page)
+            require_page(url, page, f"{screen} recover link check")
+            ok, msg, _ = verify_links(url, page, board, expected)
+            print(f"{screen}: {msg}")
+            if not ok:
+                code = 1
+
+        time.sleep(0.5)
+        open_page_retry(url, page)
+        require_page(url, page, f"{screen} recover end")
+    except (PageDrift, McpError) as exc:
+        print(f"{screen}: ERROR {exc}", file=sys.stderr)
+        return 2, 0
+    return code, nulls
+
+
 def dry_run(names: list[str]) -> int:
     """Statik geçiş: dosya, `node --check`, SCREENS kaydı.
 
@@ -629,13 +710,25 @@ def main(argv: list[str] | None = None) -> tuple[int, int]:
                          "never contacts the plugin")
     ap.add_argument("--settle", metavar="SCREEN",
                     help="recovery only: toggle the page and re-run fit, do not rebuild")
+    ap.add_argument("--recover", metavar="SCREEN",
+                    help="post-build pipeline only (toggle, fit, reflow, photos, flows, "
+                         "links) on an already-built board; never rebuilds")
     ap.add_argument("--fit-deadline", type=float, default=FIT_DEADLINE_S,
                     help="seconds per fit stage (default %(default)s)")
     args = ap.parse_args(argv)
     if args.no_flows:
         args.flows = None
+    if args.recover and (args.settle or args.dry_run):
+        print("build: --recover cannot be combined with --settle or --dry-run",
+              file=sys.stderr)
+        return 2, 0
 
-    if args.settle:
+    if args.recover:
+        if args.recover not in SCREENS:
+            print(f"build: unknown screen {args.recover!r}", file=sys.stderr)
+            return 2, 0
+        names = [args.recover]
+    elif args.settle:
         if args.settle not in SCREENS:
             print(f"build: unknown screen {args.settle!r}", file=sys.stderr)
             return 2, 0
@@ -706,6 +799,8 @@ def main(argv: list[str] | None = None) -> tuple[int, int]:
     try:
         if args.settle:
             return settle(url, args.settle, args.fit_deadline)
+        if args.recover:
+            return recover(url, args.recover, args.fit_deadline, args.flows)
 
         for name in names:
             page, board = SCREENS[name]

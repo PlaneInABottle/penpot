@@ -25,7 +25,8 @@ fails an empty one.
 
 1. **Hook** — the promise, one message, above everything else.
 2. **Proof** — evidence inside the first viewport: a number, a result, a logo row. A claim
-   without evidence here is decoration.
+   without evidence here is decoration. A figure above the fold never restates a number the
+   next section or a sibling page already states.
 3. **Path** — the two to four onward routes, named as the visitor would.
 4. **Action** — exactly one dominant call to action per board; the gate counts shapes named
    `*cta*`/`*primary*` and fails on two or more.

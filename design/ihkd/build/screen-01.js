@@ -3,18 +3,19 @@
  *
  *   python3 design/ihkd/build/build.py screen-01
  *
- * Story (brief §5, M8): hook → proof → path → action.
- *   hook    hero — the 12th congress as a poster over a full hall, one primary
- *   proof   hero proof — 6.847 / 41 / 12 / 10 as a 44px stat strip on paper
+ * Story (brief §5, M8): hook → path → action.
+ *   hook    hero — the 12th congress as a poster over a full hall, one primary;
+ *           its own figures (96 oturum, 214 konuşmacı, 147 gün) are the proof
  *   path    çalışma grupları, akademi, yayın, then this week's gündem
  *   action  membership band, one link
  *
- * The hero is the user's choice (cand-1-afis): a 1440×668 photo (Pexels
+ * The hero is the user's choice (cand-1-afis): a 1440×816 photo (Pexels
  * 20733081) under white type, the edition numeral as a vector layer and one
- * white ECG trace across the audience. The photo is `img-hero`, a full-bleed
- * rect inside the `hero scene` board: build.py restores it from provenance and
- * verifies it, and the board's ink.900 fill is the surface the type sits on —
- * no scrim, no gradient.
+ * white ECG trace across the audience. The poster fills the first viewport —
+ * 84..900, straight under the masthead with no rule and no paper band — so it
+ * is the `hero scene` board and the photo is `img-hero`, a full-bleed rect
+ * inside it: build.py restores it from provenance and verifies it, and the
+ * board's ink.900 fill is the surface the type sits on — no scrim, no gradient.
  * Every y below the masthead comes from the cursor; the board is resized to the
  * footer at the end, so no height literal can outlive a copy change.
  */
@@ -63,14 +64,18 @@ function posterNumeral(parent, name, x, y, size, colorToken) {
   return g;
 }
 
-S.masthead(pb, null, { cta: "ghost" });
+S.masthead(pb, null, { cta: "ghost", rule: false });
 
 /* ------------------------------------------------------------------- hero */
 /* M8 (2026-11-03): the user chose the poster. Poster = photo scene board +
    white type + vector numeral + one white trace; the society is the signature
-   line at the poster's foot, the congress is the message. Proof leaves the
-   photo: the numbers are a stat strip on paper under the poster's edge. */
-const HERO_Y = 108, HERO_H = 668;
+   line at the poster's foot, the congress is the message. M10 (2026-11-05): the
+   four-cell stat strip under the poster is gone — 12 and 10 repeated the next
+   two sections, 6.847 and 41 already live on the Dernek page, and the bar left
+   a dead band between the poster and §01. M11: the poster fills the first
+   viewport (84..900), so the masthead rule is off and the foot is anchored to
+   the poster's bottom edge. */
+const HERO_Y = 84, HERO_H = 816;
 const hero = S.board(pb, "hero scene", 0, HERO_Y, S.W, HERO_H, "ink.900");
 /* the photo slot: restored from provenance by build.py; the board clips it */
 S.rect(hero, "img-hero", 0, HERO_Y, S.W, HERO_H, "surface.alt");
@@ -89,26 +94,22 @@ S.text(hero, "hero countdown note", "gün kaldı · erken kayıt 31 Ocak 2027'de
 S.ctaRow(hero, "hero cta", 120, HERO_Y + 300, "Kongreye kayıt ol",
   { w: 236, link: "Programı gör", gap: 24, linkInk: "on.ink" });
 /* the society speaks in the first viewport, second to the date (M8: it was a
-   13px kicker in the candidate) */
+   13px kicker in the candidate); anchored to the poster's foot, not a fixed
+   offset, so a taller poster keeps it above the trace */
 S.text(hero, "hero society", "Hastanın hekimi.", "h3", "on.ink",
-  { x: 120, y: HERO_Y + 420, w: 560 });
+  { x: 120, y: HERO_Y + HERO_H - 248, w: 560 });
 /* the identity line is an imprint: below the trace, on the poster's darkest
    band (mean luminance 28 of 255 at 1:1), so 13px white keeps its AA ratio
    without a scrim; on the crowd above it dropped to 3.2:1 at the bright pixels */
 S.text(hero, "hero society line", "İHKD · İç Hastalıkları ve Kardiyoloji Derneği · 1998'den beri Ankara",
-  "label", "on.ink", { x: 120, y: HERO_Y + 624, w: 720 });
-/* the numeral keeps the candidate's share of the poster (435 in 668 = 520 in
-   792), right edge on 1294 so the audience's faces stay outside its left half */
+  "label", "on.ink", { x: 120, y: HERO_Y + HERO_H - 44, w: 720 });
+/* the numeral keeps the candidate's share of the poster's upper half, right
+   edge on 1294 so the audience's faces stay outside its left half */
 posterNumeral(hero, "hero twelve", 902, HERO_Y + 130, 435, "on.ink");
-S.ecg(hero, "hero ecg", 0, HERO_Y + 540, S.W, 30, "on.ink");
+S.ecg(hero, "hero ecg", 0, HERO_Y + HERO_H - 128, S.W, 30, "on.ink");
 
-/* proof: 44px figures on paper, the poster's edge is the joint */
-let y = S.statsStrip(pb, "hero proof", S.X, HERO_Y + HERO_H, S.CW, [
-  ["6.847", "Üye"],
-  ["41", "İl temsilcisi"],
-  ["12", "Çalışma grubu"],
-  ["10", "Kılavuz"],
-], { pad: 20, rule: false });
+/* M10: the poster ends the cover; §01 follows on the standard rhythm. */
+let y = HERO_Y + HERO_H;
 
 /* ------------------------------------------------------- çalışma grupları */
 y = S.headIndex(pb, S.X, y + RHYTHM, "ÇALIŞMA GRUPLARI", "On iki grup, on iki soru.");

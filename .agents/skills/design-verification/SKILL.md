@@ -30,7 +30,7 @@ Run in this order; a later gate does not excuse an earlier failure.
 | `export_board.py --board <b> --page <p>` | together with the 1:1 review | one image per board, from the board's own id |
 | `crop_board.py --board … --out …` then `--attest` | the 1:1 review itself | every tile and region the board has is `reviewed: true` with a note; `--attest` also fails a missing PNG |
 | `ux_gate.py --spec design/<p>/ux-spec.json` | after the story is written, again on the final state | structural contract only: non-empty task/beats, named CTA exists, one saturated primary, firstViewport names above the fold, state/mobile names, claim counts |
-| `gate.py --pages <p1,p2> [--boards …]` | a convenience run: lint → QA → copy → ux per page (+export/crop for `--boards`) | prints QA advisories and a `PASS (not clean)` line; `coverage incomplete` means an unconfigured lint rule, not clean coverage; prints `FAIL (invalid)`, never PASS, on an unmeasured page. It is **not** the definition of done: contrast, rhythm, 1:1 attest, flows and the independent review are separate gates below |
+| `gate.py --pages <p1,p2> [--boards …]` | any board change: lint → QA → copy → ux per page (+export/crop for `--boards`) | `design_lint`/`design_qa` alone skip the UX contract and the export/attest; prints QA advisories and a `PASS (not clean)` line; `coverage incomplete` means an unconfigured lint rule, not clean coverage; prints `FAIL (invalid)`, never PASS, on an unmeasured page. It is **not** the definition of done: contrast, rhythm, 1:1 attest, flows and the independent review are separate gates below |
 
 ## Definition of done
 
@@ -52,7 +52,8 @@ A screen is finished only when all eight hold on the **final** state:
    idea-fit findings from execution findings (`visual-interface-design` § Two Internal Checks,
    One Delivery); this stays one review, not a ninth gate or a second reviewer.
 7. Grid edges hold: every content shape inside the declared grid and only declared bleeds on
-   the board edge. This is a manual `--dump-nodes` + 1:1 render check, not a script.
+   the board edge. A declared bleed is proven on the render — ink reaches both edges — never
+   on the frame. This is a manual `--dump-nodes` + 1:1 render check, not a script.
 8. `ux_gate.py` → exit 0 for the structural contract above; whether hook→proof→path→action
    actually reads visually is item 6, never inferred from the gate.
 
@@ -75,8 +76,12 @@ Anything not covered is reported as a gap, never as done.
 - **Baselines, not boxes.** A line built from two text sizes gets a 2× crop on baseline
   continuity; optical alignment is invisible to a geometry dump.
 - **Stale renders lie.** Never open a PNG older than the last build that touched its board;
-  check mtime first, or you review yesterday's state as today's. Review carry requires the
-  same board, source hash and region geometry; a changed input needs a new inspection.
+  check mtime first, or you review yesterday's state as today's. A board change invalidates
+  its shot and manifest: regenerate both and re-run `crop_board.py --attest` — an old
+  manifest is not evidence. Review carry otherwise requires the same board, source hash and
+  region geometry.
+- **The fold is one composition.** The first viewport is a single unit: no background-only
+  band of 24 px or more, and no heading sliced by the fold.
 - **Coverage**: unexplained hard-coded fills, unnamed shapes, orphan components and render
   mismatches are findings, not noise.
 - **Craft** is checked against `visual-interface-design`'s `references/craft-checklist.md`.

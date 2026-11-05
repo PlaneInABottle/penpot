@@ -27,7 +27,9 @@ const IK = (function () {
   const ROLE = {
     label:  { font: "mono", variant: "500", size: 13, lh: 1.2, track: 1.1, upper: true },
     meta:   { font: "sans", variant: "regular", size: 13, lh: 1.5 },
-    data:   { font: "mono", variant: "400", size: 13, lh: 1.5, track: 0.2 },
+    /* 2.19 rejects "400" as a fontVariantId; the 400 face is "regular" (proven on
+       the hosted file: every 400-weight text reads back as "regular"). */
+    data:   { font: "mono", variant: "regular", size: 13, lh: 1.5, track: 0.2 },
     dataLg: { font: "mono", variant: "500", size: 16, lh: 1.4, track: 0.2 },
     body:   { font: "sans", variant: "regular", size: 16, lh: 1.6 },
     bodyMed:{ font: "sans", variant: "600", size: 16, lh: 1.5 },
@@ -326,7 +328,9 @@ const IK = (function () {
     // button where the screen already carries its own red action, e.g. home).
     // Dominance is visual: the ux-gate counts only saturated-fill buttons.
     if (o.cta !== false) btn(parent, "masthead cta", "Üye ol", X + CW - 136, 22, 136, 40, o.cta === "ghost" ? "ghost" : "primary");
-    rule(parent, "masthead rule", 0, 84, W, "line.soft");
+    // A full-bleed surface directly under the masthead draws its own edge:
+    // 01's poster starts on y84 and a 1px rule there would be a paper seam.
+    if (o.rule !== false) rule(parent, "masthead rule", 0, 84, W, "line.soft");
     return 108;
   }
 
@@ -411,6 +415,13 @@ const IK = (function () {
         began = true;
       });
     }
+    // The last cycle's shape ends at 0.18 of its slot, so the trace used to
+    // stop at 0.918w and leave a bare strip on the right (01's poster read
+    // 0..1321 of 1440). Close the line on the shape's own right edge at the
+    // flat level; the wave itself is untouched.
+    d.push("L" + w.toFixed(1) + " " + (0.55 * h).toFixed(1));
+    const lastX = Number(d[d.length - 1].split(" ")[0].slice(1));
+    if (lastX < w - 0.5) throw new Error("ecg: ink stops at " + lastX + " of " + w + ", the trace must span the slot");
     const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + " " + h + '"><path d="' + d.join(" ") + '" fill="none" stroke="#E0364B" stroke-width="1.5" stroke-linejoin="round"/></svg>';
     const g = penpot.createShapeFromSvg(svg);
     g.name = nrm(name);
