@@ -203,6 +203,88 @@
           "h": 500
         }
       ]
+    },
+    {
+      "board": "01-ana-sayfa-m",
+      "page": "Mobil",
+      "png": "design/ihkd/shots/01-ana-sayfa-m.png",
+      "out": "design/ihkd/shots/01-ana-sayfa-m",
+      "primary": "hero cta",
+      "regions": [
+        {
+          "slug": "hero-copy",
+          "name": "mobile poster copy: label, date, venue, countdown",
+          "x": 0,
+          "y": 384,
+          "w": 390,
+          "h": 300
+        },
+        {
+          "slug": "groups",
+          "name": "six working groups, one column, link below",
+          "x": 0,
+          "y": 1059,
+          "w": 390,
+          "h": 760
+        },
+        {
+          "slug": "publication",
+          "name": "journal photo, TOC, guide block with ECG",
+          "x": 0,
+          "y": 2389,
+          "w": 390,
+          "h": 1100
+        },
+        {
+          "slug": "news",
+          "name": "three news rows and the all-news link",
+          "x": 0,
+          "y": 3559,
+          "w": 390,
+          "h": 700
+        },
+        {
+          "slug": "membership",
+          "name": "white membership band: title, bullets, one link, fee",
+          "x": 0,
+          "y": 4150,
+          "w": 390,
+          "h": 470
+        },
+        {
+          "slug": "footer",
+          "name": "mobile footer: mark, claim, 2x2 links, legal",
+          "x": 0,
+          "y": 4719,
+          "w": 390,
+          "h": 717
+        }
+      ]
+    },
+    {
+      "board": "01-ana-sayfa-m-menu",
+      "page": "Mobil",
+      "png": "design/ihkd/shots/01-ana-sayfa-m-menu.png",
+      "out": "design/ihkd/shots/01-ana-sayfa-m-menu",
+      "primary": null,
+      "regions": [
+        {
+          "slug": "menu-nav",
+          "name": "six nav rows with one rule each",
+          "x": 0,
+          "y": 96,
+          "w": 390,
+          "h": 432
+        },
+        {
+          "slug": "menu-account",
+          "name": "login row, ghost join, date and imprint",
+          "x": 0,
+          "y": 568,
+          "w": 390,
+          "h": 276
+        }
+      ]
     }
   ]
 }

@@ -1,6 +1,10 @@
 {
-    "_why": "The type scale's body/meta pair is 13 -> 16px (1.23). The 1.25 default assumes a prose scale; this project's 13px labels and table meta are a deliberate step. This is the only project deviation: the uppercase ceiling is a lint DEFAULT (0.35), not a rule here.",
+    "_why": "The type scale's body/meta pair is 13 -> 16px (1.23). The 1.25 default assumes a prose scale; this project's 13px labels and table meta are a deliberate step. This is the project's only type-scale deviation: the uppercase ceiling is a lint DEFAULT (0.35), not a rule here.",
     "min_step_ratio": 1.2,
+    "_type_display_exempt": "The mobile menu sheet is navigational chrome: its largest type is the shared 22px wordmark and its rows are 16px nav. Requiring a 44px display would invent a headline the screen does not need (01-ana-sayfa-m-menu, M3 2026-11-05).",
+    "type_display_exempt": [
+        "01-ana-sayfa-m-menu"
+    ],
     "_surface": "Surface roles for the tool-side surface audit (F11): white is the card/content sheet, surface.alt the inset/secondary panel. Values copied from tokens.json color.white / color.surface.alt (verified 2026-11-03); craft-rules names them because the audit reads this file, not the token set.",
     "surface_white": [
         "#FFFFFF"

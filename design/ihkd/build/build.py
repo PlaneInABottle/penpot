@@ -87,6 +87,8 @@ SCREENS = {
     "screen-19": ("Üyelik", "19-giris"),
     "screen-20": ("Üyelik", "20-panel"),
     # Mobil 390 ikizleri ve durum tahtaları (sayfa `Mobil` önce oluşturulmalı).
+    "screen-01-m": ("Mobil", "01-ana-sayfa-m"),
+    "screen-state-01-m": ("Mobil", "01-ana-sayfa-m-menu"),
     "screen-state-01": ("Kurumsal", "01-bos"),
     "screen-state-07": ("Kongre", "07-program-loading"),
     "screen-state-09": ("Kongre", "09-kayit-hata"),

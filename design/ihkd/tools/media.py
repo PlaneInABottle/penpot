@@ -16,7 +16,8 @@ network.
 `--restore` re-places exactly the photos recorded for one board in provenance
 (`name@board` keys), using the pinned source URL — the lossless-rebuild path called by
 build.py. Provenance keys are `name@board`; the bare `board` key is not a placement
-record.
+record. An entry may pin `radius` (default 8) for a full-bleed slot that must keep
+square corners.
 
 Exit codes: 0 placed, 1 board/slot missing or placement failed, 2 environment or transport.
 """
@@ -220,7 +221,7 @@ shape.setParentIndex(existing.parentIndex);
 shape.x = x;
 shape.y = y;
 shape.fills = [{ fillOpacity: 1, fillImage: media }];
-shape.borderRadius = 8;
+shape.borderRadius = __RADIUS__;
 // remove by id (see above): everything that had this name before the place, i.e. the
 // placeholder slot and any older duplicate. The fresh photo has a new id and survives.
 const drop = (root) => {
@@ -252,7 +253,8 @@ return JSON.stringify({{ page: p.name }});
     raise McpError(f"page {page!r} did not become current within 2s")
 
 
-def place(url: str, name: str, page: str, board: str, src: str, credit: str) -> dict:
+def place(url: str, name: str, page: str, board: str, src: str, credit: str,
+          radius: int = 8) -> dict:
     activate(url, page)
     slot = payload(call_execute_code(url, MEASURE.replace("__PAGE__", json.dumps(page))
                                      .replace("__BOARD__", json.dumps(board))
@@ -263,6 +265,7 @@ def place(url: str, name: str, page: str, board: str, src: str, credit: str) -> 
     code = (PLACE.replace("__PAGE__", json.dumps(page))
             .replace("__BOARD__", json.dumps(board))
             .replace("__NAME__", json.dumps(name))
+            .replace("__RADIUS__", str(int(radius)))
             .replace("__B64__", json.dumps(base64.b64encode(data).decode())))
     # A shared plugin has one active page, and another session can switch
     # it between our open and our write ("Cannot modify a page that is not
@@ -337,7 +340,8 @@ def main(argv: list[str]) -> int:
                 fail(f"{name}: provenance has no pinned page/source ({page!r}, {src!r})", 1)
             print(f"restore {name} -> {args.board}")
             try:
-                res = place(url, name, page, args.board, src, credit)
+                res = place(url, name, page, args.board, src, credit,
+                            int(record.get("radius", 8)))
             except (McpError, PlaceError) as exc:
                 print(f"{name}: ERROR {exc}", file=sys.stderr)
                 return placement_code(exc)

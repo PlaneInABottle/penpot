@@ -155,7 +155,7 @@ Grid: 1440 board, content 1200 at x=120, 12 columns of 78 with 24 gutters. Every
 content x/w derives from `X`/`CW`; bleeds (bands, footers) are declared per screen.
 Card: 24px padding (32 for feature cards), 1px border, no shadow.
 
-## 4. Sitemap — 20 boards on 6 pages
+## 4. Sitemap — 20 boards on 6 pages, plus the `Mobil` twin (M12)
 
 | # | Page | Board | Primary action | Height |
 |---|---|---|---|---|
@@ -576,3 +576,36 @@ tutulur; kullanıcı aksini söyleyene kadar silinmez.
 - **Run.** `build.py screen-01` completed inside one session (no 120s abort):
   `RESULT ok nulls=0`, photos 2/2, links 1/1, layout quiet after 3 fit passes; canvas reflow
   moved `02-dernek` 4720→4764. `ux_gate --spec design/ihkd/ux-spec.json` → exit 0, 0 findings.
+
+## M12 · Mobile home (2026-11-05)
+
+- **Two boards on `Mobil`.** `01-ana-sayfa-m` 390×5436 is the phone home and
+  `01-ana-sayfa-m-menu` 390×844 is its open menu. Grid 20/350, section rhythm 64, and five
+  type sizes (13/16/22/30/44) — a refold, not a scaled-down desktop.
+- **The poster, refolded.** 64..992 (`HERO_H 928`): the Pexels 20733081 frame as a 390×320
+  band (radius 0), copy from +344, foot at H−188 / H−128 / H−56, and the `12` numeral dropped.
+  The ECG is 390×24 at full board width; the 844 fold shows the label through the society line,
+  and the trace sits just below it.
+- **Contrast fallback, measured.** White type on the photo failed AA at copy offset 40 (label
+  2.02, ghost link 3.47) and no offset 40..100 reached 4.5, so the photo band sits over an
+  `ink.900` copy field instead: `on.ink` on `ink.900` is **18.67:1**, no scrim, no gradient.
+  The band is 0..320 and the copy starts 24px under it.
+- **Sections.** Desktop order on one column, copy verbatim: çalışma grupları, akademi, yayın,
+  gündem, üyelik band, then a 2×2 footer (169 + 12 + 169). Every slot height is measured from
+  the laid-out string — a character model reserves two lines for the 34-character
+  `Kalp yetersizliğinde güncel tedavi` that measures one — and links sit below their lists.
+- **Menu sheet.** Six 72px rows from 96, one hairline on each row's bottom edge, `Üye girişi`
+  at 44, ghost `Üye ol` 350×48, congress date and imprint under one rule. `MENÜ` opens it,
+  `KAPAT` returns; `flows.js` wires both and starts flow `menü` on the home board.
+- **Spec.** `ux-spec.json` carries the Mobil screen with `viewportH 844` and the menu board as
+  its `menu` state; `craft-rules.json` `type_display_exempt` names `01-ana-sayfa-m-menu` — a
+  chrome sheet's largest type is the shared 22px wordmark and its rows are 16px nav, so a 44px
+  display would invent a headline the screen does not need.
+- **Review rounds found and fixed.** Six single-word last lines; two dangling separators (they
+  lead the next line now); three links without their underline; a double rule in the menu;
+  centred `MENÜ`/`KAPAT`, now right-aligned to the measure edge; a photo radius on a
+  full-bleed band, now 0. An earlier copy edit (shorter group name, longer membership text)
+  was reverted: copy is the desktop's, final.
+- **Run.** `build.py screen-01-m screen-state-01-m`; `gate.py --pages Mobil --boards
+  01-ana-sayfa-m`. Lint 0 high / 0 medium (8 low, the 13px `label`/`meta` roles), QA clean,
+  `ux_gate` 0 findings, and desktop `01-ana-sayfa` stays 1440×4084.

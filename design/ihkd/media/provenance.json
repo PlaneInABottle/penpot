@@ -83,6 +83,19 @@
     "source": "https://images.pexels.com/photos/20733081/pexels-photo-20733081.jpeg",
     "credit": "https://www.pexels.com/photo/20733081/ by BBSO"
   },
+  "img-hero@01-ana-sayfa-m": {
+    "board": "01-ana-sayfa-m",
+    "page": "Mobil",
+    "source": "https://images.pexels.com/photos/20733081/pexels-photo-20733081.jpeg",
+    "credit": "https://www.pexels.com/photo/20733081/ by BBSO",
+    "radius": 0
+  },
+  "img-journal@01-ana-sayfa-m": {
+    "board": "01-ana-sayfa-m",
+    "page": "Mobil",
+    "source": "https://images.pexels.com/photos/3860983/pexels-photo-3860983.jpeg",
+    "credit": "https://www.pexels.com/photo/3860983/ by Robert Munteanu"
+  },
   "img-c2-ecg@cand-2-kapak": {
     "board": "cand-2-kapak",
     "page": "_scratch",

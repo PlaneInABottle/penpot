@@ -47,7 +47,11 @@ const IK = (function () {
   const gaps = [];
   let OX = 0, OY = 0, PB = null, NUM = 0;
 
-  const snap = (v) => Math.round(v / 4) * 4;
+  /* Grid step. Desktop snaps to 4px; the 390/350 mobile grid needs 2 (390 and
+     350 are not multiples of 4). start() and M.start() set it before the first
+     shape is placed, and every rect/board/text/rule below reads it. */
+  let GRID = 4;
+  const snap = (v) => Math.round(v / GRID) * GRID;
   const nrm = (n) => String(n).replace(/\s*\/\s*/g, " / ");
 
   function token(name) {
@@ -80,8 +84,12 @@ const IK = (function () {
     return p;
   }
 
-  function start(pageName, boardName, height) {
-    const p = page(pageName);
+  /**
+   * Opens `pageName`, creates the named board when absent (below the column) or
+   * clears it, sizes it and makes it the coordinate origin for this build.
+   * Shared by the desktop `start` (1440, 4px grid) and `M.start` (390, 2px grid).
+   */
+  function startBoard(p, boardName, height, width) {
     penpot.openPage(p);
     const wanted = nrm(boardName);
     let b = (p.root.children || []).filter((s) => s.name === wanted)[0] || null;
@@ -97,10 +105,15 @@ const IK = (function () {
       (b.children || []).slice().forEach((c) => c.remove());
     }
     b.fills = [];
-    b.resize(W, snap(height));
+    b.resize(width, snap(height));
     PB = b; OX = b.x; OY = b.y; NUM = 0;
     paint(b, "paper");
     return b;
+  }
+
+  function start(pageName, boardName, height) {
+    GRID = 4;
+    return startBoard(page(pageName), boardName, height, W);
   }
 
   function rect(parent, name, x, y, w, h, fillToken, opts) {
@@ -136,10 +149,15 @@ const IK = (function () {
     return String(chars).split("\n").reduce((n, line) => n + Math.max(1, Math.ceil(line.length / cpl)), 0);
   }
 
-  function text(parent, name, chars, roleName, colorToken, opts) {
+  /**
+   * One text node from an already-resolved role spec. Shared by `text` (desktop
+   * ROLE) and `M.textM` (mobile ROLE): the role maps differ in size and
+   * tracking, the placement behaviour does not.
+   */
+  function textWith(parent, name, chars, role, colorToken, opts) {
     const o = opts || {};
-    const r = ROLE[roleName];
-    if (!r) throw new Error("unknown role " + roleName + " for " + name);
+    const r = role;
+    if (!r) throw new Error("unknown role for " + name);
     const t = penpot.createText(String(chars));
     t.name = nrm(name);
     t.fontId = FONT[r.font].id;
@@ -170,6 +188,12 @@ const IK = (function () {
     if (colorToken) paint(t, colorToken);
     bind(t, "fs." + r.size, ["fontSize"]);
     return t;
+  }
+
+  function text(parent, name, chars, roleName, colorToken, opts) {
+    const r = ROLE[roleName];
+    if (!r) throw new Error("unknown role " + roleName + " for " + name);
+    return textWith(parent, name, chars, r, colorToken, opts);
   }
 
   const rule = (parent, name, x, y, w, colorToken, thick) =>
@@ -333,6 +357,62 @@ const IK = (function () {
     if (o.rule !== false) rule(parent, "masthead rule", 0, 84, W, "line.soft");
     return 108;
   }
+
+  /* ------------------------------------------------------------ mobile 390 */
+  /**
+   * The mobile 390×844 surface. Not a scaled desktop: a 2px grid (390/350 are
+   * not multiples of 4), the desktop `CW` split (X=20, CW=350), and five type
+   * sizes — 13 / 16 / 22 / 30 / 44 — with its own role map. Everything else
+   * (rect, board, rows, bullets, link, photo, ecg, bind) is the shared
+   * primitive, driven by explicit x/y/w because the mobile measure is the
+   * board, not a 1200px column.
+   */
+  const M = (function () {
+    const W = 390, X = 20, CW = 350, RHYTHM = 64;
+    const ROLE = {
+      label:   { font: "mono", variant: "500", size: 13, lh: 1.2, track: 1.1, upper: true },
+      meta:    { font: "sans", variant: "regular", size: 13, lh: 1.5 },
+      data:    { font: "mono", variant: "regular", size: 13, lh: 1.5, track: 0.2 },
+      body:    { font: "sans", variant: "regular", size: 16, lh: 1.6 },
+      nav:     { font: "sans", variant: "500", size: 16, lh: 1.4 },
+      lead:    { font: "sans", variant: "regular", size: 22, lh: 1.5 },
+      h3:      { font: "sans", variant: "600", size: 22, lh: 1.2, track: -0.4 },
+      figure:  { font: "mono", variant: "500", size: 22, lh: 1.1 },
+      stat:    { font: "mono", variant: "500", size: 30, lh: 1.1, track: -0.6 },
+      h2:      { font: "sans", variant: "600", size: 30, lh: 1.06, track: -0.6 },
+      display: { font: "sans", variant: "700", size: 44, lh: 0.98, track: -1.4 },
+      wordmark:{ font: "mono", variant: "600", size: 22, lh: 1.0, track: 0.6 },
+    };
+
+    function start(pageName, boardName, height) {
+      GRID = 2;
+      return startBoard(page(pageName), boardName, height, W);
+    }
+
+    function textM(parent, name, chars, roleName, colorToken, opts) {
+      const r = ROLE[roleName];
+      if (!r) throw new Error("unknown mobile role " + roleName + " for " + name);
+      return textWith(parent, name, chars, r, colorToken, opts);
+    }
+
+    /**
+     * Closed masthead, 0..64: 4px red bar, wordmark at the top bar + 12, the
+     * society kicker 16 from the wordmark's advance (20 + 55 + 16 = 91), and
+     * one 60×44 menu control on the right grid edge. No sign-in/join here —
+     * the mobile bar carries the menu, not the desktop pair.
+     */
+    function masthead(parent) {
+      rect(parent, "top bar", 0, 0, W, 4, "red.600");
+      textM(parent, "masthead mark", "İHKD", "wordmark", "ink.900", { x: X, y: 16 });
+      textM(parent, "masthead sub", "ÜYE PLATFORMU", "label", "ink.500", { x: 91, y: 20 });
+      const menu = board(parent, "masthead menu", 310, 10, 60, 44);
+      textM(menu, "masthead menu label", "MENÜ", "label", "ink.900",
+        { x: 310, y: 24, w: 60, align: "right" });
+      return 64;
+    }
+
+    return { W, X, CW, RHYTHM, ROLE, start, masthead, textM };
+  })();
 
   /** A bone sheet inside the viewer: the publication/record mode (journal, guideline, article). */
   function sheet(parent, name, x, y, w, h) {
@@ -758,10 +838,10 @@ const IK = (function () {
   }
 
   /** Bumped when this file changes: build.py re-sends it only on a mismatch. */
-  const VERSION = "1.2.3";
+  const VERSION = "1.3.1";
 
   return {
-    SET, W, X, CW, ROLE, FONT, warnings, gaps, VERSION, HELPERS: H.version,
+    SET, W, X, CW, ROLE, FONT, M, warnings, gaps, VERSION, HELPERS: H.version,
     start, end, fit, fitBars, fitCards, reflowColumn, report, page, rect, board, text, rule, vrule, bind, paint, stroke, corners,
     btn, link, tag, head, pageHead, stat, field, photo, sheet, masthead, footer, sidebar, crumbs,
     progress, ecg, row, rows, bullets, vcenter, snap, nrm, token, estLines,

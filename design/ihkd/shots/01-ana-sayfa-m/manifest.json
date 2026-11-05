@@ -1,0 +1,212 @@
+{
+ "board": "01-ana-sayfa-m",
+ "source": "01-ana-sayfa-m.png",
+ "source_sha256": "184a647124a1e24e4af815e56a999012ed6426207c90f6377af503b25c7e963f",
+ "image": {
+  "w": 390,
+  "h": 5436
+ },
+ "tile": {
+  "w": 390,
+  "h": 900,
+  "overlap": 0.1
+ },
+ "tiles": [
+  {
+   "file": "tile-01.png",
+   "x0": 0,
+   "y0": 0,
+   "x1": 390,
+   "y1": 900,
+   "reviewed": true,
+   "note": "Poster and first viewport: masthead, 320px photo band, two-line label and 44px date, venue break `… 96 oturum` / `· 214 konuşmacı`, `147` with `gün kaldı · erken kayıt` / `31 Ocak 2027'de kapanıyor`, the 52px primary at 684–735, the underlined `Programı gör` at 784 and `Hastanın hekimi.` at 809; the 844 fold falls in clean ink 19px below the signature, nothing sliced."
+  },
+  {
+   "file": "tile-02.png",
+   "x0": 0,
+   "y0": 810,
+   "x1": 390,
+   "y1": 1710,
+   "reviewed": true,
+   "note": "Poster foot and §01 head: the full-width ECG at 867–885, the two-line imprint, `01 ÇALIŞMA GRUPLARI` at 1059 and the group rows at 92–118px pitch (index 13 / title 22 / meta 13 / arrow aligned to the first title line); the last rows continue in tile-03, no clipped text in this crop."
+  },
+  {
+   "file": "tile-03.png",
+   "x0": 0,
+   "y0": 1620,
+   "x1": 390,
+   "y1": 2520,
+   "reviewed": true,
+   "note": "§01 tail and §02 Akademi: the last group rows, the 1px red underline at 1794 under `12 çalışma grubunun tümü →`, `02 AKADEMİ` at 1869, three course rows with meta plus `Başla →` on one line and the 13px STE note."
+  },
+  {
+   "file": "tile-04.png",
+   "x0": 0,
+   "y0": 2430,
+   "x1": 390,
+   "y1": 3330,
+   "reviewed": true,
+   "note": "§03 Yayın: journal photo 350×300 at 2510, caption/title/meta stack, three TOC rows including the fixed `KKY'de SGLT2 inhibitörleri:` / `gerçek yaşam verisi` break aligned at x68, `Sayıyı oku` red-underlined at 3206 eight px above the 3214 divider, and the guide head with its red ECG."
+  },
+  {
+   "file": "tile-05.png",
+   "x0": 0,
+   "y0": 3240,
+   "x1": 390,
+   "y1": 4140,
+   "reviewed": true,
+   "note": "§03 action and §04 Gündem: `Kılavuzu indir` underlined at 3482, `04 GÜNDEM` at 3559, three news rows whose titles break at phrase boundaries (`Program yayınlandı:` / `96 oturum, dört salon`; `… kursu için` / `kayıtlar açıldı`), the underlined `Tüm haberler →` and the publication note."
+  },
+  {
+   "file": "tile-06.png",
+   "x0": 0,
+   "y0": 4050,
+   "x1": 390,
+   "y1": 4950,
+   "reviewed": true,
+   "note": "Membership band 4150–4619 and the footer's first block: 56/58 padding, 30px title, 22px lede, three bullets, the single red underlined `Başvuruyu başlat →` at 4528, 13px fee, then paper, the 2px red footer bar at 4676 and the white footer."
+  },
+  {
+   "file": "tile-07.png",
+   "x0": 0,
+   "y0": 4536,
+   "x1": 390,
+   "y1": 5436,
+   "reviewed": true,
+   "note": "Footer bottom: 2×2 groups at x20/x201 with 44px pitch, the legal rule at 5322, and the fixed disclaimer `Tasarım çalışması` / `— kurum ve kişiler kurgudur.` (orphan gone; 135px then 220px), 34px bottom pad on the 5436 board."
+  }
+ ],
+ "regions": [
+  {
+   "file": "region-smallest-text.png",
+   "subject": "masthead sub",
+   "x": 68,
+   "y": 0,
+   "w": 163,
+   "h": 65,
+   "origin": "auto",
+   "reviewed": true,
+   "note": "The 13px mono `ÜYE PLATFORMU` at 1:1 in a 163×65 masthead strip, ink.500 on paper (5.04:1), fully resolved and unclipped."
+  },
+  {
+   "file": "region-densest.png",
+   "subject": "120 texts near x=20",
+   "x": 0,
+   "y": 0,
+   "w": 390,
+   "h": 948,
+   "origin": "auto",
+   "reviewed": true,
+   "note": "A full-width 390×948 crop of the hero proving the densest 13/16/22/44 copy block and the ECG at 1:1 with every line inside x20–369."
+  },
+  {
+   "file": "region-primary-action.png",
+   "subject": "hero cta",
+   "x": 0,
+   "y": 660,
+   "w": 390,
+   "h": 100,
+   "origin": "auto",
+   "reviewed": true,
+   "note": "The hero primary at 1:1: `Kongreye kayıt ol` in white on red.600 (6.04:1), 350×52 at 684–735 with a centred label at x136–253."
+  },
+  {
+   "file": "region-icons-arrows.png",
+   "subject": "6 icon/arrow shape(s)",
+   "x": 330,
+   "y": 1179,
+   "w": 60,
+   "h": 553,
+   "origin": "auto",
+   "reviewed": true,
+   "note": "The six §01 arrows at 1:1 — one 16px `→` per row at x357–366 in ink.500, tied to each title's first line, with the row rules ending at 369."
+  },
+  {
+   "file": "region-hero-copy.png",
+   "subject": "mobile poster copy: label, date, venue, countdown",
+   "x": 0,
+   "y": 384,
+   "w": 390,
+   "h": 300,
+   "origin": "declared",
+   "reviewed": true,
+   "note": "Poster copy at 1:1: two-line label and 44px date, the venue wrap `Antalya Kongre Merkezi, Belek · 96 oturum` / `· 214 konuşmacı` (leading `·` clears the orphan but splits the two figures — accepted), and the note `gün kaldı · erken kayıt` / `31 Ocak 2027'de kapanıyor` with no orphan."
+  },
+  {
+   "file": "region-groups.png",
+   "subject": "six working groups, one column, link below",
+   "x": 0,
+   "y": 1059,
+   "w": 390,
+   "h": 760,
+   "origin": "declared",
+   "reviewed": true,
+   "note": "All six group rows and the section link at 1:1: 92–118px rows, index 13 / title 22 (row 1 two lines) / meta 13 / arrow, and the red-underlined `12 çalışma grubunun tümü →`; no clipped or crossed text."
+  },
+  {
+   "file": "region-publication.png",
+   "subject": "journal photo, TOC, guide block with ECG",
+   "x": 0,
+   "y": 2389,
+   "w": 390,
+   "h": 1100,
+   "origin": "declared",
+   "reviewed": true,
+   "note": "§03 at 1:1: photo 350×300, caption/title/meta, the colon-broken TOC row aligned at x68, `Sayıyı oku` underlined 8px above the section divider (tight but legible), the guide title/ECG/body and the underlined `Kılavuzu indir` at the bottom edge."
+  },
+  {
+   "file": "region-news.png",
+   "subject": "three news rows and the all-news link",
+   "x": 0,
+   "y": 3559,
+   "w": 390,
+   "h": 700,
+   "origin": "declared",
+   "reviewed": true,
+   "note": "§04 at 1:1: three rows with 13px date/category/reading-time, both fixed two-line titles, the underlined `Tüm haberler →` and the 13px publication note; no orphan or dangling separator remains."
+  },
+  {
+   "file": "region-membership.png",
+   "subject": "white membership band: title, bullets, one link, fee",
+   "x": 0,
+   "y": 4150,
+   "w": 390,
+   "h": 470,
+   "origin": "declared",
+   "reviewed": true,
+   "note": "The white band at 1:1: 56/58 padding, 30px title, 22px lede, three bullets, one red underlined `Başvuruyu başlat →` at 4528 and the 13px fee — balanced with a single, clearly marked action and no saturated button."
+  },
+  {
+   "file": "region-footer.png",
+   "subject": "mobile footer: mark, claim, 2x2 links, legal",
+   "x": 0,
+   "y": 4719,
+   "w": 390,
+   "h": 717,
+   "origin": "declared",
+   "reviewed": true,
+   "note": "The footer at 1:1: mark, claim, address, 2×2 groups at 44px pitch and the fixed three-line legal block whose last line is dash-led (`— kurum ve kişiler kurgudur.`, 220px) after a 135px first line — orphan gone, inverted rag accepted."
+  }
+ ],
+ "coverage": {
+  "required": [
+   "smallest-text",
+   "densest",
+   "primary-action",
+   "icons-arrows"
+  ],
+  "present": [
+   "smallest-text",
+   "densest",
+   "primary-action",
+   "icons-arrows",
+   "hero-copy",
+   "groups",
+   "publication",
+   "news",
+   "membership",
+   "footer"
+  ],
+  "missing": []
+ }
+}

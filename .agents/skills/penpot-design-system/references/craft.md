@@ -7,7 +7,7 @@ passed while the pixels were wrong.
 ## Contents
 
 - Origins are never zero · Grid is code · Slots derive from content · Repeated blocks
-- Media · Surfaces · Rhythm and joints · Optical joints
+- Media · Surfaces · Rhythm and joints · Optical joints · At a second width
 
 ## Origins are never zero
 
@@ -162,3 +162,12 @@ next row.
   boxes at different sizes always drifts, because box tops are not baselines. Use a single
   text node, stack value over unit label, or compute both baselines from committed
   `textBounds` in a later call.
+
+## At a second width
+
+- **Refold, never reword.** Copy is final; the width change is a measured fit pass, not a rewrite.
+- **Check each last line.** No single short word left alone, and a separator leads the next line.
+- **An action keeps its affordance at every width** — the underline, fill or border stays.
+- **A list's last row rule is its boundary;** the block ends there, nothing below reuses it.
+- **Right-align to the measure edge,** not to a pixel picked at one width.
+- **Full-bleed media has radius 0;** a radius on an edge-touching band reads as a card.

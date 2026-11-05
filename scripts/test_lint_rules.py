@@ -335,6 +335,34 @@ class StatSizeTest(unittest.TestCase):
         self.assertEqual(_findings(nodes, "stats row"), [])
 
 
+class TypeDisplayExemptionTest(unittest.TestCase):
+    """`type.display` is a content-screen rule; a declared chrome sheet skips it."""
+
+    def _menu_board(self):
+        # one 22px wordmark over 16px nav rows: body 16, display 22 (1.38x)
+        nodes = [_node(id="pg", name="01-menu", type="board", parentId=None,
+                       x=0, y=0, w=1440, h=2000),
+                 _text("mark", x=20, y=16, w=120, h=30, size=22, line="1.0",
+                       text="İHKD", ink_w=60, ink_h=30, ink_y=16)]
+        for i in range(3):
+            nodes.append(_text("row %d" % i, x=20, y=96 + i * 72, w=350, h=24,
+                               size=16, text="Dernek", ink_w=60, ink_h=20,
+                               ink_y=96 + i * 72))
+        return nodes
+
+    def test_exempt_board_is_clean_and_the_skip_is_printed(self):
+        rules = dict(design_lint.DEFAULTS, type_display_exempt=["01-menu"])
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            found = _rules(self._menu_board(), rules)
+        self.assertEqual(found, [])
+        self.assertIn("01-menu", out.getvalue())
+        self.assertIn("type_display_exempt", out.getvalue())
+
+    def test_same_board_without_the_exemption_still_reports_the_high(self):
+        self.assertIn(("type.display", "high"), _rules(self._menu_board()))
+
+
 class DeadSpaceTest(unittest.TestCase):
     def _card(self, tiles=False):
         card = _node(id="c", name="plan", type="board", parentId="pg",

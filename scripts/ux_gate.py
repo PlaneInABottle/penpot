@@ -24,7 +24,9 @@ Spec schema:
         "story": {"hook": "…", "proof": "…", "path": "…", "action": "…"},
         "states": [{"state": "empty", "board": "…"}],   # boards/shapes that must exist
         "mobile": {"board": "01-home-m", "page": "Mobil"} | "n/a: <reason>",   # optional: omit when mobile is out of scope
-        "firstViewport": ["hero title", "hero cta"],    # shapes inside the first 900px
+        "firstViewport": ["hero title", "hero cta"],    # shapes inside the screen's fold
+        "viewportH": 844,                    # optional per-screen fold for firstViewport
+                                             # (falls back to defaults.viewportH, then 900)
         "accentMaxRatio": 0.3,               # optional per-screen override
         "claims": [{"pattern": "sess title", "count": 96, "label": "sessions listed"}]
      }]}
@@ -78,7 +80,6 @@ def is_button(name: str) -> bool:
 def evaluate(spec: dict, pages: dict[str, list[dict]]) -> list[dict]:
     """Pure gate: spec + {page: nodes} -> findings. No network, fully testable."""
     defaults = spec.get("defaults", {}) or {}
-    viewport_h = float(defaults.get("viewportH", 900))
     findings: list[dict] = []
 
     def add(screen: str, message: str) -> None:
@@ -91,6 +92,9 @@ def evaluate(spec: dict, pages: dict[str, list[dict]]) -> list[dict]:
     for screen in spec.get("screens", []):
         name = screen.get("board", "?")
         page = screen.get("page")
+        # The fold is a property of the screen, not the project: a 390×844
+        # phone twin cannot be judged against the desktop default.
+        viewport_h = float(screen.get("viewportH", defaults.get("viewportH", 900)))
         board = boards.get((page, name))
         if board is None:
             add(name, f"board {name!r} not found on page {page!r}")

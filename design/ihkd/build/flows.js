@@ -19,6 +19,9 @@
  *     "f cta" @ 15-haberler (Haberi oku)         -> 16-makale
  *   üye (Üyelik, start 19-giris):
  *     "f submit" @ 19-giris (Giriş yap)          -> 20-panel
+ *   menü (Mobil, start 01-ana-sayfa-m):
+ *     "masthead menu" @ 01-ana-sayfa-m (MENÜ)    -> 01-ana-sayfa-m-menu
+ *     "menu close" @ 01-ana-sayfa-m-menu (KAPAT) -> 01-ana-sayfa-m
  *
  * Hygiene: drops auto-named "Flow N" flows (null starting board, created as a
  * side effect of addInteraction) so exactly 5 flows remain.
@@ -36,7 +39,20 @@ const kid = (b, n) => (b.children || []).filter((c) => c.name === n)[0];
 const need = (v, what) => { if (!v) throw new Error("M8 missing " + what); return v; };
 const ensureFlow = (pg, name, start) => {
   const names = (pg.flows || []).map((f) => f.name);
-  if (names.indexOf(name) === -1) pg.createFlow(name, start);
+  if (names.indexOf(name) === -1) {
+    try {
+      pg.createFlow(name, start);
+    } catch (e) {
+      // Penpot 2.19 bridge: createFlow serialises the Board proxy and the
+      // backend rejects it (`Value not valid … :createFlow-frame`). The
+      // addInteraction calls above already created a flow that starts on the
+      // wired source board — adopt and rename that one instead.
+      const auto = (pg.flows || []).filter(
+        (f) => f.startingBoard && f.startingBoard.name === start.name)[0];
+      if (!auto) throw e;
+      auto.name = name;
+    }
+  }
 };
 const links = [];
 const errors = [];
@@ -97,5 +113,16 @@ section("Üyelik", (pg) => {
   wire("19 f submit", "f submit", b19, b20);
   wire("20 p cta", "p cta", b20, b18);
   ensureFlow(pg, "üye", b19);
+});
+section("Mobil", (pg) => {
+  const home = need(board(pg, "01-ana-sayfa-m"), "board 01-ana-sayfa-m");
+  const menu = need(board(pg, "01-ana-sayfa-m-menu"), "board 01-ana-sayfa-m-menu");
+  wire("menu open", "masthead menu", home, menu);
+  wire("menu close", "menu close", menu, home);
+  ensureFlow(pg, "menü", home);
+  (pg.flows || []).filter((f) => /^Flow \d+$/.test(f.name)).forEach((f) => {
+    pg.removeFlow(f);
+    links.push("dropped junk flow " + f.name);
+  });
 });
 return JSON.stringify({ links: links, errors: errors, byBoard: byBoard });

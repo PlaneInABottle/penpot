@@ -1,0 +1,84 @@
+{
+ "board": "01-ana-sayfa-m-menu",
+ "source": "01-ana-sayfa-m-menu.png",
+ "source_sha256": "e681bd13e055adc02a74da563b1080fb7ae3de232b6071a36857cfb546431c08",
+ "image": {
+  "w": 390,
+  "h": 844
+ },
+ "tile": {
+  "w": 390,
+  "h": 844,
+  "overlap": 0.1
+ },
+ "tiles": [
+  {
+   "file": "tile-01.png",
+   "x0": 0,
+   "y0": 0,
+   "x1": 390,
+   "y1": 844,
+   "reviewed": true,
+   "note": "The open menu: `KAPAT` in the MENÜ slot, six 72px rows with exactly one rule each (168–528; the former 552 rule is gone), `Üye girişi` at 582 in its 44 row, the red-bordered `Üye ol` ghost at 624–671, date 727 and two-line imprint 792–820 — same product frame as the home."
+  }
+ ],
+ "regions": [
+  {
+   "file": "region-smallest-text.png",
+   "subject": "masthead sub",
+   "x": 68,
+   "y": 0,
+   "w": 163,
+   "h": 65,
+   "origin": "auto",
+   "reviewed": true,
+   "note": "The 13px mono `ÜYE PLATFORMU` at 1:1 in the menu masthead, ink.500 on paper and unclipped, proving the smallest role survives the state change identically."
+  },
+  {
+   "file": "region-densest.png",
+   "subject": "13 texts near x=20",
+   "x": 0,
+   "y": 0,
+   "w": 390,
+   "h": 844,
+   "origin": "auto",
+   "reviewed": true,
+   "note": "The whole 390×844 menu sheet at 1:1, proving the single-rule-per-row nav and the 40px of air below the last rule before the login."
+  },
+  {
+   "file": "region-menu-nav.png",
+   "subject": "six nav rows with one rule each",
+   "x": 0,
+   "y": 96,
+   "w": 390,
+   "h": 432,
+   "origin": "declared",
+   "reviewed": true,
+   "note": "The six nav rows at 1:1 — Dernek through Haberler at 72px pitch with one 1px line.soft under each (168…528) — confirming the doubled divider is gone."
+  },
+  {
+   "file": "region-menu-account.png",
+   "subject": "login row, ghost join, date and imprint",
+   "x": 0,
+   "y": 568,
+   "w": 390,
+   "h": 276,
+   "origin": "declared",
+   "reviewed": true,
+   "note": "The account block at 1:1: `Üye girişi` at 16px in its 44 row, the 350×48 `Üye ol` ghost with a 1px red.600 border and a centred ink label, `22–25 Nisan 2027` and the two-line imprint — one clear join action."
+  }
+ ],
+ "coverage": {
+  "required": [
+   "smallest-text",
+   "densest"
+  ],
+  "present": [
+   "smallest-text",
+   "densest",
+   "menu-nav",
+   "menu-account"
+  ],
+  "missing": []
+ }
+}

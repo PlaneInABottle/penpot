@@ -1564,6 +1564,30 @@ class UxGateTest(unittest.TestCase):
         findings = ux_gate.evaluate(self._screen_spec(), {"Web": nodes})
         self.assertTrue(any("accent fills" in f["finding"] for f in findings), findings)
 
+    def test_viewport_height_is_per_screen(self):
+        """A per-screen viewportH wins over the defaults: the same text at y 870
+        sits inside a 900 fold and below an 850 fold."""
+        import ux_gate
+        nodes = self._screen_nodes()
+        nodes.append(_node(id="b2", name="02-home", type="board", parentId=None,
+                           x=0, y=0, w=1440, h=2000))
+        nodes.append(_node(id="c2", name="hero cta", type="board", parentId="b2",
+                           parent="02-home", x=120, y=392, w=200, h=48, fill="#E0364B"))
+        for board_id, node_id in (("b1", "t2"), ("b2", "t3")):
+            nodes.append(_node(id=node_id, name="fold note", type="text", parentId=board_id,
+                               parent="01-home" if board_id == "b1" else "02-home",
+                               x=120, y=870, w=300, h=20, fill="#0E1318",
+                               fontSize=16, lineHeight="1.5", text="Fold",
+                               inkX=120, inkY=870, inkW=100, inkH=17))
+        base = self._screen_spec()["screens"][0]
+        spec = {"project": "demo", "defaults": {"accentMaxRatio": 0.3, "viewportH": 900},
+                "screens": [dict(base, board="01-home", firstViewport=["fold note"]),
+                            dict(base, board="02-home", firstViewport=["fold note"],
+                                 viewportH=850)]}
+        findings = ux_gate.evaluate(spec, {"Web": nodes})
+        folds = [f["screen"] for f in findings if "below the fold" in f["finding"]]
+        self.assertEqual(folds, ["02-home"], findings)
+
 
 class OverlapBlindSpotTest(unittest.TestCase):
     def _side(self):

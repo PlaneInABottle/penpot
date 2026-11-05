@@ -17,6 +17,7 @@
         {"state": "default", "board": "01-ana-sayfa"},
         {"state": "empty", "board": "01-bos"}
       ],
+      "mobile": {"board": "01-ana-sayfa-m", "page": "Mobil"},
       "firstViewport": ["hero date", "hero society", "hero cta", "hero countdown value", "masthead cta"],
       "claims": [
         {"pattern": "group name [0-9]", "count": 6, "label": "öne çıkan altı çalışma grubu"},
@@ -64,6 +65,29 @@
       "firstViewport": ["ph title", "fee h 0", "fee name 0", "inc label"],
       "claims": [
         {"pattern": "fee name [0-9]", "count": 5, "label": "beş ücret satırı"}
+      ]
+    },
+    {
+      "board": "01-ana-sayfa-m",
+      "page": "Mobil",
+      "task": "Telefondaki ziyaretçi derneğin ne yaptığını görür ve kongreye kaydolur.",
+      "primaryCta": "hero cta",
+      "story": {
+        "hook": "hero label + hero date: 12. Ulusal Kongre, 22–25 Nisan 2027; hero society: Hastanın hekimi.",
+        "proof": "hero venue 96 oturum · 214 konuşmacı, hero countdown value 147 gün — afiş kendi rakamlarıyla",
+        "path": "group name 0-5 → course cta 0-2 → toc title 0-2: tek kolon, her satır bir hedef",
+        "action": "hero cta: kongre kaydı; sayfa member cta ile üyeliğe kapanır"
+      },
+      "states": [
+        {"state": "default", "board": "01-ana-sayfa-m"},
+        {"state": "menu", "board": "01-ana-sayfa-m-menu"}
+      ],
+      "viewportH": 844,
+      "firstViewport": ["hero label", "hero date", "hero countdown value", "hero cta", "hero society"],
+      "claims": [
+        {"pattern": "group name [0-9]", "count": 6, "label": "altı çalışma grubu satırı"},
+        {"pattern": "course cta [0-9]", "count": 3, "label": "üç kurs yolu"},
+        {"pattern": "toc title [0-9]", "count": 3, "label": "derginin üç içindekiler satırı"}
       ]
     }
   ]

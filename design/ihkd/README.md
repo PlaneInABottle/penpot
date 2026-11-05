@@ -5,11 +5,13 @@ Ankara, founded 1998. Public site + congress + academy + journal, with a member 
 login. Story one-liner: **Hastanın hekimi.** — kılavuz, kongre ve akademi tek adreste.
 
 - Pages: `Kurumsal` (5 boards + empty state) · `Kongre` (5 + loading + error state) ·
-  `Akademi` (4) · `İçerik` (3) · `Üyelik` (3) · `Components` (library sheet, 30 components).
+  `Akademi` (4) · `İçerik` (3) · `Üyelik` (3) · `Mobil` (2: home + open menu) ·
+  `Components` (library sheet, 30 components).
 - Token set: **`ihkd`** (`design/ihkd/tokens.json`; `tokens_sync --check` clean).
-- Library: `design/ihkd/build/lib.js`; screens `screen-01…20.js` + `screen-state-01/07/09.js`
-  + `screen-components.js`, one at a time through `build.py` (it restores photos from
-  provenance, re-applies `flows.js` and verifies `photos N/N` / `links N/N`).
+- Library: `design/ihkd/build/lib.js`; screens `screen-01…20.js` + the mobile `screen-01-m.js`
+  / `screen-state-01-m.js` + `screen-state-01/07/09.js` + `screen-components.js`, one at a time
+  through `build.py` (it restores photos from provenance, re-applies `flows.js` and verifies
+  `photos N/N` / `links N/N`).
 - Exports: `design/ihkd/shots/*.png`; `shots/<board>/` holds the 1:1 tiles and the manifest
   whose notes are the review record.
 - Selected hero: the **congress poster** (candidate 1), contract in `brief.md` § M8. Two
@@ -45,7 +47,7 @@ login. Story one-liner: **Hastanın hekimi.** — kılavuz, kongre ve akademi te
 | `on.red` | #FFFFFF | text on red.600 |
 
 Type is bound per shape to `fs.13 / 16 / 22 / 30 / 44 / 80` (QA text-size coverage 100% on
-all five pages). Roles: `label · meta · data · body · bodyMed · nav · lead · h3 · h2 · stat ·
+all six pages). Roles: `label · meta · data · body · bodyMed · nav · lead · h3 · h2 · stat ·
 figure · display · wordmark`. Spacing `4–120`, radius `0 / 2 / 4`.
 
 ## Component inventory
@@ -62,7 +64,7 @@ active · disabled` (4), `tag`, `card`, `stat` (3). Names are `aile-durum`, not 
 Penpot rewrites a `/` in a shape or component name as a path separator. The screens do not
 instance them yet — moving to instances is a breaking change and a later job.
 
-## Boards (live; 01 re-verified 2026-11-05, others 2026-11-03)
+## Boards (live; 01 and Mobil re-verified 2026-11-05, others 2026-11-03)
 
 | # | page | board | size | live id |
 |---|---|---|---|---|
@@ -89,6 +91,8 @@ instance them yet — moving to instances is a breaking change and a later job.
 | 18 | Üyelik | 18-uyelik | 1440×2292 | 48eb7286-684f-8018-8008-e197aa759d2e |
 | 19 | Üyelik | 19-giris | 1440×1024 | 48eb7286-684f-8018-8008-e197b848b03b |
 | 20 | Üyelik | 20-panel | 1440×1680 | 48eb7286-684f-8018-8008-e197bd55d6fb |
+| 01 | Mobil | 01-ana-sayfa-m | 390×5436 | — |
+| — | Mobil | 01-ana-sayfa-m-menu (menu state) | 390×844 | — |
 | — | Components | component sheet | 1440×2460 | d464fdd4-6900-809f-8008-e2dc73baa1d4 |
 
 Canvas spacing: after a rebuild settles a board's height, the runner reconciles that board's
@@ -141,7 +145,7 @@ The pinned URL in `tools/media.py` is the single source, so a rebuild reimports 
 frame. The parked candidates' slots are also in provenance (`…@cand-2-kapak`,
 `…@cand-4-topluluk`, page `_scratch`).
 
-## Flows (live: 5 flows, 7 links, 0 errors)
+## Flows (live: 6 flows, 9 links, 0 errors)
 
 | flow | page | interaction |
 |---|---|---|
@@ -150,6 +154,7 @@ frame. The parked candidates' slots are also in provenance (`…@cand-2-kapak`,
 | `kurs` | Akademi (11-akademi) | `f cta` → 12-kurs-detay |
 | `oku` | İçerik (15-haberler) | `f cta` → 16-makale |
 | `üye` | Üyelik (19-giris) | `f submit` → 20-panel; `p cta` (20) → 18-uyelik |
+| `menü` | Mobil (01-ana-sayfa-m) | `masthead menu` → 01-ana-sayfa-m-menu; `menu close` (menu) → 01-ana-sayfa-m |
 
 Cross-page journeys stay unwired by design (the API stores a hollow destination proxy). The
 01 primary and its ghost are cross-page, so the page's same-page route is the groups link.
@@ -157,8 +162,11 @@ Cross-page journeys stay unwired by design (the API stores a hollow destination 
 ## Gaps / limitations (honest list)
 
 1. **Cross-page journeys unwired** (above). Wire them in the Penpot UI if needed.
-2. **No mobile twin.** Mobile was dropped from the roadmap; `ux_gate` passes without the key.
-   Adding it back is a decision, not a build detail.
+2. **Mobile is one screen, not a system.** `Mobil` carries the phone twin of the home
+   (`01-ana-sayfa-m` 390×5436) and its open menu (`01-ana-sayfa-m-menu` 390×844), wired as flow
+   `menü`. The other 19 screens, their three state boards and the component sheet stay
+   desktop-only: the twin proves the home's refold, not a mobile breakpoint set or a mobile
+   library.
 3. **Components are not instanced** by the screens. The library is the handoff object; moving
    to instances is a breaking change and a later job.
 4. **Ghost numerals** (`head num`, `ink.400`, 2.07:1) are decorative order marks; real copy
@@ -177,8 +185,8 @@ Cross-page journeys stay unwired by design (the API stores a hollow destination 
    boards of identical dimensions could still swap renders on the disk-rescue path.
 9. **`_scratch` remains.** Three hero candidates (kept at the user's request, one is the live
    hero's source) and two parked concepts live there. Nothing is deleted without the user.
-10. **State coverage is desktop-only and partial**: empty (01), loading (07), registration
-    error (09). Success/disabled/offline states are not drawn.
+10. **State coverage is partial**: empty (01), loading (07) and registration error (09) on
+    desktop, the open menu on `Mobil`. Success/disabled/offline states are not drawn.
 11. **`contrast_audit.py` read an unset shape opacity as 0** (`Number(null) === 0`), so on
     this file every text was "translucent (opacity 0)" and nothing was checked automatically.
     Fixed in the tool (`num()` falls back on null/undefined/"" before coercion; an unreadable
@@ -203,7 +211,7 @@ Run on this checkout with the cherry-picked evidence tools (`2420380`, `2279557`
 | `contrast_audit` (Kurumsal, Üyelik, Components — repository tool, exit 0/0/1) | Kurumsal 593 texts / 578 checked / **0 failing**, 7 ghost numerals ignored, 8 MANUAL over `img-hero`; Üyelik 0 fails, 4 MANUAL (the retained .85/.88 lines, measured 4.88 / 4.64 on the render); Components 6 automatic fails, all **disabled-state** labels (1.91–2.28) — inactive controls, no live-content failure |
 | `crop_board` re-cut (11 boards) + `--attest` | exit 0 on every board; no blank CTA region; the hero CTA, 07's nav CTA, 08's `f send` and 09's `reg cta` are the crop subjects |
 | negative attest (temp fixture, one PNG removed) | exit 1 with "1 referenced PNG(s) missing" — the real evidence files were copied, never deleted |
-| `penpot_exec.py --read` | returns the live file and all seven pages (`Kurumsal…_scratch`) |
+| `penpot_exec.py --read` | returns the live file and all seven pages live at the time (`Kurumsal…_scratch`; `Mobil` was added later) |
 
 Two tool/data facts this round produced, recorded so the next reader does not rediscover them:
 

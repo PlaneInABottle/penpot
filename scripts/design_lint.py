@@ -526,12 +526,23 @@ def lint(nodes: list[dict], rules: dict) -> list[dict]:
             counts = {size: sum(1 for n in texts if n["fontSize"] == size) for size in sizes}
             body = max(counts, key=counts.get)
             if sizes[-1] / body < rules["min_display_ratio"]:
-                add(
-                    "type.display",
-                    f"display {sizes[-1]}px is only {sizes[-1] / body:.2f}x the body {body}px "
-                    f"(min {rules['min_display_ratio']}x) — no scale drama → push the display to "
-                    f"{body * rules['min_display_ratio']:.0f}px or drop to one size",
-                )
+                # A chrome sheet (menu, overlay) may carry no display step at
+                # all; the project can name it in `type_display_exempt`. The
+                # skip is printed, so an exemption is visible, never silent.
+                exempt = rules.get("type_display_exempt") or []
+                if isinstance(exempt, str):
+                    exempt = [exempt]
+                if board["name"] in exempt:
+                    print(f"note: type.display skipped for {board['name']} "
+                          f"({sizes[-1] / body:.2f}x display {sizes[-1]}px over body {body}px) "
+                          f"— declared in type_display_exempt")
+                else:
+                    add(
+                        "type.display",
+                        f"display {sizes[-1]}px is only {sizes[-1] / body:.2f}x the body {body}px "
+                        f"(min {rules['min_display_ratio']}x) — no scale drama → push the display to "
+                        f"{body * rules['min_display_ratio']:.0f}px or drop to one size",
+                    )
             if len(sizes) > 1:
                 gaps = [b / a for a, b in zip(sizes, sizes[1:])]
                 if min(gaps) < rules["min_step_ratio"]:

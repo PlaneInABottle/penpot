@@ -413,9 +413,13 @@ def main(argv: list[str] | None = None) -> int:
              f"{img_w}x{img_h}; pass the matching --board/--png (existing outputs untouched)",
              2)
     boxes = tile_boxes(img_w, img_h, tile_w, tile_h, args.overlap)
+    # The manifest records what was produced, not what was asked for: a tile
+    # wider than the render is clamped, and a declared 1440 on a 390 board is
+    # false evidence. Same for a region clamped at the image edge.
+    eff_tile_w, eff_tile_h = min(tile_w, img_w), min(tile_h, img_h)
     manifest: dict = {"board": board_name, "source": src.name, "source_sha256": digest,
                       "image": {"w": img_w, "h": img_h},
-                      "tile": {"w": tile_w, "h": tile_h, "overlap": args.overlap},
+                      "tile": {"w": eff_tile_w, "h": eff_tile_h, "overlap": args.overlap},
                       "tiles": [], "regions": []}
     for i, (x, y, w, h) in enumerate(boxes, 1):
         name = f"tile-{i:02d}.png"
@@ -469,14 +473,19 @@ def main(argv: list[str] | None = None) -> int:
         else:
             fail(f"region {slug!r} falls outside the {img_w}x{img_h} render")
         geometry = {"file": name, "x": region["x"], "y": region["y"],
-                    "w": region["w"], "h": region["h"], "origin": region["origin"]}
+                    "w": w, "h": h, "origin": region["origin"]}
         manifest["regions"].append({"file": name, "subject": region["name"],
-                                    "x": region["x"], "y": region["y"], "w": region["w"],
-                                    "h": region["h"], "origin": region["origin"],
+                                    "x": region["x"], "y": region["y"], "w": w,
+                                    "h": h, "origin": region["origin"],
                                     **keep_review(old_regions.get(name, {}), geometry,
                                                   ("x", "y", "w", "h"))})
 
-    required = ["smallest-text", "densest", "primary-action"]
+    # A chrome sheet has no saturated action; requiring a primary-action crop
+    # there would report a gap that does not exist. Only require what the board
+    # actually offers.
+    required = ["smallest-text", "densest"]
+    if "primary-action" in regions:
+        required.append("primary-action")
     if "icons-arrows" in regions:
         required.append("icons-arrows")
     present = [r["file"].removeprefix("region-").removesuffix(".png") for r in manifest["regions"]]
