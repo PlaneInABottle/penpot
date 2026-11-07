@@ -1,0 +1,5 @@
+{
+  "_why": "surface.role skips a project whose palette is not declared. The alt value matches tokens.json color.surface.alt (#EAEAE8); change both together.",
+  "surface_white": ["#FFFFFF"],
+  "surface_alt": ["#EAEAE8"]
+}

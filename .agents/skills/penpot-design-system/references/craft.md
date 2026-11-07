@@ -162,6 +162,13 @@ next row.
   boxes at different sizes always drifts, because box tops are not baselines. Use a single
   text node, stack value over unit label, or compute both baselines from committed
   `textBounds` in a later call.
+- **A circle is an ellipse, not a rounded rect.** An icon lens drawn as a stroked rectangle
+  with a radius reads as a box at any zoom; draw the ellipse and its rotated handle. The same
+  holds for dots, avatars and status lamps.
+- **A label in a fixed box gets the box, not an x.** Give the text the chip's full width and
+  `align: center`; a guessed `x` drifts and the glyph collides with the border. Shortcut
+  marks differ per font (a `⌘` glyph can overrun a `K`), so a keycap carries one ASCII
+  character (`/`) unless the font is proven.
 
 ## At a second width
 

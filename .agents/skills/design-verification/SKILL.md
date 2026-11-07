@@ -73,6 +73,8 @@ Anything not covered is reported as a gap, never as done.
   than the write; the commit is asynchronous.
 - **Geometry is not a render.** Clean coordinates coexist with clipped glyphs and
   overlapping bands; after any layout, measurement or icon change take the crop again.
+- **Chrome gets a 3× crop.** Search fields, keycaps and icon buttons are checked in a 3× crop,
+  never in the page render: a square icon or a label over its border is invisible at page scale.
 - **Baselines, not boxes.** A line built from two text sizes gets a 2× crop on baseline
   continuity; optical alignment is invisible to a geometry dump.
 - **Stale renders lie.** Never open a PNG older than the last build that touched its board;

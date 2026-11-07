@@ -1,0 +1,54 @@
+{
+  "project": "Perde",
+  "defaults": {"accentMaxRatio": 0.3, "viewportH": 900},
+  "screens": [
+    {
+      "board": "A1-harita",
+      "page": "Page 1",
+      "task": "See what is on in Istanbul tonight, and where, on one map.",
+      "primaryCta": "pin-selected",
+      "story": {
+        "hook": "Perde — İstanbul kültür haritası",
+        "proof": "6 dated pins plus 12 events across four categories",
+        "path": "category rail, time scope, search",
+        "action": "open a pin"
+      },
+      "states": [{"state": "default", "board": "A1-harita"}],
+      "mobile": "n/a: exploration board, desktop only until a direction is chosen",
+      "firstViewport": ["brand", "search", "tag-tiyatro", "pin-0", "when-pill"],
+      "claims": []
+    },
+    {
+      "board": "A2-detay",
+      "page": "Page 1",
+      "task": "Decide on one event from its pin.",
+      "primaryCta": "pop-cta",
+      "story": {
+        "hook": "the selected pin",
+        "proof": "venue, time, length, price in one label",
+        "path": "Detaylar, or close the card",
+        "action": "Bilet al"
+      },
+      "states": [{"state": "default", "board": "A2-detay"}],
+      "mobile": "n/a: exploration board, desktop only until a direction is chosen",
+      "firstViewport": ["pop", "pin-selected"],
+      "claims": []
+    },
+    {
+      "board": "A3-liste",
+      "page": "Page 1",
+      "task": "Scan the evening in time order.",
+      "primaryCta": "list-more",
+      "story": {
+        "hook": "12 etkinlik",
+        "proof": "five rows with time, venue and price",
+        "path": "sort, or open a row",
+        "action": "Tüm haftayı gör"
+      },
+      "states": [{"state": "default", "board": "A3-liste"}],
+      "mobile": "n/a: exploration board, desktop only until a direction is chosen",
+      "firstViewport": ["list-title", "row-0"],
+      "claims": []
+    }
+  ]
+}

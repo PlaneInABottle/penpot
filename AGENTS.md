@@ -93,16 +93,14 @@ All live scripts need the plugin connected. Exit codes everywhere: `0` clean, `1
 
 `--only`/`--force`/`--restore` belong to a project's `tools/media.py`, never the generic
 importer. The generic importer does not write a media table: record the accepted source URL
-and provenance in the project table before claiming a lossless rebuild. `crop_board.py
---region '{"slug":"…","name":"…","x":0,"y":0,"w":0,"h":0}'` declares one board-relative region
-(repeatable); `--primary-action NAME` needs `--regions`. A `--png` tile-only run is not attestable
-until the required regions are declared.
+and provenance in the project table before claiming a lossless rebuild. `crop_board.py --region
+'{"slug":"…","name":"…","x":0,"y":0,"w":0,"h":0}'` declares a board-relative region (repeatable);
+`--primary-action NAME` needs `--regions`; a `--png` tile-only run is not attestable without them.
 
 Thresholds live in `design_lint.DEFAULTS`/`RULES`, `ux_gate` and `build.py`, never in prose:
-`--rules` is a written deviation, and `--acknowledge` entries need a reason. `design_lint.py`
-exits 2 when a page is unmeasured (over 5% of texts without `textBounds`), and `gate.py` then
-prints `FAIL (invalid)`, never PASS. Grid edges and declared bleeds are a manual nodes+render
-check, not a script.
+`--rules` is a written deviation and `--acknowledge` needs a reason. `design_lint.py` exits 2
+when a page is unmeasured (over 5% of texts without `textBounds`) and `gate.py` prints
+`FAIL (invalid)`, never PASS. Grid edges and declared bleeds are a manual nodes+render check.
 
 ## Ownership and safety
 
@@ -116,5 +114,7 @@ check, not a script.
 - `design/*/` is gitignored: stage a design only with an explicit `git add -f <path>` list (or
   `gate.py stage`), and verify with `git ls-files design/` — `git status` looks empty otherwise.
 - In zsh, separate output sections with `---`, never `echo ===` (it misparses).
+- Small chrome gets a **3× crop** before a board is shown: a square icon, a chip label with a
+  guessed x, and a multi-glyph keycap are invisible at page scale. See `searchIcon()`, `keycap()`.
 - `python3 -m py_compile` for `scripts/*.py`, `node --check` for helpers/build JS; never
   cross-check.
